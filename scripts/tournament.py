@@ -463,6 +463,27 @@ def _print_results(
         print(f"  {label:<12} {n_dk:>6} {n_dk/N*100:>4.0f}%  "
               f"{avg_sol:>+6.2f} ± {hw_sol:<5.2f} {n_kontra/n_dk*100:>4.0f}%")
 
+    # ── Per-model contract breakdown ─────────────────────────────
+    if len(model_names) > 1:
+        for m in ranked:
+            m_results = [r for r in results if r.soloist_model == m]
+            m_played = [r for r in m_results if r.contract_dkey != "__pass__"]
+            m_pass = len(m_results) - len(m_played)
+            if not m_results:
+                continue
+            print()
+            print(f"  {m} as soloist: {len(m_played)} bids, "
+                  f"{m_pass} passes ({m_pass * 100 // len(m_results)}% pass)")
+            for dk in DISPLAY_ORDER:
+                dk_results = [r for r in m_results if r.contract_dkey == dk]
+                n_dk = len(dk_results)
+                if n_dk == 0:
+                    continue
+                label = DK_LABELS.get(dk, dk)
+                sol_pts_list = [r.model_pts.get(m, 0.0) for r in dk_results]
+                avg_sol, _, hw_sol = _ci95(sol_pts_list)
+                print(f"    {label:<12} {n_dk:>5}  {avg_sol:>+6.2f} ± {hw_sol:<5.2f}")
+
     # ── Footer ────────────────────────────────────────────────────
     print()
     n_matchups = len(matchups)

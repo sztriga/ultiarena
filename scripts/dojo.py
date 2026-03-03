@@ -281,21 +281,19 @@ def _init_worker(net_kwargs: dict) -> None:
     _W_WRAPPER = make_wrapper(_W_NET, device="cpu")
 
 
-def _play_game_in_worker(
+def _play_batch_in_worker(
     args: tuple,
-) -> tuple[list[tuple[np.ndarray, np.ndarray, np.ndarray, float, bool]], float]:
-    """Worker entry-point for parallel dojo self-play."""
-    (weights, sol_cfg, def_cfg, game_seed, alpha, suit_sigma,
+) -> list[tuple[list[tuple[np.ndarray, np.ndarray, np.ndarray, float, bool]], float]]:
+    """Worker entry-point: play a batch of games with one weight load."""
+    (weights, sol_cfg, def_cfg, game_seeds, alpha, suit_sigma,
      kontra, endgame_tricks, pimc_dets, solver_temp) = args
 
     global _W_NET, _W_WRAPPER, _W_GAME
 
-    # Update weights from main process
+    # Load weights once per batch (not per game)
     _W_NET.load_state_dict(weights, strict=False)
     _W_NET.eval()
     _W_WRAPPER = make_wrapper(_W_NET, device="cpu")
-
-    rng = random.Random(game_seed)
 
     sol_player = HybridPlayer(
         _W_GAME, _W_WRAPPER, mcts_config=sol_cfg,
@@ -310,10 +308,14 @@ def _play_game_in_worker(
         solver_temperature=solver_temp,
     )
 
-    return play_one_dojo_game(
-        _W_GAME, _W_WRAPPER, sol_player, def_player, rng,
-        alpha, suit_sigma, kontra,
-    )
+    results = []
+    for seed in game_seeds:
+        rng = random.Random(seed)
+        results.append(play_one_dojo_game(
+            _W_GAME, _W_WRAPPER, sol_player, def_player, rng,
+            alpha, suit_sigma, kontra,
+        ))
+    return results
 
 
 # ---------------------------------------------------------------------------
@@ -427,6 +429,15 @@ def train_dojo(cfg: DojoConfig) -> None:
     print(f"  Device: {cfg.device}")
     print()
 
+    def _fmt_time(s: float) -> str:
+        if s < 60:
+            return f"{s:.0f}s"
+        m, sec = divmod(int(s), 60)
+        if m < 60:
+            return f"{m}m {sec:02d}s"
+        h, m = divmod(m, 60)
+        return f"{h}h {m:02d}m"
+
     total_games = 0
     total_wins = 0
     total_kontras = 0
@@ -498,18 +509,31 @@ def train_dojo(cfg: DojoConfig) -> None:
                     step_samples += 1
 
             if executor is not None:
-                # --- Parallel self-play ---
+                # --- Parallel self-play (batched per worker) ---
                 all_weights = {k: v.cpu() for k, v in net.state_dict().items()}
-                tasks = []
-                for g in range(cfg.games_per_step):
-                    game_seed = cfg.seed + step * 1000 + g
-                    tasks.append((
-                        all_weights, sol_mcts, def_mcts, game_seed,
+                all_seeds = [cfg.seed + step * 1000 + g
+                             for g in range(cfg.games_per_step)]
+
+                # Split seeds across workers (weights sent once per worker)
+                batches = []
+                base = 0
+                per_w = cfg.games_per_step // cfg.num_workers
+                extra = cfg.games_per_step % cfg.num_workers
+                for w in range(cfg.num_workers):
+                    n = per_w + (1 if w < extra else 0)
+                    if n == 0:
+                        continue
+                    batches.append((
+                        all_weights, sol_mcts, def_mcts,
+                        all_seeds[base:base + n],
                         cfg.alpha, cfg.suit_sigma, cfg.kontra,
                         cfg.endgame_tricks, cfg.pimc_dets, cfg.solver_temp,
                     ))
-                for samples, quality in executor.map(_play_game_in_worker, tasks):
-                    _collect_result(samples, quality)
+                    base += n
+
+                for batch_results in executor.map(_play_batch_in_worker, batches):
+                    for samples, quality in batch_results:
+                        _collect_result(samples, quality)
             else:
                 # --- Sequential self-play ---
                 wrapper = make_wrapper(net, device=cfg.device)
@@ -571,39 +595,27 @@ def train_dojo(cfg: DojoConfig) -> None:
                 v_loss_avg /= sgd_count
                 p_loss_avg /= sgd_count
 
-            # ── Logging ──────────────────────────────────────────────
-            win_rate = step_wins / cfg.games_per_step
-            mean_q = np.mean(step_qualities) if step_qualities else 0.0
+            # ── Progress bar ─────────────────────────────────────────
             elapsed = time.perf_counter() - t0
             gps = total_games / elapsed if elapsed > 0 else 0
             overall_wr = total_wins / total_games if total_games > 0 else 0
 
-            if step % 10 == 0 or step == cfg.steps:
-                print(
-                    f"  [{step:4d}/{cfg.steps}]  "
-                    f"win={overall_wr:.0%}  "
-                    f"q={mean_q:.2f}  "
-                    f"v_loss={v_loss_avg:.4f}  "
-                    f"p_loss={p_loss_avg:.4f}  "
-                    f"buf={len(buf):,}  "
-                    f"lr={lr:.1e}  "
-                    f"{gps:.1f} g/s"
-                )
-            else:
-                print(
-                    f"\r  [{step:4d}/{cfg.steps}] {gps:.1f} g/s",
-                    end="", flush=True,
-                )
+            frac = step / cfg.steps
+            bar_w = 30
+            filled = int(bar_w * frac)
+            bar = "█" * filled + "░" * (bar_w - filled)
+            eta = elapsed / frac * (1 - frac) if frac > 0 else 0
 
-            # Periodic quality tier breakdown
-            if step % 25 == 0 or step == cfg.steps:
-                print("  ── Quality tiers ──")
-                for i in range(TIERS_N):
-                    if tier_total[i] > 0:
-                        tw = tier_wins[i] / tier_total[i]
-                        print(f"    {tier_labels[i]}: {tw:.0%} ({tier_wins[i]}/{tier_total[i]})")
-                    else:
-                        print(f"    {tier_labels[i]}: n/a")
+            print(
+                f"\r  {bar} {frac*100:5.1f}%  "
+                f"win={overall_wr:.0%}  "
+                f"v={v_loss_avg:.3f} p={p_loss_avg:.3f}  "
+                f"{gps:.1f} g/s  "
+                f"{_fmt_time(elapsed)} / {_fmt_time(eta)}   ",
+                end="", flush=True,
+            )
+
+            if step == cfg.steps:
                 print()
 
     finally:
@@ -635,11 +647,16 @@ def train_dojo(cfg: DojoConfig) -> None:
     print()
     print(f"  ┌─ DOJO COMPLETE ─────────────────────────────────")
     print(f"  │  Contract:   {cfg.contract}")
-    print(f"  │  Games:      {total_games:,}")
-    print(f"  │  Win rate:   {overall_wr:.1%}")
-    print(f"  │  Kontras:    {total_kontras}")
-    print(f"  │  Time:       {elapsed:.0f}s ({total_games / elapsed:.1f} g/s)")
-    print(f"  │  Saved:      {out_dir}/model.pt")
+    print(f"  │  Games:      {total_games:,}  ({_fmt_time(elapsed)}, {total_games / elapsed:.1f} g/s)")
+    print(f"  │  Win rate:   {overall_wr:.1%}  (kontras: {total_kontras})")
+    print(f"  │")
+    print(f"  │  Quality tiers:")
+    for i in range(TIERS_N):
+        if tier_total[i] > 0:
+            tw = tier_wins[i] / tier_total[i]
+            print(f"  │    {tier_labels[i]}: {tw:>4.0%}  ({tier_wins[i]}/{tier_total[i]})")
+    print(f"  │")
+    print(f"  │  Saved: {out_dir}/model.pt")
     print(f"  └─────────────────────────────────────────────────")
 
 
