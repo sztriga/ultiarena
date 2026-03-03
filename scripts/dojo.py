@@ -5,13 +5,17 @@ Forces specific contract games with biased dealing that gives the soloist
 hands resembling real contract hands.  The model learns both what good
 hands look like and how to play them.
 
+Each contract type provides its own dealing, discard, and game setup
+logic via a :class:`ContractDojo` interface.
+
 Usage:
-    python scripts/dojo.py scout --contract betli --steps 200 --games-per-step 8
-    python scripts/dojo.py knight --contract betli --alpha 0.5 --suit-sigma 1.0
-    python scripts/dojo.py scout --contract betli --save-as scout --workers 4
+    python scripts/dojo.py trinity --contract betli --steps 200 --workers 4
+    python scripts/dojo.py trinity --contract ulti --steps 200 --workers 4
+    python scripts/dojo.py trinity --contract betli --freeze-value --steps 500
 """
 from __future__ import annotations
 
+import abc
 import argparse
 import math
 import random
@@ -57,136 +61,55 @@ from trickster.training.tiers import TIERS
 
 
 # ---------------------------------------------------------------------------
-#  Biased dealing
+#  Shared helpers
 # ---------------------------------------------------------------------------
 
-def biased_betli_deal(
+def _weighted_sample_without_replacement(
+    deck: list[Card],
+    weights: list[float],
+    n: int,
     rng: random.Random,
-    alpha: float = 0.5,
-    suit_sigma: float = 1.0,
-) -> tuple[list[list[Card]], list[Card]]:
-    """Deal 10 biased cards to soloist (player 0), rest randomly.
-
-    Returns (hands[3], talon[2]) where hands[0] is the biased soloist hand.
-    """
-    deck = make_deck()
-
-    # Per-suit multipliers for suit concentration
-    suit_mult = {s: math.exp(rng.gauss(0, suit_sigma)) for s in ALL_SUITS}
-
-    # Compute sampling weights
-    weights = []
-    for card in deck:
-        rank_strength = BETLI_STRENGTH[card.rank]
-        w = math.exp(-alpha * rank_strength) * suit_mult[card.suit]
-        weights.append(w)
-
-    # Weighted sampling without replacement for soloist (10 cards)
+) -> tuple[list[Card], list[Card]]:
+    """Pick *n* cards from *deck* using *weights*, return (chosen, rest)."""
     remaining = list(range(len(deck)))
     remaining_weights = list(weights)
-    soloist_indices: list[int] = []
+    chosen_indices: list[int] = []
 
-    for _ in range(10):
+    for _ in range(n):
         total = sum(remaining_weights)
         r = rng.random() * total
         cumulative = 0.0
-        chosen = 0
+        pick = 0
         for i, w in enumerate(remaining_weights):
             cumulative += w
             if cumulative >= r:
-                chosen = i
+                pick = i
                 break
-        soloist_indices.append(remaining[chosen])
-        remaining.pop(chosen)
-        remaining_weights.pop(chosen)
+        chosen_indices.append(remaining[pick])
+        remaining.pop(pick)
+        remaining_weights.pop(pick)
 
-    soloist_hand = [deck[i] for i in soloist_indices]
+    chosen = [deck[i] for i in chosen_indices]
     rest = [deck[i] for i in remaining]
-    rng.shuffle(rest)
-
-    # Remaining 22 cards: 10 to def1, 10 to def2, 2 to talon
-    hands: list[list[Card]] = [soloist_hand, rest[:10], rest[10:20]]
-    talon = rest[20:22]
-
-    return hands, talon
+    return chosen, rest
 
 
-def hand_quality(hand: list[Card]) -> float:
-    """Betli hand quality: 0.0 (all Aces) to 1.0 (all 7s).
-
-    quality = sum(7 - BETLI_STRENGTH[rank]) / 70.0
-    """
-    return sum(7 - BETLI_STRENGTH[c.rank] for c in hand) / 70.0
-
-
-# ---------------------------------------------------------------------------
-#  Smart discard via evaluator
-# ---------------------------------------------------------------------------
-
-def best_betli_discard(
-    gs: GameState,
-    soloist: int,
-    wrapper,
-    game: UltiGame,
-) -> list[Card]:
-    """Find the best 2 cards to discard for betli using the value head.
-
-    Evaluates all C(12,2)=66 discard pairs and picks the one that
-    maximises the soloist value prediction.
-    """
-    hand = gs.hands[soloist]
-    assert len(hand) == 12
-
-    cdef = CONTRACT_DEFS["betli"]
-    best_val = -float("inf")
-    best_pair: tuple[Card, Card] = (hand[0], hand[1])
-
-    # Build evaluation states for all discard pairs
-    for c1, c2 in combinations(hand, 2):
-        node = _make_eval_state(
-            gs, soloist,
-            trump=None,
-            discards=(c1, c2),
-            contract_def=cdef,
-            is_piros=False,
-            dealer=gs.dealer,
-        )
-        feats = game.encode_state(node, soloist)
-        val = wrapper.predict_value(feats)
-        if val > best_val:
-            best_val = val
-            best_pair = (c1, c2)
-
-    return list(best_pair)
-
-
-# ---------------------------------------------------------------------------
-#  Play one dojo game
-# ---------------------------------------------------------------------------
-
-def play_one_dojo_game(
-    game: UltiGame,
-    wrapper,
-    sol_player: HybridPlayer,
-    def_player: HybridPlayer,
+def _deal_rest(
+    rest: list[Card],
     rng: random.Random,
-    alpha: float,
-    suit_sigma: float,
-    kontra: bool,
-) -> tuple[list[tuple[np.ndarray, np.ndarray, np.ndarray, float, bool]], float]:
-    """Play one biased betli game, return (samples, quality).
+) -> tuple[list[list[Card]], list[Card]]:
+    """Shuffle *rest* (22 cards) into def1(10), def2(10), talon(2)."""
+    rng.shuffle(rest)
+    return [rest[:10], rest[10:20]], rest[20:22]
 
-    Each sample: (state_feats, action_mask, policy, reward, is_soloist).
-    """
-    # 1. Biased deal
-    hands, talon = biased_betli_deal(rng, alpha, suit_sigma)
-    dealer = 2  # arbitrary; soloist is player 0
-    soloist = 0
 
-    quality = hand_quality(hands[soloist])
-
-    # Build GameState with 10-card hands
-    gs = GameState(
+def _make_gs(
+    hands: list[list[Card]],
+    dealer: int,
+    soloist: int,
+) -> GameState:
+    """Build a fresh 10-card GameState."""
+    return GameState(
         hands=hands,
         trump=None,
         betli=False,
@@ -200,25 +123,266 @@ def play_one_dojo_game(
         last_trick=None,
     )
 
+
+# ---------------------------------------------------------------------------
+#  Contract dojo interface
+# ---------------------------------------------------------------------------
+
+_Sample = tuple[np.ndarray, np.ndarray, np.ndarray, float, bool]
+
+
+class ContractDojo(abc.ABC):
+    """Interface for contract-specific dojo logic."""
+
+    @abc.abstractmethod
+    def deal(
+        self, rng: random.Random, alpha: float, suit_sigma: float,
+    ) -> tuple[list[list[Card]], list[Card]]:
+        """Return (hands[3], talon[2]) with biased soloist hand at index 0."""
+
+    @abc.abstractmethod
+    def hand_quality(self, hand: list[Card]) -> float:
+        """Return a 0-1 quality score for the soloist hand."""
+
+    @abc.abstractmethod
+    def best_discard(
+        self, gs: GameState, soloist: int, wrapper, game: UltiGame,
+    ) -> list[Card]:
+        """Return the 2 cards to discard from the 12-card hand."""
+
+    @abc.abstractmethod
+    def setup_node(
+        self, gs: GameState, soloist: int, dealer: int,
+    ) -> UltiNode:
+        """Set contract on gs and return a ready-to-play UltiNode."""
+
+    @property
+    @abc.abstractmethod
+    def kontra_key(self) -> str:
+        """Component key used for kontra bookkeeping."""
+
+    @property
+    @abc.abstractmethod
+    def training_mode(self) -> str:
+        """Value for gs.training_mode."""
+
+
+# ---------------------------------------------------------------------------
+#  Betli dojo
+# ---------------------------------------------------------------------------
+
+
+class BetliDojo(ContractDojo):
+
+    def deal(self, rng, alpha, suit_sigma):
+        deck = make_deck()
+        suit_mult = {s: math.exp(rng.gauss(0, suit_sigma)) for s in ALL_SUITS}
+        weights = [
+            math.exp(-alpha * BETLI_STRENGTH[c.rank]) * suit_mult[c.suit]
+            for c in deck
+        ]
+        sol_hand, rest = _weighted_sample_without_replacement(deck, weights, 10, rng)
+        def_hands, talon = _deal_rest(rest, rng)
+        return [sol_hand] + def_hands, talon
+
+    def hand_quality(self, hand):
+        return sum(7 - BETLI_STRENGTH[c.rank] for c in hand) / 70.0
+
+    def best_discard(self, gs, soloist, wrapper, game):
+        hand = gs.hands[soloist]
+        assert len(hand) == 12
+        cdef = CONTRACT_DEFS["betli"]
+        best_val = -float("inf")
+        best_pair = (hand[0], hand[1])
+        for c1, c2 in combinations(hand, 2):
+            node = _make_eval_state(
+                gs, soloist, trump=None, discards=(c1, c2),
+                contract_def=cdef, is_piros=False, dealer=gs.dealer,
+            )
+            feats = game.encode_state(node, soloist)
+            val = wrapper.predict_value(feats)
+            if val > best_val:
+                best_val = val
+                best_pair = (c1, c2)
+        return list(best_pair)
+
+    def setup_node(self, gs, soloist, dealer):
+        set_contract(gs, soloist, trump=None, betli=True)
+        gs.training_mode = "betli"
+        declare_all_marriages(gs, soloist_marriage_restrict=None)
+        return UltiNode(
+            gs=gs,
+            known_voids=(frozenset(), frozenset(), frozenset()),
+            bid_rank=0, is_red=False,
+            contract_components=frozenset({"betli"}),
+            dealer=dealer,
+        )
+
+    @property
+    def kontra_key(self):
+        return "betli"
+
+    @property
+    def training_mode(self):
+        return "betli"
+
+
+# ---------------------------------------------------------------------------
+#  Ulti dojo
+# ---------------------------------------------------------------------------
+
+# Trump count distribution for biased ulti deals.
+_ULTI_TRUMP_COUNTS = [3,    4,    5,    6,    7,    8]
+_ULTI_TRUMP_WEIGHTS = [0.05, 0.40, 0.30, 0.15, 0.08, 0.02]
+
+
+class UltiDojo(ContractDojo):
+
+    def deal(self, rng, alpha, suit_sigma):
+        deck = make_deck()
+        # Pick trump suit
+        trump = rng.choice(ALL_SUITS)
+        self._last_trump = trump
+
+        # Choose trump count from distribution
+        n_trump = rng.choices(_ULTI_TRUMP_COUNTS, _ULTI_TRUMP_WEIGHTS, k=1)[0]
+
+        # --- Deal trump cards (biased toward high strength) ---
+        trump_cards = [c for c in deck if c.suit == trump]
+        n_trump = min(n_trump, len(trump_cards))
+        # Weight by exp(alpha * normal_strength) — high cards preferred
+        trump_weights = [
+            math.exp(alpha * int(c.rank)) for c in trump_cards
+        ]
+        sol_trumps, remaining_trumps = _weighted_sample_without_replacement(
+            trump_cards, trump_weights, n_trump, rng,
+        )
+
+        # --- Deal remaining soloist cards (hajtó + filler) ---
+        n_rest = 10 - n_trump
+        non_trump = [c for c in deck if c.suit != trump]
+        # Use suit_sigma to concentrate into one or two suits (hajtó)
+        suit_mult = {s: math.exp(rng.gauss(0, suit_sigma)) for s in ALL_SUITS}
+        suit_mult[trump] = 0.0  # already dealt trump cards
+        rest_weights = [
+            math.exp(alpha * int(c.rank)) * suit_mult[c.suit]
+            for c in non_trump
+        ]
+        sol_rest, remaining_non_trump = _weighted_sample_without_replacement(
+            non_trump, rest_weights, n_rest, rng,
+        )
+
+        sol_hand = sol_trumps + sol_rest
+        all_remaining = remaining_trumps + remaining_non_trump
+        def_hands, talon = _deal_rest(all_remaining, rng)
+        return [sol_hand] + def_hands, talon
+
+    def hand_quality(self, hand):
+        # Quality based on trump count (normalised 3-8 → 0-1)
+        # plus average strength of all cards
+        trump = getattr(self, "_last_trump", None)
+        if trump is None:
+            return 0.5
+        n_trump = sum(1 for c in hand if c.suit == trump)
+        trump_score = min((n_trump - 3) / 5.0, 1.0)  # 3→0, 8→1
+        avg_strength = sum(int(c.rank) for c in hand) / (7.0 * 10)  # 0-1
+        return 0.6 * trump_score + 0.4 * avg_strength
+
+    def best_discard(self, gs, soloist, wrapper, game):
+        hand = gs.hands[soloist]
+        assert len(hand) == 12
+        trump = self._last_trump
+        is_piros = (trump == Suit.HEARTS)
+        cdef = CONTRACT_DEFS["ulti"]
+        trump_7 = Card(trump, Rank.SEVEN)
+
+        best_val = -float("inf")
+        best_pair = (hand[0], hand[1])
+        for c1, c2 in combinations(hand, 2):
+            # Never discard the trump 7 (needed for ulti endgame)
+            if c1 == trump_7 or c2 == trump_7:
+                continue
+            node = _make_eval_state(
+                gs, soloist, trump=trump, discards=(c1, c2),
+                contract_def=cdef, is_piros=is_piros, dealer=gs.dealer,
+            )
+            feats = game.encode_state(node, soloist)
+            val = wrapper.predict_value(feats)
+            if val > best_val:
+                best_val = val
+                best_pair = (c1, c2)
+        return list(best_pair)
+
+    def setup_node(self, gs, soloist, dealer):
+        trump = self._last_trump
+        is_piros = (trump == Suit.HEARTS)
+        set_contract(gs, soloist, trump=trump, betli=False)
+        gs.has_ulti = True
+        gs.training_mode = "ulti"
+        declare_all_marriages(gs, soloist_marriage_restrict=None)
+        return UltiNode(
+            gs=gs,
+            known_voids=(frozenset(), frozenset(), frozenset()),
+            bid_rank=0, is_red=is_piros,
+            contract_components=frozenset({"parti", "ulti"}),
+            dealer=dealer,
+        )
+
+    @property
+    def kontra_key(self):
+        return "ulti"
+
+    @property
+    def training_mode(self):
+        return "ulti"
+
+
+# ---------------------------------------------------------------------------
+#  Dojo registry
+# ---------------------------------------------------------------------------
+
+DOJO_REGISTRY: dict[str, type[ContractDojo]] = {
+    "betli": BetliDojo,
+    "ulti": UltiDojo,
+}
+
+
+# ---------------------------------------------------------------------------
+#  Play one dojo game (generic)
+# ---------------------------------------------------------------------------
+
+def play_one_dojo_game(
+    game: UltiGame,
+    wrapper,
+    sol_player: HybridPlayer,
+    def_player: HybridPlayer,
+    rng: random.Random,
+    alpha: float,
+    suit_sigma: float,
+    kontra: bool,
+    dojo: ContractDojo,
+) -> tuple[list[_Sample], float]:
+    """Play one biased game, return (samples, quality).
+
+    Each sample: (state_feats, action_mask, policy, reward, is_soloist).
+    """
+    # 1. Biased deal
+    hands, talon = dojo.deal(rng, alpha, suit_sigma)
+    dealer = 2  # arbitrary; soloist is player 0
+    soloist = 0
+
+    quality = dojo.hand_quality(hands[soloist])
+
+    # Build GameState with 10-card hands
+    gs = _make_gs(hands, dealer, soloist)
+
     # 2. Pickup talon (hand goes 10 → 12) and smart discard
     pickup_talon(gs, soloist, talon)
-    discards = best_betli_discard(gs, soloist, wrapper, game)
+    discards = dojo.best_discard(gs, soloist, wrapper, game)
     discard_talon(gs, discards)
 
-    # 3. Set contract
-    set_contract(gs, soloist, trump=None, betli=True)
-    gs.training_mode = "betli"
-    declare_all_marriages(gs, soloist_marriage_restrict=None)
-
-    # Build UltiNode
-    node = UltiNode(
-        gs=gs,
-        known_voids=(frozenset(), frozenset(), frozenset()),
-        bid_rank=0,
-        is_red=False,
-        contract_components=frozenset({"betli"}),
-        dealer=dealer,
-    )
+    # 3. Set contract and build UltiNode
+    node = dojo.setup_node(gs, soloist, dealer)
 
     # Kontra decision (simple: defenders kontra if their value > 0.4)
     if kontra:
@@ -228,12 +392,12 @@ def play_one_dojo_game(
             feats = game.encode_state(node, def_p)
             def_val = wrapper.predict_value(feats)
             if def_val > 0.4:
-                node.component_kontras["betli"] = 1
+                node.component_kontras[dojo.kontra_key] = 1
                 node.gs.kontra_level = 1
                 break
 
     # 4. Play the game
-    samples: list[tuple[np.ndarray, np.ndarray, np.ndarray, float, bool]] = []
+    samples: list[_Sample] = []
 
     state = node
     while not game.is_terminal(state):
@@ -241,19 +405,16 @@ def play_one_dojo_game(
         is_sol = (player == soloist)
         hp = sol_player if is_sol else def_player
 
-        # Get policy + action
         pi, action, _sv = hp.choose_action_with_policy(state, player, rng)
 
-        # Encode state
         feats = game.encode_state(state, player)
         mask = game.legal_action_mask(state)
-
-        samples.append((feats, mask, pi, 0.0, is_sol))  # reward filled later
+        samples.append((feats, mask, pi, 0.0, is_sol))
 
         state = game.apply(state, action)
 
     # 5. Label with terminal outcome
-    labeled: list[tuple[np.ndarray, np.ndarray, np.ndarray, float, bool]] = []
+    labeled: list[_Sample] = []
     for feats, mask, pi, _, is_sol in samples:
         player_for_reward = soloist if is_sol else (1 if soloist != 1 else 2)
         reward = simple_outcome(state, player_for_reward)
@@ -283,10 +444,10 @@ def _init_worker(net_kwargs: dict) -> None:
 
 def _play_batch_in_worker(
     args: tuple,
-) -> list[tuple[list[tuple[np.ndarray, np.ndarray, np.ndarray, float, bool]], float]]:
+) -> list[tuple[list[_Sample], float]]:
     """Worker entry-point: play a batch of games with one weight load."""
     (weights, sol_cfg, def_cfg, game_seeds, alpha, suit_sigma,
-     kontra, endgame_tricks, pimc_dets, solver_temp) = args
+     kontra, endgame_tricks, pimc_dets, solver_temp, contract) = args
 
     global _W_NET, _W_WRAPPER, _W_GAME
 
@@ -294,6 +455,8 @@ def _play_batch_in_worker(
     _W_NET.load_state_dict(weights, strict=False)
     _W_NET.eval()
     _W_WRAPPER = make_wrapper(_W_NET, device="cpu")
+
+    dojo = DOJO_REGISTRY[contract]()
 
     sol_player = HybridPlayer(
         _W_GAME, _W_WRAPPER, mcts_config=sol_cfg,
@@ -313,7 +476,7 @@ def _play_batch_in_worker(
         rng = random.Random(seed)
         results.append(play_one_dojo_game(
             _W_GAME, _W_WRAPPER, sol_player, def_player, rng,
-            alpha, suit_sigma, kontra,
+            alpha, suit_sigma, kontra, dojo,
         ))
     return results
 
@@ -356,6 +519,9 @@ class DojoConfig:
     # Kontra
     kontra: bool = True
 
+    # Freeze value head (only train policy)
+    freeze_value: bool = False
+
     # Workers
     num_workers: int = 1
 
@@ -367,6 +533,13 @@ class DojoConfig:
 def train_dojo(cfg: DojoConfig) -> None:
     """Run focused dojo training."""
 
+    if cfg.contract not in DOJO_REGISTRY:
+        print(f"Error: no dojo for contract '{cfg.contract}'. "
+              f"Available: {', '.join(DOJO_REGISTRY)}")
+        sys.exit(1)
+
+    dojo = DOJO_REGISTRY[cfg.contract]()
+
     # ── Load model ────────────────────────────────────────────────
     model_dir = Path(f"models/ulti/{cfg.source}/final/{cfg.contract}")
     model_pt = model_dir / "model.pt"
@@ -374,8 +547,6 @@ def train_dojo(cfg: DojoConfig) -> None:
         print(f"Error: no model found at {model_dir}")
         sys.exit(1)
 
-    # Load with strict=False to handle legacy models missing bid_value_fc
-    # or carrying old single policy_head/value_fc keys.
     cp = torch.load(model_pt, weights_only=False, map_location=cfg.device)
     game = UltiGame()
     net = UltiNet(
@@ -422,6 +593,8 @@ def train_dojo(cfg: DojoConfig) -> None:
     print(f"  Steps: {cfg.steps} × {cfg.games_per_step} games")
     print(f"  Alpha: {cfg.alpha}, Suit σ: {cfg.suit_sigma}")
     print(f"  LR: {cfg.lr_start:.1e} → {cfg.lr_end:.1e}")
+    if cfg.freeze_value:
+        print(f"  Freeze: value head (policy-only training)")
     if cfg.num_workers > 1:
         print(f"  Self-play: {cfg.num_workers} workers (process pool)")
     else:
@@ -476,34 +649,29 @@ def train_dojo(cfg: DojoConfig) -> None:
             step_wins = 0
             step_qualities: list[float] = []
             step_kontras = 0
-            step_sol_vals: list[float] = []
             step_samples = 0
 
             def _collect_result(
-                samples: list[tuple[np.ndarray, np.ndarray, np.ndarray, float, bool]],
+                samples: list[_Sample],
                 quality: float,
             ) -> None:
                 nonlocal step_wins, step_kontras, step_samples
 
                 step_qualities.append(quality)
 
-                # Determine win (soloist reward > 0)
                 sol_reward = next(r for _, _, _, r, is_sol in samples if is_sol)
                 won = sol_reward > 0
                 if won:
                     step_wins += 1
 
-                # Quality tier tracking
                 tier_idx = min(int(quality * TIERS_N), TIERS_N - 1)
                 tier_total[tier_idx] += 1
                 if won:
                     tier_wins[tier_idx] += 1
 
-                # Check kontra (kontra doubles stakes → reward magnitude > 1.1)
                 if abs(sol_reward) > 1.1:
                     step_kontras += 1
 
-                # Push to buffer
                 for feats, mask, pi, reward, is_sol in samples:
                     buf.push(feats, mask, pi, reward, is_sol)
                     step_samples += 1
@@ -514,7 +682,6 @@ def train_dojo(cfg: DojoConfig) -> None:
                 all_seeds = [cfg.seed + step * 1000 + g
                              for g in range(cfg.games_per_step)]
 
-                # Split seeds across workers (weights sent once per worker)
                 batches = []
                 base = 0
                 per_w = cfg.games_per_step // cfg.num_workers
@@ -528,6 +695,7 @@ def train_dojo(cfg: DojoConfig) -> None:
                         all_seeds[base:base + n],
                         cfg.alpha, cfg.suit_sigma, cfg.kontra,
                         cfg.endgame_tricks, cfg.pimc_dets, cfg.solver_temp,
+                        cfg.contract,
                     ))
                     base += n
 
@@ -552,7 +720,7 @@ def train_dojo(cfg: DojoConfig) -> None:
                 for g in range(cfg.games_per_step):
                     samples, quality = play_one_dojo_game(
                         game, wrapper, sol_player, def_player, rng,
-                        cfg.alpha, cfg.suit_sigma, cfg.kontra,
+                        cfg.alpha, cfg.suit_sigma, cfg.kontra, dojo,
                     )
                     _collect_result(samples, quality)
 
@@ -578,9 +746,13 @@ def train_dojo(cfg: DojoConfig) -> None:
                     is_sol_t = torch.from_numpy(is_sol).bool().to(cfg.device)
 
                     log_probs, values = net.forward_dual(s_t, m_t, is_sol_t)
-                    value_loss = F.huber_loss(values, z_t, delta=1.0)
                     policy_loss = -(pi_t * log_probs).sum(dim=-1).mean()
-                    loss = value_loss + policy_loss
+                    if cfg.freeze_value:
+                        value_loss = torch.tensor(0.0)
+                        loss = policy_loss
+                    else:
+                        value_loss = F.huber_loss(values, z_t, delta=1.0)
+                        loss = value_loss + policy_loss
 
                     optimizer.zero_grad()
                     loss.backward()
@@ -632,7 +804,7 @@ def train_dojo(cfg: DojoConfig) -> None:
         "body_layers": body_layers,
         "input_dim": game.state_dim,
         "action_dim": game.action_space_size,
-        "training_mode": "betli",
+        "training_mode": dojo.training_mode,
         "method": "dojo",
         "dojo_contract": cfg.contract,
         "dojo_alpha": cfg.alpha,
@@ -668,14 +840,15 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description="Dojo — focused contract training with biased dealing",
     )
-    parser.add_argument("model", help="Source model (e.g. scout, knight, bronze)")
-    parser.add_argument("--contract", default="betli", help="Contract to train (default: betli)")
+    parser.add_argument("model", help="Source model (e.g. trinity, bishop)")
+    parser.add_argument("--contract", default="betli",
+                        help=f"Contract to train (available: {', '.join(DOJO_REGISTRY)})")
     parser.add_argument("--steps", type=int, default=200)
     parser.add_argument("--games-per-step", type=int, default=8)
     parser.add_argument("--train-steps", type=int, default=50)
     parser.add_argument("--batch-size", type=int, default=64)
     parser.add_argument("--buffer-size", type=int, default=30_000)
-    parser.add_argument("--alpha", type=float, default=0.5, help="Betli rank bias strength")
+    parser.add_argument("--alpha", type=float, default=0.5, help="Rank bias strength")
     parser.add_argument("--suit-sigma", type=float, default=1.0, help="Suit concentration variance")
     parser.add_argument("--lr-start", type=float, default=5e-4)
     parser.add_argument("--lr-end", type=float, default=1e-4)
@@ -688,6 +861,8 @@ def main() -> None:
     parser.add_argument("--solver-temp", type=float, default=0.5)
     parser.add_argument("--kontra", action="store_true", default=True)
     parser.add_argument("--no-kontra", dest="kontra", action="store_false")
+    parser.add_argument("--freeze-value", action="store_true", default=False,
+                        help="Freeze value head, only train policy")
     parser.add_argument("--save-as", default=None, help="Target model name (default: same as source)")
     parser.add_argument("--workers", type=int, default=1, help="Number of parallel workers")
     parser.add_argument("--device", default=None)
@@ -725,6 +900,7 @@ def main() -> None:
         pimc_dets=args.pimc_dets,
         solver_temp=args.solver_temp,
         kontra=args.kontra,
+        freeze_value=args.freeze_value,
         num_workers=args.workers,
         device=device,
         seed=args.seed,

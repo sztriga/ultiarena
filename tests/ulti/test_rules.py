@@ -67,6 +67,26 @@ class TestMustBeat:
         assert result == [C(H, Rank.TEN)]
 
 
+    def test_no_must_beat_when_trump_already_played(self):
+        """When a trump has captured the trick, must-beat on the led suit is lifted."""
+        # AQ led, second player trumped with HA; we have A10 and AJ
+        hand = [C(A, Rank.TEN), C(A, Rank.JACK), C(L, Rank.SEVEN)]
+        led_suit = A
+        played = [C(A, Rank.QUEEN), C(H, Rank.ACE)]  # AQ led, HA trumped
+        result = legal_response(hand, led_suit, played, trump=H)
+        # Both A10 and AJ are legal — no obligation to beat AQ
+        assert set(result) == {C(A, Rank.TEN), C(A, Rank.JACK)}
+
+    def test_must_beat_still_applies_when_led_suit_is_trump(self):
+        """When trump is led, must-beat still applies (trump on table is the led suit)."""
+        hand = [C(H, Rank.SEVEN), C(H, Rank.ACE), C(B, Rank.KING)]
+        led_suit = H  # trump is also H
+        played = [C(H, Rank.KING)]
+        result = legal_response(hand, led_suit, played, trump=H)
+        # Must beat HK with HA
+        assert result == [C(H, Rank.ACE)]
+
+
 class TestMustTrump:
     def test_must_trump_when_cant_follow_suit(self):
         hand = [C(B, Rank.SEVEN), C(H, Rank.KING), C(H, Rank.NINE)]

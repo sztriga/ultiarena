@@ -62,13 +62,22 @@ def legal_response(
     same_suit = [c for c in hand if c.suit == led_suit]
 
     if same_suit:
-        # Must beat: find highest same-suit card already played
-        led_played = [c for c in played_cards if c.suit == led_suit]
-        if led_played:
-            max_str = max(c.strength(betli=betli) for c in led_played)
-            higher = [c for c in same_suit if c.strength(betli=betli) > max_str]
-            if higher:
-                return higher
+        # Must beat — but only if the trick hasn't already been captured
+        # by a trump.  When a trump is on the table and the led suit
+        # isn't trump, no same-suit card can win, so the obligation to
+        # beat is lifted.
+        trump_on_table = (
+            trump is not None
+            and led_suit != trump
+            and any(c.suit == trump for c in played_cards)
+        )
+        if not trump_on_table:
+            led_played = [c for c in played_cards if c.suit == led_suit]
+            if led_played:
+                max_str = max(c.strength(betli=betli) for c in led_played)
+                higher = [c for c in same_suit if c.strength(betli=betli) > max_str]
+                if higher:
+                    return higher
         return same_suit
 
     # --- Can't follow suit ---

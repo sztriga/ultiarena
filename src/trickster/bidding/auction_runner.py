@@ -143,7 +143,7 @@ def evaluate_pickup(
     bid_rank: int = 0,
     n_talon_samples: int = 20,
     rng: random.Random | None = None,
-    pickup_quantile: float = 0.5,
+    pickup_quantile: float = 0.75,
 ) -> PickupEval | None:
     """Evaluate a 10-card hand for pickup using Kermit-style talon enumeration.
 
@@ -469,7 +469,7 @@ def decide_pickup(
     *,
     pickup_explore: float = 0.0,
     n_talon_samples: int = 20,
-    pickup_quantile: float = 0.5,
+    pickup_quantile: float = 0.75,
     rng: random.Random | None = None,
 ) -> PickupEval | None:
     """Decide whether to pick up the talon (10-card hand).
@@ -592,7 +592,7 @@ def run_auction(
     dk_game_counts: dict[str, int] | None = None,
     pickup_explore: float = 0.0,
     n_talon_samples: int = 20,
-    pickup_quantile: float | list[float] = 0.5,
+    pickup_quantile: float | list[float] = 0.75,
     rng: random.Random | None = None,
 ) -> AuctionResult:
     """Run a competitive 3-player auction.
