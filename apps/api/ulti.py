@@ -61,7 +61,6 @@ DEFAULT_STRENGTH = "normal"
 from trickster.bidding.constants import (
     KONTRA_THRESHOLD,
     MIN_BID_PTS,
-    PICKUP_QUANTILE_OVERRIDES,
     REKONTRA_THRESHOLD,
 )
 from trickster.bidding.evaluator import evaluate_all_contracts
@@ -885,7 +884,6 @@ def _advance_ai_auction(sess: UltiSession) -> None:
             pe = decide_pickup(
                 sess.state, player, sess.dealer, wrappers, a,
                 min_bid_pts=MIN_BID_PTS,
-                quantile_overrides=PICKUP_QUANTILE_OVERRIDES,
             )
             if pe is not None:
                 hand.extend(a.talon)

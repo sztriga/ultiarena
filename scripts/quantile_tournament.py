@@ -40,7 +40,6 @@ from trickster.bidding.constants import (
     KONTRA_THRESHOLD,
     MIN_BID_PTS,
     PASS_PENALTY,
-    PICKUP_QUANTILE_OVERRIDES,
     REKONTRA_THRESHOLD,
 )
 from trickster.games.ulti.adapter import UltiGame
@@ -167,7 +166,6 @@ def _play_one_deal(
     deal_index: int,
     pass_penalty: float,
     min_bid_pts: float,
-    quantile_overrides: dict[str, float] | None = None,
 ) -> DealResult:
     rng = random.Random(seed)
     dealer = deal_index % 3
@@ -181,7 +179,6 @@ def _play_one_deal(
         gs, talon, dealer, seat_wrappers,
         min_bid_pts=min_bid_pts,
         pickup_quantile=seat_quantiles,
-        quantile_overrides=quantile_overrides,
     )
     soloist = auction_result.soloist
     bid = auction_result.bid
@@ -267,15 +264,13 @@ def _play_one_deal(
 _TW_GAME: UltiGame | None = None
 _TW_WRAPPERS: dict[str, UltiNetWrapper] = {}
 _TW_PRESET: SearchPreset | None = None
-_TW_Q_OVERRIDES: dict[str, float] | None = None
 
 
-def _init_worker(model_source: str, preset_raw: tuple, q_overrides: dict[str, float] | None) -> None:
-    global _TW_GAME, _TW_WRAPPERS, _TW_PRESET, _TW_Q_OVERRIDES
+def _init_worker(model_source: str, preset_raw: tuple) -> None:
+    global _TW_GAME, _TW_WRAPPERS, _TW_PRESET
     _TW_GAME = UltiGame()
     _TW_WRAPPERS = load_wrappers(model_source)
     _TW_PRESET = SearchPreset(*preset_raw)
-    _TW_Q_OVERRIDES = q_overrides
 
 
 def _worker_fn(args: tuple) -> DealResult:
@@ -285,7 +280,6 @@ def _worker_fn(args: tuple) -> DealResult:
         _TW_GAME, _TW_WRAPPERS, _TW_PRESET,
         seat_preset_names, seat_quantiles,
         seed, deal_index, pass_penalty, min_bid_pts,
-        quantile_overrides=_TW_Q_OVERRIDES,
     )
 
 
@@ -518,11 +512,6 @@ def main() -> None:
     parser.add_argument("--min-bid-pts", type=float, default=MIN_BID_PTS)
     parser.add_argument("--pass-penalty", type=float, default=PASS_PENALTY)
     parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument(
-        "--betli-quantile", type=float, default=None,
-        help=f"Override betli pickup quantile (default: {PICKUP_QUANTILE_OVERRIDES.get('betli', 'none')}). "
-             f"Use 0 to disable the betli override.",
-    )
     args = parser.parse_args()
 
     # Validate presets
@@ -533,16 +522,6 @@ def main() -> None:
     preset_names = args.presets
     quantiles = {p: QUANTILE_PRESETS[p] for p in preset_names}
     search = SPEEDS[args.speed]
-
-    # Build per-contract quantile overrides
-    q_overrides = dict(PICKUP_QUANTILE_OVERRIDES)
-    if args.betli_quantile is not None:
-        if args.betli_quantile == 0:
-            q_overrides.pop("betli", None)
-        else:
-            q_overrides["betli"] = args.betli_quantile
-    if not q_overrides:
-        q_overrides = None
 
     # Generate all 3-seat permutations from the selected presets
     # (combinations_with_replacement for all combos, then all permutations)
@@ -562,11 +541,6 @@ def main() -> None:
     print("╚" + "═" * w + "╝")
     print(f"  Model: {args.model}")
     print(f"  Presets: {', '.join(f'{p}(q={quantiles[p]:.2f})' for p in preset_names)}")
-    if q_overrides:
-        ovr_str = ", ".join(f"{k}={v:.2f}" for k, v in sorted(q_overrides.items()))
-        print(f"  Quantile overrides: {ovr_str}")
-    else:
-        print(f"  Quantile overrides: none")
     print(f"  Arrangements: {len(fair_perms)} × {args.games} deals = {total_deals:,} total")
     print(f"  Speed: {args.speed}  "
           f"({search.sims} sims, {search.dets} dets, "
@@ -597,7 +571,7 @@ def main() -> None:
         with ProcessPoolExecutor(
             max_workers=args.workers,
             initializer=_init_worker,
-            initargs=(args.model, preset_raw, q_overrides),
+            initargs=(args.model, preset_raw),
         ) as pool:
             for i, result in enumerate(pool.map(_worker_fn, work_args, chunksize=4), 1):
                 results.append(result)
@@ -620,7 +594,6 @@ def main() -> None:
             result = _play_one_deal(
                 game, wrappers, search, perm, seat_qs,
                 seed, didx, pp, mbp,
-                quantile_overrides=q_overrides,
             )
             results.append(result)
             if i % 20 == 0 or i == total_deals:

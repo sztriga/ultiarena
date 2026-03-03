@@ -16,7 +16,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from trickster.bidding.constants import PASS_PENALTY, PICKUP_QUANTILE_OVERRIDES, _display_key
+from trickster.bidding.constants import PASS_PENALTY, _display_key
 from trickster.bidding.evaluator import (
     ContractEval,
     _make_eval_state,
@@ -144,7 +144,6 @@ def evaluate_pickup(
     n_talon_samples: int = 20,
     rng: random.Random | None = None,
     pickup_quantile: float = 0.5,
-    quantile_overrides: dict[str, float] | None = None,
 ) -> PickupEval | None:
     """Evaluate a 10-card hand for pickup using Kermit-style talon enumeration.
 
@@ -152,13 +151,15 @@ def evaluate_pickup(
     to 12 cards, and evaluates each via ``evaluate_all_contracts`` using
     the already-trained soloist value head.
 
-    Each contract is evaluated independently across all talon samples.
-    The *pickup_quantile* (default 0.5 = median) is computed per-contract
-    on that contract's own game_pts distribution.  The contract with the
-    highest quantile value wins.
+    For each talon sample the **best contract** is selected (highest
+    game_pts).  The pickup decision is then based on the quantile of
+    these *per-sample best* values — i.e. "on a random talon, how good
+    is my best option?".  This prevents *contract switching*: the pickup
+    can't be approved because contract A looks good on some talons while
+    the real talon ends up selecting contract B.
 
-    Per-contract quantile overrides (via *quantile_overrides*) let you
-    set a stricter gate for specific contracts (e.g. betli).
+    The winning contract is the one that appears most often as the
+    per-sample best.
     """
     hand = gs.hands[player]
     if len(hand) != 10:
@@ -190,7 +191,9 @@ def evaluate_pickup(
                 talon_samples.append((unknown[pair[0]], unknown[pair[1]]))
 
     # ── Evaluate each sampled talon ───────────────────────────────
-    # Collect game_pts per contract across all talon samples.
+    # For each talon, find the best contract and record its game_pts.
+    # Also track each contract's own game_pts across all samples.
+    per_sample_best: list[tuple[float, str, bool]] = []  # (game_pts, ck, is_piros)
     contract_pts: dict[tuple[str, bool], list[float]] = {}
 
     for talon_pair in talon_samples:
@@ -204,36 +207,42 @@ def evaluate_pickup(
         if not evals:
             continue
 
+        # evals is sorted by stakes_pts descending — first is best
+        best_ev = evals[0]
+        per_sample_best.append((best_ev.game_pts, best_ev.contract_key, best_ev.is_piros))
+
         for ev in evals:
             ck_key = (ev.contract_key, ev.is_piros)
-            if ck_key not in contract_pts:
-                contract_pts[ck_key] = []
-            contract_pts[ck_key].append(ev.game_pts)
+            contract_pts.setdefault(ck_key, []).append(ev.game_pts)
 
-    if not contract_pts:
+    if not per_sample_best:
         return None
 
-    # ── Per-contract quantile selection ────────────────────────────
-    # Compute the quantile value for each contract independently,
-    # using the override quantile if one exists for that contract.
-    best_ck: tuple[str, bool] | None = None
-    best_qval = -float("inf")
+    # ── Per-sample-best quantile ────────────────────────────────
+    # Sort by game_pts and take the quantile.  This measures
+    # "on a random talon, how good is my best option?"
+    per_sample_best.sort(key=lambda x: x[0])
+    idx = min(int(len(per_sample_best) * pickup_quantile), len(per_sample_best) - 1)
+    best_qval = per_sample_best[idx][0]
 
-    for ck_key, pts_list in contract_pts.items():
-        ck, is_piros = ck_key
-        q = pickup_quantile
-        if quantile_overrides and ck in quantile_overrides:
-            q = quantile_overrides[ck]
-        pts_list.sort()
-        idx = int(len(pts_list) * q)
-        idx = min(idx, len(pts_list) - 1)
-        qval = pts_list[idx]
-        if qval > best_qval:
-            best_qval = qval
-            best_ck = ck_key
+    # ── Vote: which contract wins most often? ───────────────────
+    vote_counts: dict[tuple[str, bool], int] = {}
+    for _, ck, is_piros in per_sample_best:
+        key = (ck, is_piros)
+        vote_counts[key] = vote_counts.get(key, 0) + 1
+    best_ck = max(vote_counts, key=vote_counts.get)
 
-    if best_ck is None:
-        return None
+    # ── Safety check: vote-winning contract must itself be viable ─
+    # The per-sample-best median may be positive (driven by diverse
+    # contracts across talons), but if the contract that wins the vote
+    # is negative at its own median, we'd be committing to a losing
+    # contract.  Require both the holistic and per-contract checks.
+    win_pts = sorted(contract_pts.get(best_ck, []))
+    if win_pts:
+        win_idx = min(int(len(win_pts) * pickup_quantile), len(win_pts) - 1)
+        win_qval = win_pts[win_idx]
+        # Use the more conservative of the two estimates
+        best_qval = min(best_qval, win_qval)
 
     win_ck, win_piros = best_ck
     win_rank = CONTRACT_TO_BID_RANK.get((win_ck, win_piros), 0)
@@ -461,7 +470,6 @@ def decide_pickup(
     pickup_explore: float = 0.0,
     n_talon_samples: int = 20,
     pickup_quantile: float = 0.5,
-    quantile_overrides: dict[str, float] | None = None,
     rng: random.Random | None = None,
 ) -> PickupEval | None:
     """Decide whether to pick up the talon (10-card hand).
@@ -484,7 +492,6 @@ def decide_pickup(
         gs, player, dealer, wrappers, bid_rank=current_rank,
         n_talon_samples=n_talon_samples, rng=rng,
         pickup_quantile=pickup_quantile,
-        quantile_overrides=quantile_overrides,
     )
     if result is None or result.value <= _PICKUP_THRESHOLD:
         return None
@@ -586,7 +593,6 @@ def run_auction(
     pickup_explore: float = 0.0,
     n_talon_samples: int = 20,
     pickup_quantile: float | list[float] = 0.5,
-    quantile_overrides: dict[str, float] | None = None,
     rng: random.Random | None = None,
 ) -> AuctionResult:
     """Run a competitive 3-player auction.
@@ -621,11 +627,6 @@ def run_auction(
     pickup_quantile : float or list[float]
         Quantile for Kermit-style pickup evaluation.  A single float
         applies to all seats; a 3-element list sets per-seat quantiles.
-    quantile_overrides : dict[str, float] or None
-        Per-contract quantile overrides.  After the winning contract is
-        determined by vote, its quantile value is recomputed using the
-        override if the contract key is present.  Defaults to
-        ``PICKUP_QUANTILE_OVERRIDES`` from constants.
     rng : random.Random
         RNG for stochastic decisions.  Required when any exploration
         parameter is non-zero.
@@ -684,7 +685,6 @@ def run_auction(
                 pickup_explore=pickup_explore,
                 n_talon_samples=n_talon_samples,
                 pickup_quantile=_pq[player],
-                quantile_overrides=quantile_overrides,
                 rng=rng,
             )
             if pe is not None:

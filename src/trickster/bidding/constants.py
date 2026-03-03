@@ -38,18 +38,6 @@ BID_TEMP_START: float = 2.0
 #: Final temperature (low → greedy).
 BID_TEMP_END: float = 0.1
 
-
-# ---------------------------------------------------------------------------
-#  Per-contract pickup quantile overrides
-# ---------------------------------------------------------------------------
-
-#: Override the global pickup_quantile for specific contracts.
-#: The winning contract (by vote across talon samples) is determined first,
-#: then the quantile value is recomputed using the override if present.
-PICKUP_QUANTILE_OVERRIDES: dict[str, float] = {
-    "betli": 0.25,  # More conservative for betli
-}
-
 # ---------------------------------------------------------------------------
 #  Display key helpers
 # ---------------------------------------------------------------------------

@@ -96,7 +96,6 @@ def _run_auction_mode(game, net, wrapper, mcts_cfg, base_seed):
     import itertools
     import numpy as np
     from trickster.bidding.auction_runner import evaluate_pickup, run_auction
-    from trickster.bidding.constants import PICKUP_QUANTILE_OVERRIDES
     from trickster.bidding.evaluator import evaluate_all_contracts
     from trickster.games.ulti.game import deal
     from trickster.model import make_wrapper as _mw
@@ -134,7 +133,6 @@ def _run_auction_mode(game, net, wrapper, mcts_cfg, base_seed):
         result = run_auction(
             gs, talon, dealer, seat_wrappers,
             pickup_quantile=0.5,
-            quantile_overrides=dict(PICKUP_QUANTILE_OVERRIDES),
             rng=random.Random(seed),
         )
         if result.bid is None or result.bid.contract_key != "betli":
