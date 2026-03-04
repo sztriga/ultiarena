@@ -36,6 +36,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 import torch
 
 from trickster.bidding.auction_runner import extract_player_bid_ranks, run_auction, setup_bid_game
+from trickster.bidding.cfr import CFRStrategy, load_cfr_strategy
 from trickster.bidding.constants import (
     KONTRA_THRESHOLD,
     MIN_BID_PTS,
@@ -163,6 +164,7 @@ def _play_one_deal(
     deal_index: int,
     pass_penalty: float,
     min_bid_pts: float,
+    seat_cfr: list[CFRStrategy | None] | None = None,
 ) -> DealResult:
     rng = random.Random(seed)
     dealer = deal_index % 3
@@ -170,9 +172,13 @@ def _play_one_deal(
     gs, talon = deal(seed=seed, dealer=dealer)
 
     # --- Competitive auction (shared with training) ---
+    bidding_strategy = "cfr" if seat_cfr and any(s is not None for s in seat_cfr) else "kermit"
     auction_result = run_auction(
         gs, talon, dealer, seat_wrappers,
         min_bid_pts=min_bid_pts,
+        rng=rng,
+        bidding_strategy=bidding_strategy,
+        cfr_strategies=seat_cfr,
     )
     soloist = auction_result.soloist
     bid = auction_result.bid
@@ -259,25 +265,36 @@ def _play_one_deal(
 _TW_GAME: UltiGame | None = None
 _TW_ALL_WRAPPERS: dict[str, dict[str, UltiNetWrapper]] = {}
 _TW_ALL_PRESETS: dict[str, SearchPreset] = {}
+_TW_ALL_CFR: dict[str, CFRStrategy | None] = {}
 
 
 def _init_worker(
     model_sources: list[str],
     model_presets_raw: dict[str, tuple],
+    cfr_paths: dict[str, str | None] | None = None,
 ) -> None:
-    global _TW_GAME, _TW_ALL_WRAPPERS, _TW_ALL_PRESETS
+    global _TW_GAME, _TW_ALL_WRAPPERS, _TW_ALL_PRESETS, _TW_ALL_CFR
     _TW_GAME = UltiGame()
     _TW_ALL_WRAPPERS = {src: load_wrappers(src) for src in model_sources}
     _TW_ALL_PRESETS = {src: SearchPreset(*t) for src, t in model_presets_raw.items()}
+    _TW_ALL_CFR = {}
+    if cfr_paths:
+        for src, path in cfr_paths.items():
+            if path is not None:
+                _TW_ALL_CFR[src] = load_cfr_strategy(path)
+            else:
+                _TW_ALL_CFR[src] = None
 
 
 def _worker_fn(args: tuple) -> DealResult:
     (seat_models, seed, deal_index, pass_penalty, min_bid_pts) = args
     seat_wrappers = [_TW_ALL_WRAPPERS[m] for m in seat_models]
     seat_presets = [_TW_ALL_PRESETS[m] for m in seat_models]
+    seat_cfr = [_TW_ALL_CFR.get(m) for m in seat_models] if _TW_ALL_CFR else None
     return _play_one_deal(
         _TW_GAME, seat_wrappers, seat_presets, seat_models,
         seed, deal_index, pass_penalty, min_bid_pts,
+        seat_cfr=seat_cfr,
     )
 
 
@@ -517,16 +534,34 @@ def main() -> None:
     parser.add_argument("--min-bid-pts", type=float, default=MIN_BID_PTS)
     parser.add_argument("--pass-penalty", type=float, default=PASS_PENALTY)
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument(
+        "--bidding", default="kermit", choices=["kermit", "cfr"],
+        help="Bidding strategy for all models (default: kermit). "
+             "Per-model override: append :cfr to model name (e.g. knight:fast:cfr).",
+    )
+    parser.add_argument(
+        "--cfr-path", type=str, default=None,
+        help="Path to CFR strategy file (default: models/ulti/<source>/cfr_strategy.pkl)",
+    )
     args = parser.parse_args()
 
-    # Parse entrants
-    entrants: list[tuple[str, str]] = []
+    # Parse entrants (support model:speed:bidding syntax)
+    entrants: list[tuple[str, str, str]] = []
     for arg in args.models:
-        source, speed = _parse_entrant(arg, args.speed)
-        entrants.append((source, speed))
+        parts = arg.split(":")
+        source = parts[0]
+        speed = args.speed
+        bidding = args.bidding
+        for part in parts[1:]:
+            if part in SPEEDS:
+                speed = part
+            elif part in ("kermit", "cfr"):
+                bidding = part
+        entrants.append((source, speed, bidding))
 
-    model_names = [src for src, _ in entrants]
-    model_speeds = {src: SPEEDS[spd] for src, spd in entrants}
+    model_names = [src for src, _, _ in entrants]
+    model_speeds = {src: SPEEDS[spd] for src, spd, _ in entrants}
+    model_bidding = {src: bid for src, _, bid in entrants}
 
     if len(model_names) < 2:
         parser.error("Need at least 2 models for a tournament.")
@@ -563,19 +598,34 @@ def main() -> None:
           f"= {len(fair_matchups)} seat arrangements")
     print(f"  Deals: {deals_per_perm}/arrangement × {len(fair_matchups)} "
           f"= {total_deals:,} total")
-    all_same = len(set(s for _, s in entrants)) == 1
-    if all_same:
+    all_same_speed = len(set(s for _, s, _ in entrants)) == 1
+    if all_same_speed:
         sp = list(model_speeds.values())[0]
         print(f"  Speed: {entrants[0][1]}  "
               f"({sp.sims} sims, {sp.dets} dets, "
               f"{sp.pimc_dets} PIMC, endgame={sp.endgame_tricks}t)")
     else:
-        for src, spd in entrants:
+        for src, spd, _ in entrants:
             sp = model_speeds[src]
             print(f"    {src}: {spd} "
                   f"({sp.sims} sims, {sp.dets} dets, {sp.pimc_dets} PIMC)")
+    # Show bidding strategies
+    bidding_strs = [f"{src}:{bid}" for src, _, bid in entrants]
+    print(f"  Bidding: {', '.join(bidding_strs)}")
     print(f"  Workers: {args.workers}  Solver: {SOLVER_ENGINE}")
     print()
+
+    # Load CFR strategies for models that use CFR bidding
+    cfr_paths: dict[str, str | None] = {}
+    for src in unique:
+        if model_bidding.get(src) == "cfr":
+            if args.cfr_path:
+                cfr_paths[src] = args.cfr_path
+            else:
+                default_path = f"models/ulti/{src}/cfr_strategy.pkl"
+                cfr_paths[src] = default_path
+        else:
+            cfr_paths[src] = None
 
     # Build work items
     deal_rng = random.Random(args.seed)
@@ -609,7 +659,7 @@ def main() -> None:
         with ProcessPoolExecutor(
             max_workers=args.workers,
             initializer=_init_worker,
-            initargs=(unique, model_presets_raw),
+            initargs=(unique, model_presets_raw, cfr_paths),
         ) as pool:
             for i, result in enumerate(pool.map(_worker_fn, work_args, chunksize=4), 1):
                 results.append(result)
@@ -623,19 +673,33 @@ def main() -> None:
         print("  Loading models...", flush=True)
         game = UltiGame()
         all_wrappers = {src: load_wrappers(src) for src in unique}
+        all_cfr: dict[str, CFRStrategy | None] = {}
         for src in unique:
             if src != "random":
                 n = len(all_wrappers[src])
                 print(f"    {src}: {n} contract models loaded")
+            path = cfr_paths.get(src)
+            if path is not None:
+                from pathlib import Path as _P
+                if _P(path).exists():
+                    all_cfr[src] = load_cfr_strategy(path)
+                    print(f"    {src}: CFR strategy loaded from {path}")
+                else:
+                    print(f"    {src}: CFR strategy not found at {path}, using Kermit fallback")
+                    all_cfr[src] = None
+            else:
+                all_cfr[src] = None
         print()
 
         for i, wa in enumerate(work_args, 1):
             seat_models = wa[0]
             seat_wrappers = [all_wrappers[m] for m in seat_models]
             seat_presets = [model_speeds[m] for m in seat_models]
+            seat_cfr = [all_cfr.get(m) for m in seat_models] if all_cfr else None
             result = _play_one_deal(
                 game, seat_wrappers, seat_presets, seat_models,
                 wa[1], wa[2], args.pass_penalty, args.min_bid_pts,
+                seat_cfr=seat_cfr,
             )
             results.append(result)
             if i % 20 == 0 or i == total_deals:

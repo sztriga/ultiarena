@@ -16,6 +16,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
+from trickster.bidding.cfr import CFRStrategy, cfr_decide_bid, cfr_decide_pickup
 from trickster.bidding.constants import PASS_PENALTY, _display_key
 from trickster.bidding.evaluator import (
     ContractEval,
@@ -594,6 +595,8 @@ def run_auction(
     n_talon_samples: int = 20,
     pickup_quantile: float | list[float] = 0.75,
     rng: random.Random | None = None,
+    bidding_strategy: str = "kermit",
+    cfr_strategies: list[CFRStrategy | None] | None = None,
 ) -> AuctionResult:
     """Run a competitive 3-player auction.
 
@@ -630,6 +633,12 @@ def run_auction(
     rng : random.Random
         RNG for stochastic decisions.  Required when any exploration
         parameter is non-zero.
+    bidding_strategy : str
+        ``"kermit"`` (default) or ``"cfr"``.  When ``"cfr"``, uses
+        the CFR strategy table for pickup/bid decisions.
+    cfr_strategies : list[CFRStrategy | None] | None
+        Per-seat CFR strategy tables.  Required when ``bidding_strategy
+        == "cfr"``.  ``None`` entries fall back to Kermit for that seat.
     """
     # Normalise pickup_quantile to a 3-element list
     if isinstance(pickup_quantile, (int, float)):
@@ -649,8 +658,15 @@ def run_auction(
     pickup_player: int = -1
     pickup_hand_10: list[Card] | None = None
 
+    use_cfr = bidding_strategy == "cfr" and cfr_strategies is not None
+
     while not a.done:
         player = a.turn
+        player_cfr = (
+            cfr_strategies[player]
+            if use_cfr and cfr_strategies[player] is not None
+            else None
+        )
 
         # Auto-pass when current bid is at or above the highest we support.
         if (
@@ -662,14 +678,29 @@ def run_auction(
             continue
 
         if a.awaiting_bid:
-            bid_obj, discards, winning_eval, all_evals = decide_bid(
-                gs, player, dealer, seat_wrappers[player], a,
-                min_bid_pts=min_bid_pts,
-                bid_temp=bid_temp,
-                c_explore=c_explore,
-                dk_game_counts=dk_game_counts,
-                rng=rng,
-            )
+            if player_cfr is not None:
+                # CFR bid decision
+                bid_obj = cfr_decide_bid(
+                    gs.hands[player], a, player, player_cfr, rng=rng,
+                )
+                # For discards, use NN evaluation if available, else heuristic
+                evals = evaluate_all_contracts(
+                    gs, player, dealer,
+                    wrappers=seat_wrappers[player],
+                    min_bid_rank=(a.current_bid.rank if a.current_bid else 0),
+                ) if seat_wrappers[player] else []
+                discards = nn_discard(evals) if evals else fallback_discards(gs.hands[player])
+                winning_eval = evals[0] if evals else None
+                all_evals = evals
+            else:
+                bid_obj, discards, winning_eval, all_evals = decide_bid(
+                    gs, player, dealer, seat_wrappers[player], a,
+                    min_bid_pts=min_bid_pts,
+                    bid_temp=bid_temp,
+                    c_explore=c_explore,
+                    dk_game_counts=dk_game_counts,
+                    rng=rng,
+                )
             for c in discards:
                 gs.hands[player].remove(c)
             submit_bid(a, player, bid_obj, discards)
@@ -679,22 +710,35 @@ def run_auction(
             submit_pass(a, player)
 
         else:
-            pe = decide_pickup(
-                gs, player, dealer, seat_wrappers[player], a,
-                min_bid_pts=min_bid_pts,
-                pickup_explore=pickup_explore,
-                n_talon_samples=n_talon_samples,
-                pickup_quantile=_pq[player],
-                rng=rng,
-            )
-            if pe is not None:
-                # Save 10-card hand before extending with talon
-                pickup_player = player
-                pickup_hand_10 = list(gs.hands[player])
-                gs.hands[player].extend(a.talon)
-                submit_pickup(a, player)
+            if player_cfr is not None:
+                # CFR pickup decision
+                should_pickup = cfr_decide_pickup(
+                    gs.hands[player], a, player, player_cfr, rng=rng,
+                )
+                if should_pickup:
+                    pickup_player = player
+                    pickup_hand_10 = list(gs.hands[player])
+                    gs.hands[player].extend(a.talon)
+                    submit_pickup(a, player)
+                else:
+                    submit_pass(a, player)
             else:
-                submit_pass(a, player)
+                pe = decide_pickup(
+                    gs, player, dealer, seat_wrappers[player], a,
+                    min_bid_pts=min_bid_pts,
+                    pickup_explore=pickup_explore,
+                    n_talon_samples=n_talon_samples,
+                    pickup_quantile=_pq[player],
+                    rng=rng,
+                )
+                if pe is not None:
+                    # Save 10-card hand before extending with talon
+                    pickup_player = player
+                    pickup_hand_10 = list(gs.hands[player])
+                    gs.hands[player].extend(a.talon)
+                    submit_pickup(a, player)
+                else:
+                    submit_pass(a, player)
 
     soloist = a.winner
 
