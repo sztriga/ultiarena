@@ -25,7 +25,7 @@ from pathlib import Path
 import numpy as np
 
 from trickster.bidding.constants import PASS_PENALTY
-from trickster.bidding.evaluator import evaluate_all_contracts
+from trickster.bidding.evaluator import evaluate_contract
 from trickster.bidding.registry import (
     BID_TO_CONTRACT,
     CONTRACT_DEFS,
@@ -241,22 +241,71 @@ def _evaluate_terminal(
 ) -> float:
     """Evaluate a resolved auction: return game_pts for the soloist.
 
-    Uses the value heads via evaluate_all_contracts on the soloist's
-    12-card hand.  Returns the best contract's game_pts.
+    Evaluates only the specific contract that was bid (looked up via
+    ``BID_TO_CONTRACT``), not all contracts.  This is ~15× faster and
+    reflects the actual committed bid rather than the best alternative.
     """
     hand = gs.hands[soloist]
     if len(hand) != 12:
         return 0.0
 
-    evals = evaluate_all_contracts(
-        gs, soloist, dealer, wrappers=wrappers,
-        min_bid_rank=max(0, bid_rank - 1),
-    )
-    if not evals:
+    contract_info = BID_TO_CONTRACT.get(bid_rank)
+    if contract_info is None:
         return 0.0
 
-    # Best contract's game_pts
-    return evals[0].game_pts
+    contract_key, is_piros = contract_info
+    cdef = CONTRACT_DEFS.get(contract_key)
+    if cdef is None:
+        return 0.0
+
+    wrapper = wrappers.get(contract_key)
+    if wrapper is None:
+        return 0.0
+
+    if cdef.is_betli:
+        trump = None
+    elif is_piros:
+        trump = Suit.HEARTS
+    else:
+        counts: dict[Suit, int] = {}
+        for c in hand:
+            counts[c.suit] = counts.get(c.suit, 0) + 1
+        trump = max(counts, key=counts.get)
+
+    ev = evaluate_contract(
+        gs, soloist, dealer, cdef,
+        trump=trump, is_piros=is_piros,
+        wrapper=wrapper,
+    )
+    return ev.game_pts if ev is not None else 0.0
+
+
+# ---------------------------------------------------------------------------
+#  Parallel worker helpers (module-level for pickling)
+# ---------------------------------------------------------------------------
+
+_CFR_WORKER_WRAPPERS: dict[str, UltiNetWrapper] = {}
+
+
+def _cfr_worker_init(wrappers: dict[str, UltiNetWrapper]) -> None:
+    global _CFR_WORKER_WRAPPERS
+    _CFR_WORKER_WRAPPERS = wrappers
+
+
+def _cfr_worker_fn(
+    args: tuple[int, int, int, int, int],
+) -> tuple[dict[str, "CFRNode"], int]:
+    """Run CFR iterations in a worker process. Returns (nodes, n_iterations)."""
+    n_iterations, n_hands_per_iter, seed, progress_every, worker_id = args
+    solver = CFRSolver(wrappers=_CFR_WORKER_WRAPPERS)
+    solver.train(
+        n_iterations=n_iterations,
+        n_hands_per_iter=n_hands_per_iter,
+        rng=random.Random(seed),
+        progress_every=progress_every,
+        workers=1,
+    )
+    return solver.nodes, solver.iterations
 
 
 # ---------------------------------------------------------------------------
@@ -291,8 +340,20 @@ class CFRSolver:
         n_hands_per_iter: int = 100,
         rng: random.Random | None = None,
         progress_every: int = 100,
+        workers: int = 1,
     ) -> None:
-        """Run external-sampling MCCFR iterations."""
+        """Run external-sampling MCCFR iterations.
+
+        When *workers* > 1, splits iterations across independent solver
+        processes and merges their node tables (regret/strategy sums are
+        additive).
+        """
+        if workers > 1:
+            self._train_parallel(
+                n_iterations, n_hands_per_iter, rng, progress_every, workers,
+            )
+            return
+
         rng = rng or random.Random()
 
         for it in range(n_iterations):
@@ -332,6 +393,52 @@ class CFRSolver:
                 avg_entropy = np.mean(entropies) if entropies else 0.0
                 print(f"  Iteration {it + 1}/{n_iterations}: "
                       f"{n_nodes} info sets, avg entropy={avg_entropy:.3f}")
+
+    def _train_parallel(
+        self,
+        n_iterations: int,
+        n_hands_per_iter: int,
+        rng: random.Random | None,
+        progress_every: int,
+        workers: int,
+    ) -> None:
+        """Run CFR training across multiple processes, then merge."""
+        from concurrent.futures import ProcessPoolExecutor
+
+        rng = rng or random.Random()
+
+        # Split iterations across workers with unique seeds
+        worker_args = []
+        iters_per_worker = n_iterations // workers
+        remainder = n_iterations % workers
+        for w in range(workers):
+            w_iters = iters_per_worker + (1 if w < remainder else 0)
+            w_seed = rng.randint(0, 2**31)
+            worker_args.append((w_iters, n_hands_per_iter, w_seed, progress_every, w))
+
+        print(f"  Spawning {workers} workers "
+              f"({iters_per_worker}-{iters_per_worker + 1} iters each)...",
+              flush=True)
+
+        with ProcessPoolExecutor(
+            max_workers=workers,
+            initializer=_cfr_worker_init,
+            initargs=(self.wrappers,),
+        ) as pool:
+            results = list(pool.map(_cfr_worker_fn, worker_args))
+
+        # Merge node tables from all workers
+        for worker_nodes, worker_iters in results:
+            self.iterations += worker_iters
+            for key, wnode in worker_nodes.items():
+                if key in self.nodes:
+                    self.nodes[key].regret_sum += wnode.regret_sum
+                    self.nodes[key].strategy_sum += wnode.strategy_sum
+                else:
+                    self.nodes[key] = wnode
+
+        print(f"  Merged: {len(self.nodes)} info sets, "
+              f"{self.iterations} total iterations")
 
     def _cfr_traverse(
         self,

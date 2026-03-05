@@ -110,6 +110,10 @@ def main() -> None:
         "--progress-every", type=int, default=100,
         help="Print progress every N iterations (default: 100)",
     )
+    parser.add_argument(
+        "--workers", type=int, default=1,
+        help="Number of parallel workers (default: 1)",
+    )
     args = parser.parse_args()
 
     # Output path
@@ -130,6 +134,7 @@ def main() -> None:
     print(f"  Total hands:     {args.iterations * args.hands_per_iter:,}")
     print(f"  Hand buckets:    {NUM_BUCKETS}")
     print(f"  Output:          {out_path}")
+    print(f"  Workers:         {args.workers}")
     if args.resume:
         print(f"  Resume from:     {args.resume}")
     print()
@@ -165,6 +170,7 @@ def main() -> None:
         n_hands_per_iter=args.hands_per_iter,
         rng=rng,
         progress_every=args.progress_every,
+        workers=args.workers,
     )
 
     elapsed = time.perf_counter() - t0

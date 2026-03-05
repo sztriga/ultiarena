@@ -237,7 +237,9 @@ class UltiEncoder:
             for comp, idx in _DNA.items():
                 if comp in contract_components:
                     x[_CONTRACT_OFF + idx] = 1.0
-            x[_CONTRACT_OFF + 6] = 1.0 if is_red else 0.0
+            # Betli ignores is_red — piros scaling is handled at the
+            # bidding/payoff level (CFR), not by the play-phase NN.
+            x[_CONTRACT_OFF + 6] = 0.0 if betli else (1.0 if is_red else 0.0)
             x[_CONTRACT_OFF + 7] = 1.0 if is_open else 0.0
         elif betli:
             # Legacy fallback: at least set the betli flag

@@ -50,6 +50,11 @@ from trickster.games.ulti.game import (
     soloist_lost_betli,
     soloist_won_simple,
 )
+from trickster.games.ulti.restrictions import (
+    DEFAULT_AI_RESTRICTIONS,
+    Restriction,
+    apply_restrictions,
+)
 
 # ---------------------------------------------------------------------------
 #  Pre-computed card sets / indices
@@ -182,8 +187,9 @@ def build_auction_constraints(
 class UltiGame:
     """GameInterface implementation for the Ulti play phase (v2)."""
 
-    def __init__(self) -> None:
+    def __init__(self, restrictions: list[Restriction] | None = None) -> None:
         self._enc = UltiEncoder()
+        self._restrictions = DEFAULT_AI_RESTRICTIONS if restrictions is None else restrictions
 
     # -- game rules --------------------------------------------------------
 
@@ -195,7 +201,13 @@ class UltiGame:
         return _current_player(state.gs)
 
     def legal_actions(self, state: UltiNode) -> list[Card]:
-        return _legal_actions(state.gs)
+        cards = _legal_actions(state.gs)
+        if self._restrictions:
+            cards = apply_restrictions(
+                self._restrictions, state.gs,
+                _current_player(state.gs), cards,
+            )
+        return cards
 
     def apply(self, state: UltiNode, action: Card) -> UltiNode:
         gs = state.gs.clone()

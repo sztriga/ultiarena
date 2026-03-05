@@ -108,8 +108,8 @@ TIERS: dict[str, Tier] = {
     ),
     "rook": Tier(
         label="Rook",
-        description="Rook — wide+deep (512×6, 48k deals)",
-        steps=4000, games_per_step=12, train_steps=50, buffer_size=80_000,
+        description="Rook — wide+deep (512×6, 96k deals)",
+        steps=6000, games_per_step=16, train_steps=50, buffer_size=100_000,
         sol_sims=80, def_sims=30, pimc_dets=40,
         body_units=512, body_layers=6,
         lr_start=1e-3, lr_end=5e-5,

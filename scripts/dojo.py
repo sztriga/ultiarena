@@ -134,6 +134,14 @@ _Sample = tuple[np.ndarray, np.ndarray, np.ndarray, float, bool]
 class ContractDojo(abc.ABC):
     """Interface for contract-specific dojo logic."""
 
+    def _randomize_alpha(self, rng: random.Random, alpha: float) -> float:
+        """Randomize alpha per game: Uniform(0, alpha).
+
+        Gives a wide quality spectrum so the value head sees both good
+        and bad hands, preventing calibration collapse.
+        """
+        return rng.uniform(0, alpha)
+
     @abc.abstractmethod
     def deal(
         self, rng: random.Random, alpha: float, suit_sigma: float,
@@ -176,6 +184,7 @@ class BetliDojo(ContractDojo):
 
     def deal(self, rng, alpha, suit_sigma):
         deck = make_deck()
+        alpha = self._randomize_alpha(rng, alpha)
         suit_mult = {s: math.exp(rng.gauss(0, suit_sigma)) for s in ALL_SUITS}
         weights = [
             math.exp(-alpha * BETLI_STRENGTH[c.rank]) * suit_mult[c.suit]
@@ -240,6 +249,7 @@ class UltiDojo(ContractDojo):
 
     def deal(self, rng, alpha, suit_sigma):
         deck = make_deck()
+        alpha = self._randomize_alpha(rng, alpha)
         # Pick trump suit
         trump = rng.choice(ALL_SUITS)
         self._last_trump = trump
@@ -433,10 +443,13 @@ _W_NET: UltiNet | None = None
 _W_WRAPPER = None
 
 
+_W_RESTRICTIONS: list | None = None
+
+
 def _init_worker(net_kwargs: dict) -> None:
     """Called once per worker process to create game + network."""
     global _W_GAME, _W_NET, _W_WRAPPER
-    _W_GAME = UltiGame()
+    _W_GAME = UltiGame(restrictions=_W_RESTRICTIONS if _W_RESTRICTIONS is not None else None)
     _W_NET = UltiNet(**net_kwargs)
     _W_NET.eval()
     _W_WRAPPER = make_wrapper(_W_NET, device="cpu")
@@ -525,6 +538,9 @@ class DojoConfig:
     # Workers
     num_workers: int = 1
 
+    # Restrictions
+    no_restrictions: bool = False
+
     # Device
     device: str = "cpu"
     seed: int = 42
@@ -548,7 +564,8 @@ def train_dojo(cfg: DojoConfig) -> None:
         sys.exit(1)
 
     cp = torch.load(model_pt, weights_only=False, map_location=cfg.device)
-    game = UltiGame()
+    restrictions = [] if cfg.no_restrictions else None
+    game = UltiGame(restrictions=restrictions)
     net = UltiNet(
         input_dim=cp.get("input_dim", game.state_dim),
         body_units=cp.get("body_units", 256),
@@ -628,6 +645,9 @@ def train_dojo(cfg: DojoConfig) -> None:
 
     if cfg.num_workers > 1:
         from concurrent.futures import ProcessPoolExecutor
+
+        global _W_RESTRICTIONS
+        _W_RESTRICTIONS = restrictions
 
         executor = ProcessPoolExecutor(
             max_workers=cfg.num_workers,
@@ -865,6 +885,8 @@ def main() -> None:
                         help="Freeze value head, only train policy")
     parser.add_argument("--save-as", default=None, help="Target model name (default: same as source)")
     parser.add_argument("--workers", type=int, default=1, help="Number of parallel workers")
+    parser.add_argument("--no-restrictions", action="store_true", default=False,
+                        help="Disable AI play restrictions")
     parser.add_argument("--device", default=None)
     parser.add_argument("--seed", type=int, default=42)
 
@@ -901,6 +923,7 @@ def main() -> None:
         solver_temp=args.solver_temp,
         kontra=args.kontra,
         freeze_value=args.freeze_value,
+        no_restrictions=args.no_restrictions,
         num_workers=args.workers,
         device=device,
         seed=args.seed,
