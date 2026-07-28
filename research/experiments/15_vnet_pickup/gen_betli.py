@@ -16,9 +16,9 @@ import numpy as np
 
 sys.path.insert(0, '/Users/milansimity/Cuccok/kodok/oldtawer')
 
-from eval.dojo import deal_betli
+from ulti.eval.dojo import deal_betli
 from ulti.card import Card
-from solvers import pis, pimc as _pimc
+from ulti.solvers import pis, pimc as _pimc
 
 N_RECORDS_TARGET = 10_000
 PIMC_N           = 32

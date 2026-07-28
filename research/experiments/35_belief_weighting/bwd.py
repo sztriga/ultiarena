@@ -34,9 +34,9 @@ for _p in (_HERE, f"{_REPO}/experiments/31_exploit_play", f"{_REPO}/experiments/
         sys.path.insert(0, _p)
 
 import tournament as T                                            # reuse auction/config/helpers
-from solvers import pis, determinize as _det                     # noqa: E402
-from eval.pimc_matchup import pimc_pick                          # noqa: E402
-from scoring.oracle import score as oracle_score                 # noqa: E402
+from ulti.solvers import pis, determinize as _det                     # noqa: E402
+from ulti.eval.pimc_matchup import pimc_pick                          # noqa: E402
+from ulti.scoring.oracle import score as oracle_score                 # noqa: E402
 
 OUT = os.environ.get("OUT") or os.path.join(_HERE, "bwd_tournament.jsonl")
 SEED_BASE = 350_000_000

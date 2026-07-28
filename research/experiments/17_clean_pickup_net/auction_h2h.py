@@ -16,11 +16,11 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "14_minigame_bid_eval"))
 sys.path.insert(0, str(Path(__file__).parent.parent / "15_vnet_pickup"))
 
 from _lib import deal_12_10_10, _ev_per_def
-from solvers import pis, pimc as _pimc, determinize as _det
-from eval.pimc_matchup import god_pick
+from ulti.solvers import pis, pimc as _pimc, determinize as _det
+from ulti.eval.pimc_matchup import god_pick
 from ulti.card import SUITS, DECK
-from vnet.pickup import CONTRACT_CONFIGS, featurize
-from scoring.oracle import BidSet, score as score_oracle
+from ulti.vnet.pickup import CONTRACT_CONFIGS, featurize
+from ulti.scoring.oracle import BidSet, score as score_oracle
 import itertools as _it
 
 PIMC_N = 32

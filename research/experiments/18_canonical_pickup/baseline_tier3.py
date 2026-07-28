@@ -32,10 +32,10 @@ def _get_picker():
     if _PICKER is None:
         weights = EXP_DIR / f"multihead_v18{VARIANT}.pt"
         if VARIANT == 'b':
-            from vnet.pickup.v17 import Exp17Pickup
+            from ulti.vnet.pickup.v17 import Exp17Pickup
             _PICKER = Exp17Pickup.load(weights)
         else:
-            from vnet.pickup.v18 import Exp18Pickup
+            from ulti.vnet.pickup.v18 import Exp18Pickup
             _PICKER = Exp18Pickup.load(weights)
     return _PICKER
 

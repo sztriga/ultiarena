@@ -98,8 +98,8 @@ def _features(sol, d1, d2, talon, trump):
 # ── play the deal once with the bid's framing (mirrors deployed _setup_play) ──
 def _play_terminal(rung, trump, sol, d1, d2, talon, seed):
     import random
-    from solvers import pis, determinize as _det
-    from eval.pimc_matchup import pimc_pick
+    from ulti.solvers import pis, determinize as _det
+    from ulti.eval.pimc_matchup import pimc_pick
     from trickster._solver_core import set_multi_weights
     from scorers import resolve_bidset, _play_weights
     bid = resolve_bidset(rung, sol, trump)
@@ -133,7 +133,7 @@ def _play_terminal(rung, trump, sol, d1, d2, talon, seed):
 def _unit_table(final_pos, bid):
     """Per live unit U: (made_U, iso_U[0], iso_U[1], iso_U[2]) — U's isolated soloist
     per-defender GP at kontra level 0/1/2. Live units derived from scored components."""
-    from scoring.oracle import score as osc, _unit_of
+    from ulti.scoring.oracle import score as osc, _unit_of
     base = osc(final_pos=final_pos, bid=bid)
     live = sorted({_unit_of(k) for k in base.components if _unit_of(k)},
                   key=lambda u: UNITS.index(u))
@@ -211,8 +211,8 @@ def _unit_god_make(sol, d1, d2, talon, trump, unit, viewer, n, seed):
     worlds from the viewer's own-hand info set and god-solving that unit's objective.
     Cheat-clean. Returns (p_god, n_used)."""
     import random
-    from solvers import pis, determinize as _det
-    from eval.pimc_matchup import god_says_soloist_wins
+    from ulti.solvers import pis, determinize as _det
+    from ulti.eval.pimc_matchup import god_says_soloist_wins
     from trickster._solver_core import set_multi_weights
     solver, weights, restrict = _OBJ[unit]
     build_c = "durchmars" if solver == "durchmars" else ("betli" if solver == "betli" else "parti")
@@ -269,8 +269,8 @@ GODACT = os.path.join(_HERE, "godactual.jsonl")
 
 
 def _god_actual_worker(rec):
-    from solvers import pis
-    from eval.pimc_matchup import god_says_soloist_wins
+    from ulti.solvers import pis
+    from ulti.eval.pimc_matchup import god_says_soloist_wins
     from trickster._solver_core import set_multi_weights
     sol, d1, d2 = _cards(rec["sol"]), _cards(rec["d1"]), _cards(rec["d2"])
     talon = _cards(rec["talon"]); trump = rec["trump"]

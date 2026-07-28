@@ -14,7 +14,7 @@ import numpy as np
 sys.path.insert(0, '/Users/milansimity/Cuccok/kodok/oldtawer')
 sys.path.insert(0, str(Path(__file__).parent))
 
-from vnet.pickup.colorless import ColorlessPickup
+from ulti.vnet.pickup.colorless import ColorlessPickup
 
 EXP17 = Path(__file__).parent.parent / "17_clean_pickup_net"
 EXP18 = Path(__file__).parent.parent / "18_canonical_pickup"

@@ -45,7 +45,7 @@ def _worker(seed):
     from frontier_selfplay import _kontra_decision
     from _lib import deal_12_10_10
     from scorers import resolve_bidset, _primary_made
-    from scoring.oracle import score as osc
+    from ulti.scoring.oracle import score as osc
     sol12, d1, d2 = deal_12_10_10(seed)
     pick = _PARTI_FN(list(sol12), None, None)    # forced piros-parti pick (net's best discard)
     if pick is None:

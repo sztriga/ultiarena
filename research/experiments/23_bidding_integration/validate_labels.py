@@ -19,12 +19,12 @@ import sys
 sys.path.insert(0, "/Users/milansimity/Cuccok/kodok/oldtawer")
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from solvers import pis
-from eval.pimc_matchup import god_says_soloist_wins
-from eval.dojo import deal_ulti_biased, deal_durchmars_colored
+from ulti.solvers import pis
+from ulti.eval.pimc_matchup import god_says_soloist_wins
+from ulti.eval.dojo import deal_ulti_biased, deal_durchmars_colored
 from trickster._solver_core import set_multi_weights
 from trickster.games.ulti.game import soloist_won_durchmars
-from scoring.oracle import BidSet, score as score_oracle
+from ulti.scoring.oracle import BidSet, score as score_oracle
 from recipe_local import sol_marriages
 
 HEAD = os.environ.get("HEAD", "reach100_40")

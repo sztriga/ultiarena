@@ -24,9 +24,9 @@ from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
-from eval.dojo import deal_betli
-from solvers import pis as pis_bridge
-from solvers import pimc as pimc_player
+from ulti.eval.dojo import deal_betli
+from ulti.solvers import pis as pis_bridge
+from ulti.solvers import pimc as pimc_player
 from ulti.card import Card, card_from_id
 
 from .serialize import card_to_dict

@@ -18,9 +18,9 @@ import json, time
 from multiprocessing import Pool
 from pathlib import Path
 
-from eval.dojo import deal_betli
-from eval.pimc_matchup import play_one, god_says_soloist_wins, defenders_won
-from solvers import pis as pis_bridge
+from ulti.eval.dojo import deal_betli
+from ulti.eval.pimc_matchup import play_one, god_says_soloist_wins, defenders_won
+from ulti.solvers import pis as pis_bridge
 
 _CONTRACT = "betli"
 ALPHAS    = [0.30, 0.50, 0.70, 0.80, 1.00]

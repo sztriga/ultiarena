@@ -10,8 +10,8 @@ import sys, time
 from pathlib import Path
 sys.path.insert(0, '/Users/milansimity/Cuccok/kodok/oldtawer')
 
-from eval.dojo import deal_ulti_biased
-from solvers import pis as pis_bridge
+from ulti.eval.dojo import deal_ulti_biased
+from ulti.solvers import pis as pis_bridge
 from trickster._solver_core import solve_best, set_parti_mode, set_multi_weights
 
 N = int(sys.argv[1]) if len(sys.argv) > 1 else 30

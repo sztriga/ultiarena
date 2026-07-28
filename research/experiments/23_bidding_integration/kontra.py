@@ -25,7 +25,7 @@ for p in (_HERE, "/Users/milansimity/Cuccok/kodok/oldtawer"):
     if p not in sys.path:
         sys.path.insert(0, p)
 
-from scoring.oracle import GPTable   # noqa: E402
+from ulti.scoring.oracle import GPTable   # noqa: E402
 
 _GP = GPTable()
 

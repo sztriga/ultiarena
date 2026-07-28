@@ -11,8 +11,8 @@ import json, time
 from pathlib import Path
 from statistics import mean, median
 
-from eval.dojo import deal_durchmars_colored, deal_durchmars_colorless
-from solvers.pis import build_position, solve_all
+from ulti.eval.dojo import deal_durchmars_colored, deal_durchmars_colorless
+from ulti.solvers.pis import build_position, solve_all
 
 # Colored uses parti/ulti-style α scaling; colorless uses the inverted-
 # betli scale. We pick α ranges where each mode produces a real S-curve.

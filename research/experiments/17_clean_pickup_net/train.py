@@ -18,7 +18,7 @@ import torch.nn as nn
 
 sys.path.insert(0, '/Users/milansimity/Cuccok/kodok/oldtawer')
 
-from vnet.pickup import (
+from ulti.vnet.pickup import (
     CONTRACT_CONFIGS, MultiHeadPickupNet, pad_to_unified,
     random_suit_perm, apply_suit_perm,
 )

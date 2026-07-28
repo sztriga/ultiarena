@@ -20,7 +20,7 @@ from pathlib import Path
 sys.path.insert(0, '/Users/milansimity/Cuccok/kodok/oldtawer')
 
 from ulti.card import Card, RANKS, SUITS, fresh_deck
-from solvers import pis
+from ulti.solvers import pis
 
 N            = 500
 SEED_BASE    = 700_000_000

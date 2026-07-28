@@ -19,8 +19,8 @@ import random, sys, time
 from pathlib import Path
 sys.path.insert(0, '/Users/milansimity/Cuccok/kodok/oldtawer')
 
-from eval.dojo import deal_ulti_biased, deal_parti
-from solvers import pis as pis_bridge
+from ulti.eval.dojo import deal_ulti_biased, deal_parti
+from ulti.solvers import pis as pis_bridge
 from trickster._solver_core import (solve_root, set_multi_weights, set_multi_cull)
 from trickster.games.ulti.game import Rank
 

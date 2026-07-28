@@ -104,8 +104,8 @@ def _play_def(rung, trump, sol, d1, d2, talon, seed):
     if DEF == "pimc":
         import harness27 as h
         return h._play_terminal(rung, trump, sol, d1, d2, talon, seed)
-    from solvers import pis, determinize as _det
-    from eval.pimc_matchup import pimc_pick
+    from ulti.solvers import pis, determinize as _det
+    from ulti.eval.pimc_matchup import pimc_pick
     from trickster._solver_core import set_multi_weights
     from scorers import resolve_bidset, _play_weights
     bid = resolve_bidset(rung, sol, trump)
@@ -141,7 +141,7 @@ def _play_def(rung, trump, sol, d1, d2, talon, seed):
 def _seat_gp(rr, seed):
     """Play one auction result out (kontra + oracle); return seat_gp[3]."""
     from frontier_selfplay import _kontra_decision
-    from scoring.oracle import score as osc
+    from ulti.scoring.oracle import score as osc
     if rr["winner"] is None:
         return [-2 * PASS_PEN, PASS_PEN, PASS_PEN]              # opener (seat 0) forfeits
     pos, bid = _play_def(rr["rung"], rr["trump"], rr["sol"], rr["def1"], rr["def2"], rr["talon"], seed)

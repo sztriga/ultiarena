@@ -19,8 +19,8 @@ from pathlib import Path
 
 sys.path.insert(0, '/Users/milansimity/Cuccok/kodok/oldtawer')
 
-from eval.dojo import deal_ulti_biased
-from solvers import pis
+from ulti.eval.dojo import deal_ulti_biased
+from ulti.solvers import pis
 
 ACCEPT_TARGET = 5_000      # number of 4-2-2-2 deals to solve
 ALPHA         = 0.6

@@ -27,10 +27,10 @@ from auction_h2h import (
     _best_bid_above_rank, BID_FLOOR, PASS_PENALTY, contract_rank,
 )
 from _lib import deal_12_10_10, _ev_per_def
-from solvers import pis
-from eval.pimc_matchup import god_says_soloist_wins
-from vnet.pickup.v17 import Exp17Pickup
-from vnet.pickup.v18 import Exp18Pickup
+from ulti.solvers import pis
+from ulti.eval.pimc_matchup import god_says_soloist_wins
+from ulti.vnet.pickup.v17 import Exp17Pickup
+from ulti.vnet.pickup.v18 import Exp18Pickup
 
 EXP_DIR   = Path(__file__).parent
 EXP17_W   = EXP_DIR.parent / "17_clean_pickup_net" / "multihead_v17.pt"

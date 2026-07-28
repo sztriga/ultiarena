@@ -13,8 +13,8 @@ import time
 from pathlib import Path
 from statistics import mean, median
 
-from eval.dojo import deal_betli
-from solvers import pis as pis_bridge
+from ulti.eval.dojo import deal_betli
+from ulti.solvers import pis as pis_bridge
 
 
 ALPHAS = [round(0.2 * i, 1) for i in range(11)]   # 0.0, 0.2, ..., 2.0

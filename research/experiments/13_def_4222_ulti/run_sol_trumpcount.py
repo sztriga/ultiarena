@@ -15,8 +15,8 @@ from multiprocessing import Pool
 
 sys.path.insert(0, '/Users/milansimity/Cuccok/kodok/oldtawer')
 
-from eval.dojo import deal_ulti_biased
-from solvers import pis
+from ulti.eval.dojo import deal_ulti_biased
+from ulti.solvers import pis
 
 ACCEPT_TARGET   = 10_000
 ALPHA           = 0.6

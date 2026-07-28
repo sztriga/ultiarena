@@ -16,11 +16,11 @@ import numpy as np
 
 sys.path.insert(0, '/Users/milansimity/Cuccok/kodok/oldtawer')
 
-from solvers import pis
-from eval.pimc_matchup import god_says_soloist_wins
-from vnet.pickup import CONTRACT_CONFIGS, featurize, input_dim
+from ulti.solvers import pis
+from ulti.eval.pimc_matchup import god_says_soloist_wins
+from ulti.vnet.pickup import CONTRACT_CONFIGS, featurize, input_dim
 
-SEED_BASE = 800_000_000   # disjoint from eval seeds 100000-102999
+SEED_BASE = 800_000_000   # disjoint from ulti.eval seeds 100000-102999
 N_WORKERS = 6
 N_DEFAULT = 1_000_000
 

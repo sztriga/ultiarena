@@ -37,11 +37,11 @@ import numpy as np
 
 sys.path.insert(0, "/Users/milansimity/Cuccok/kodok/oldtawer")
 
-from solvers import pis
-from eval.pimc_matchup import god_says_soloist_wins
-from eval.dojo import deal_ulti_biased, deal_durchmars_colored
+from ulti.solvers import pis
+from ulti.eval.pimc_matchup import god_says_soloist_wins
+from ulti.eval.dojo import deal_ulti_biased, deal_durchmars_colored
 from trickster._solver_core import set_multi_weights
-from vnet.pickup import featurize
+from ulti.vnet.pickup import featurize
 from recipe_local import sol_marriages   # local copy of exp21 recipe.sol_marriages
 
 EXP_DIR = Path(__file__).parent

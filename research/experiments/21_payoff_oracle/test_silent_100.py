@@ -10,7 +10,7 @@ from pathlib import Path
 sys.path.insert(0, '/Users/milansimity/Cuccok/kodok/oldtawer')
 
 from trickster.games.ulti.game import GameState, Suit
-from scoring.oracle import BidSet, score
+from ulti.scoring.oracle import BidSet, score
 
 ACORNS, LEAVES, BELLS, HEARTS = Suit.ACORNS, Suit.LEAVES, Suit.BELLS, Suit.HEARTS
 

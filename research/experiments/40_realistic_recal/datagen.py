@@ -44,13 +44,13 @@ for _p in (_HERE, f"{_REPO}/experiments/23_bidding_integration", _REPO):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from solvers import pis, determinize as _det                                    # noqa: E402
-from eval.pimc_matchup import pimc_pick, defenders_won, god_says_soloist_wins    # noqa: E402
-from eval.dojo import (deal_parti, deal_ulti_biased, deal_durchmars_colored,     # noqa: E402
+from ulti.solvers import pis, determinize as _det                                    # noqa: E402
+from ulti.eval.pimc_matchup import pimc_pick, defenders_won, god_says_soloist_wins    # noqa: E402
+from ulti.eval.dojo import (deal_parti, deal_ulti_biased, deal_durchmars_colored,     # noqa: E402
                        deal_durchmars_colorless, deal_biased, ContractSpec)
-from vnet.pickup import featurize                                               # noqa: E402
+from ulti.vnet.pickup import featurize                                               # noqa: E402
 from recipe_local import sol_marriages                                          # noqa: E402
-from scoring.oracle import score as score_oracle, BidSet                        # noqa: E402
+from ulti.scoring.oracle import score as score_oracle, BidSet                        # noqa: E402
 from trickster._solver_core import set_multi_weights                            # noqa: E402
 
 HEAD       = os.environ["HEAD"]

@@ -36,11 +36,11 @@ from multiprocessing import Pool
 from pathlib import Path
 from typing import Any, Dict
 
-from eval.dojo import deal_parti
-from eval.pimc_matchup import god_pick, god_says_soloist_wins, defenders_won
-from solvers import determinize as _det
-from solvers import pimc as _pimc
-from solvers import pis as pis_bridge
+from ulti.eval.dojo import deal_parti
+from ulti.eval.pimc_matchup import god_pick, god_says_soloist_wins, defenders_won
+from ulti.solvers import determinize as _det
+from ulti.solvers import pimc as _pimc
+from ulti.solvers import pis as pis_bridge
 from ulti.card import Card
 
 _CONTRACT     = "parti"

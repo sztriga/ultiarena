@@ -35,8 +35,8 @@ from pydantic import BaseModel, Field
 from .play import _provider, _SUIT_HU  # noqa: E402
 from .serialize import card_to_dict     # noqa: E402
 
-from vnet.pickup import featurize        # noqa: E402
-from eval.dojo import (                  # noqa: E402
+from ulti.vnet.pickup import featurize        # noqa: E402
+from ulti.eval.dojo import (                  # noqa: E402
     deal_ulti_biased, deal_parti, deal_durchmars_colored,
     deal_durchmars_colorless, deal_betli,
 )

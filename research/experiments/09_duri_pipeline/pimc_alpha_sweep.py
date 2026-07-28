@@ -16,9 +16,9 @@ import json, time
 from multiprocessing import Pool
 from pathlib import Path
 
-from eval.dojo import deal_durchmars_colored, deal_durchmars_colorless
-from eval.pimc_matchup import play_one, god_says_soloist_wins, defenders_won
-from solvers import pis as pis_bridge
+from ulti.eval.dojo import deal_durchmars_colored, deal_durchmars_colorless
+from ulti.eval.pimc_matchup import play_one, god_says_soloist_wins, defenders_won
+from ulti.solvers import pis as pis_bridge
 
 _CONTRACT = "durchmars"
 N_DEALS   = 50

@@ -5,7 +5,7 @@ import sys
 from types import SimpleNamespace
 sys.path.insert(0, '/Users/milansimity/Cuccok/kodok/oldtawer')
 from trickster.games.ulti.cards import Card, Rank, Suit
-from scoring.oracle import BidSet, score
+from ulti.scoring.oracle import BidSet, score
 A,B,L = Suit.ACORNS, Suit.BELLS, Suit.LEAVES; F=Card(B,Rank.SEVEN)
 def mk(scores, marr, sol_tricks=10, lt=None, trump=A):
     return SimpleNamespace(hands=[[],[],[]], trump=trump, betli=False, soloist=0, dealer=2,

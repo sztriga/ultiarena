@@ -19,9 +19,9 @@ sys.path.insert(0, '/Users/milansimity/Cuccok/kodok/oldtawer')
 sys.path.insert(0, str(Path(__file__).parent.parent / "17_clean_pickup_net"))
 
 from auction_h2h import simulate
-from solvers import pis
-from eval.pimc_matchup import god_says_soloist_wins
-from vnet.pickup.composite import CompositePickup
+from ulti.solvers import pis
+from ulti.eval.pimc_matchup import god_says_soloist_wins
+from ulti.vnet.pickup.composite import CompositePickup
 
 EXP17 = Path(__file__).parent.parent / "17_clean_pickup_net"
 EXP19 = Path(__file__).parent

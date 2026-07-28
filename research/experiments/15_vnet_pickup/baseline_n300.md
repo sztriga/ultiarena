@@ -42,7 +42,7 @@ V-net weights: 10k records per contract, MLP 64→64, trained from PIMC32 labels
 
 V2 matches or beats PIMC win rate on 6/9 categories. Remaining weak spots:
 parti/bells (30% vs PIMC 60% — but only 10 deals, noisy), betli (21% vs 50%),
-durchmars (3 bids, all lost — class imbalance hangover from training labels).
+durchmars (3 bids, all lost — class imbalance hangover from ulti.training labels).
 
 ## V1 failure modes (now mostly fixed by V2)
 

@@ -13,10 +13,10 @@ import torch
 
 sys.path.insert(0, '/Users/milansimity/Cuccok/kodok/oldtawer')
 
-from solvers import pis
-from eval.pimc_matchup import god_says_soloist_wins
-from vnet.pickup import CONTRACT_CONFIGS, featurize, pad_to_unified
-from vnet.pickup.v17 import Exp17Pickup
+from ulti.solvers import pis
+from ulti.eval.pimc_matchup import god_says_soloist_wins
+from ulti.vnet.pickup import CONTRACT_CONFIGS, featurize, pad_to_unified
+from ulti.vnet.pickup.v17 import Exp17Pickup
 
 EXP_DIR = Path(__file__).parent
 WEIGHTS = EXP_DIR / "multihead_v17.pt"

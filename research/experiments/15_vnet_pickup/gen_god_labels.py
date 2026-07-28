@@ -18,8 +18,8 @@ import numpy as np
 sys.path.insert(0, '/Users/milansimity/Cuccok/kodok/oldtawer')
 sys.path.insert(0, str(Path(__file__).parent))
 
-from solvers import pis
-from eval.pimc_matchup import god_says_soloist_wins
+from ulti.solvers import pis
+from ulti.eval.pimc_matchup import god_says_soloist_wins
 from _vlib import CONTRACT_CONFIGS, EXP_DIR, featurize, input_dim
 
 SEED_BASE  = 800_000_000

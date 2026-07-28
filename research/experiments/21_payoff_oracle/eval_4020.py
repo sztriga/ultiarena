@@ -24,15 +24,15 @@ from pathlib import Path
 sys.path.insert(0, '/Users/milansimity/Cuccok/kodok/oldtawer')
 sys.path.insert(0, str(Path(__file__).parent))
 
-from eval.dojo import deal_ulti_biased
-from eval.pimc_matchup import god_pick
-from solvers import determinize as _det
-from solvers import pimc as _pimc
-from solvers import pis as pis_bridge
+from ulti.eval.dojo import deal_ulti_biased
+from ulti.eval.pimc_matchup import god_pick
+from ulti.solvers import determinize as _det
+from ulti.solvers import pimc as _pimc
+from ulti.solvers import pis as pis_bridge
 from trickster._solver_core import set_multi_weights
 from trickster.games.ulti.game import soloist_won_simple, soloist_points
 
-from scoring.oracle import BidSet, score as score_oracle
+from ulti.scoring.oracle import BidSet, score as score_oracle
 from recipe import sol_marriages, parti_multi_weights
 
 CAND      = int(os.environ.get('CAND', '120'))

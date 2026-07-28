@@ -25,14 +25,14 @@ import random, sys, time
 from multiprocessing import Pool
 from pathlib import Path
 
-from eval.dojo import deal_ulti_biased
-from solvers import determinize as _det
-from solvers import pimc as _pimc
-from solvers import pis as pis_bridge
+from ulti.eval.dojo import deal_ulti_biased
+from ulti.solvers import determinize as _det
+from ulti.solvers import pimc as _pimc
+from ulti.solvers import pis as pis_bridge
 from trickster._solver_core import set_multi_weights
 
 sys.path.insert(0, str(Path(__file__).parent))
-from scoring.oracle import BidSet, score as score_oracle
+from ulti.scoring.oracle import BidSet, score as score_oracle
 
 N            = 50
 PIMC_N       = 32

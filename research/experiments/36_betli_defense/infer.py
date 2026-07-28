@@ -13,7 +13,7 @@ import os
 
 import numpy as np
 
-from solvers import pis as _pis
+from ulti.solvers import pis as _pis
 
 _REPO = "/Users/milansimity/Cuccok/kodok/oldtawer"
 _MODEL_PATH = os.environ.get("BETLI_DEF_MODEL", os.path.join(_REPO, "models/betli/betli_defense.pt"))

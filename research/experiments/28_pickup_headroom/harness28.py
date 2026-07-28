@@ -69,8 +69,8 @@ def _primary(bid):
 
 
 def _god_make(keep, d1, d2, disc, trump, build_c, solve_c, weights, restrict):
-    from solvers import pis
-    from eval.pimc_matchup import god_says_soloist_wins
+    from ulti.solvers import pis
+    from ulti.eval.pimc_matchup import god_says_soloist_wins
     from trickster._solver_core import set_multi_weights
     if weights is not None:
         set_multi_weights(**weights)

@@ -128,7 +128,7 @@ def _kontra_decision(bid, trump, sol, d1, d2, talon, seed):
 def _worker(seed):
     import harness27 as h
     from scorers import resolve_bidset, _primary_made
-    from scoring.oracle import score as osc
+    from ulti.scoring.oracle import score as osc
     r = _full_auction(seed)
     if r["winner"] is None:
         return {"seed": seed, "pass": True, "contract": "passz",

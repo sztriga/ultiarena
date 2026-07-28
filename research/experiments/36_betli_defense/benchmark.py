@@ -23,9 +23,9 @@ for _p in (_HERE, f"{_REPO}/experiments/31_exploit_play", _REPO):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from solvers import pis, determinize as _det                         # noqa: E402
-from eval.pimc_matchup import defenders_won, god_says_soloist_wins, pimc_pick  # noqa: E402
-from eval.dojo import deal_betli                                     # noqa: E402
+from ulti.solvers import pis, determinize as _det                         # noqa: E402
+from ulti.eval.pimc_matchup import defenders_won, god_says_soloist_wins, pimc_pick  # noqa: E402
+from ulti.eval.dojo import deal_betli                                     # noqa: E402
 
 OUT = os.environ.get("OUT") or os.path.join(_HERE, "benchmark.jsonl")
 SEED_BASE = 363_000_000

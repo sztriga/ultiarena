@@ -14,7 +14,7 @@ import numpy as np
 sys.path.insert(0, '/Users/milansimity/Cuccok/kodok/oldtawer')
 sys.path.insert(0, str(Path(__file__).parent))
 
-from solvers import pis, pimc as _pimc
+from ulti.solvers import pis, pimc as _pimc
 from _vlib import CONTRACT_CONFIGS, data_path, featurize, input_dim
 
 N_RECORDS_TARGET = 10_000

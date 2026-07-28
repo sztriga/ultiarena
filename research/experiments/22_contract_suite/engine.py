@@ -15,7 +15,7 @@ configurable threshold) — rare; we target the better silent-100 and flag it.
 """
 from __future__ import annotations
 
-from scoring.oracle import BidSet
+from ulti.scoring.oracle import BidSet
 from recipe import sol_marriages   # (has_40, has_20) from a 10-card hand
 
 SILENT_40_100 = 2.0    # value of a silent 40-100 (card_pts>=60); piros doubles

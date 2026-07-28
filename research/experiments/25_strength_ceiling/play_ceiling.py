@@ -42,9 +42,9 @@ def _init():
 
 def mixed_outcome(rung, trump, sol, d1, d2, talon, sol_god, def_god, seed):
     import random
-    from solvers import pis, determinize as _det
-    from eval.pimc_matchup import pimc_pick, god_pick
-    from scoring.oracle import score as score_oracle
+    from ulti.solvers import pis, determinize as _det
+    from ulti.eval.pimc_matchup import pimc_pick, god_pick
+    from ulti.scoring.oracle import score as score_oracle
     from trickster._solver_core import set_multi_weights
     from scorers import resolve_bidset, _play_weights, _primary_made
 

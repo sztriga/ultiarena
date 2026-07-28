@@ -101,7 +101,7 @@ solver only sees the resulting weight vector.
 ## Python interface
 
 ```
-from solvers import pis
+from ulti.solvers import pis
 weights = PayoffWeights(parti_pts=1.0, silent_ulti=2.0)
 values = pis.solve_all(pos, contract='multi', weights=weights)
 # values[card] = w_parti_pts * sol_pts(card_PV) + w_silent_ulti * silent_ulti_signed(card_PV)

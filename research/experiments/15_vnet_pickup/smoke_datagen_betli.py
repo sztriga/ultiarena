@@ -16,7 +16,7 @@ from pathlib import Path
 sys.path.insert(0, '/Users/milansimity/Cuccok/kodok/oldtawer')
 
 from ulti.card import fresh_deck
-from solvers import pis, pimc as _pimc
+from ulti.solvers import pis, pimc as _pimc
 
 # Smoke knobs
 N_HANDS    = 20      # number of 12-card sol hands

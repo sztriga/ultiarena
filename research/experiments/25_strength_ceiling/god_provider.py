@@ -31,8 +31,8 @@ from auction import _best_pickup           # noqa: E402
 
 def god_base_probs(hand10, trump, d1, d2, talon):
     """TRUE (0/1) double-dummy makeability of each base event, given all hands."""
-    from solvers import pis
-    from eval.pimc_matchup import god_says_soloist_wins
+    from ulti.solvers import pis
+    from ulti.eval.pimc_matchup import god_says_soloist_wins
     from trickster._solver_core import set_multi_weights
 
     has40, has20 = sol_marriages(hand10, trump)

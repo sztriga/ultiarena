@@ -22,8 +22,8 @@ from pathlib import Path
 sys.path.insert(0, '/Users/milansimity/Cuccok/kodok/oldtawer')
 
 from ulti.card import SUITS, fresh_deck
-from solvers import pis, pimc as _pimc
-from scoring.oracle import GPTable
+from ulti.solvers import pis, pimc as _pimc
+from ulti.scoring.oracle import GPTable
 
 _GP = GPTable()
 

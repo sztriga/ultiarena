@@ -56,8 +56,8 @@ def _multi_weights(bid, sol10, trump):
 
 
 def _play_and_score(bid, contract, weights, sol, d1, d2, trump, talon, restrict):
-    from solvers import pis
-    from scoring.oracle import score as score_oracle
+    from ulti.solvers import pis
+    from ulti.scoring.oracle import score as score_oracle
     from trickster._solver_core import set_multi_weights
     if weights is not None:
         set_multi_weights(**weights)
@@ -115,8 +115,8 @@ def god_outcome(rung, trump, sol, d1, d2, talon, seed=0):
 
 def _component_combo(bid, rung, trump, sol, d1, d2, talon):
     """Trick contracts + riders via god_says makeability (no replay)."""
-    from solvers import pis
-    from eval.pimc_matchup import god_says_soloist_wins
+    from ulti.solvers import pis
+    from ulti.eval.pimc_matchup import god_says_soloist_wins
     from trickster._solver_core import set_multi_weights
 
     def g(contract, t, restrict=None, multi=False):
@@ -163,8 +163,8 @@ def kontra_god_outcome(rung, trump, sol, d1, d2, talon, seed=0):
     decision (under god, p∈{0,1}, single belief ⇒ defenders kontra failures, no
     rekontra) → analytical kontra-scaled GP (primary + scaled parti rider for
     bid ulti). Simple contracts only (milan 2026-06-26)."""
-    from solvers import pis
-    from eval.pimc_matchup import god_says_soloist_wins
+    from ulti.solvers import pis
+    from ulti.eval.pimc_matchup import god_says_soloist_wins
     from kontra import contract_payoffs, kontra_level_for
 
     def gsw(contract, t):
@@ -228,9 +228,9 @@ def pimc_outcome(rung, trump, sol, d1, d2, talon, seed=0, pimc_n=None):
     oracle. Move-by-move ⇒ no early-term PV issue ⇒ exact scoring for EVERY
     contract incl. silent games. Slower than god → the periodic check, smaller N."""
     import random
-    from solvers import pis, determinize as _det
-    from eval.pimc_matchup import pimc_pick
-    from scoring.oracle import score as score_oracle
+    from ulti.solvers import pis, determinize as _det
+    from ulti.eval.pimc_matchup import pimc_pick
+    from ulti.scoring.oracle import score as score_oracle
     from trickster._solver_core import set_multi_weights
 
     if pimc_n is None:
@@ -274,8 +274,8 @@ def _hand_makeability(sol, d1, d2, trump, talon, primary, viewer, n, seed):
     """P(soloist makes `primary` | `viewer`'s own hand), by sampling opponents from
     the viewer's ROOT info set (own hand only — cheat-proof, no trick-1 cards) and
     god-solving each. milan-approved hand-based kontra signal."""
-    from solvers import pis, determinize as _det
-    from eval.pimc_matchup import god_says_soloist_wins
+    from ulti.solvers import pis, determinize as _det
+    from ulti.eval.pimc_matchup import god_says_soloist_wins
     root = pis.build_position(hands=[list(sol), list(d1), list(d2)], soloist=0,
                               leader=0, contract=primary, trump=trump,
                               talon=list(talon), declare_marriages=(trump is not None))
@@ -300,7 +300,7 @@ def kontra_pimc_outcome(rung, trump, sol, d1, d2, talon, seed=0):
     import os as _os
     from dataclasses import replace
     from kontra import kontra_level_for            # exp23 (on sys.path)
-    from scoring.oracle import score as score_oracle
+    from ulti.scoring.oracle import score as score_oracle
 
     bid = resolve_bidset(rung, sol, trump)
     colored_simple = (trump is not None and not bid.betli and not bid.durchmars
@@ -318,8 +318,8 @@ def kontra_pimc_outcome(rung, trump, sol, d1, d2, talon, seed=0):
     # payoff multiplier → play is unchanged). kontra_level shorthand scales every
     # unit incl. silent substitutes — the oracle handles it.
     import random
-    from solvers import pis, determinize as _det
-    from eval.pimc_matchup import pimc_pick
+    from ulti.solvers import pis, determinize as _det
+    from ulti.eval.pimc_matchup import pimc_pick
     from trickster._solver_core import set_multi_weights
     pimc_n = int(_os.environ.get("PIMC_N", "16"))
     set_multi_weights(**_play_weights(bid, sol, trump))

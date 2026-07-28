@@ -24,7 +24,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from _lib import deal_12_10_10, _ev_per_def
 from run_minigame import _play_out, _score_terminal
-from solvers import pis, pimc as _pimc
+from ulti.solvers import pis, pimc as _pimc
 from ulti.card import SUITS
 from train_betli import BetliNet
 

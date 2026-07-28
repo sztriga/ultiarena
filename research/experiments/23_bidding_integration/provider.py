@@ -19,7 +19,7 @@ for p in (_HERE, "/Users/milansimity/Cuccok/kodok/oldtawer"):
     if p not in sys.path:
         sys.path.insert(0, p)
 
-from vnet.pickup import featurize          # noqa: E402
+from ulti.vnet.pickup import featurize          # noqa: E402
 from recipe_local import sol_marriages     # noqa: E402
 from train_base_head import Head           # noqa: E402
 from bidder import BaseProbs               # noqa: E402

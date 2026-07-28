@@ -16,7 +16,7 @@ import torch
 sys.path.insert(0, '/Users/milansimity/Cuccok/kodok/oldtawer')
 sys.path.insert(0, str(Path(__file__).parent))
 
-from solvers import pis, pimc as _pimc
+from ulti.solvers import pis, pimc as _pimc
 from _vlib import CONTRACT_CONFIGS, PickupNet, featurize, input_dim, weights_path
 
 N         = 50

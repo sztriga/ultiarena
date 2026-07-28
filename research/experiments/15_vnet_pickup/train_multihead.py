@@ -19,7 +19,7 @@ import torch.nn as nn
 sys.path.insert(0, '/Users/milansimity/Cuccok/kodok/oldtawer')
 sys.path.insert(0, str(Path(__file__).parent))
 
-from vnet.pickup import (
+from ulti.vnet.pickup import (
     CONTRACT_CONFIGS, MultiHeadPickupNet, pad_to_unified, UNIFIED_DIM,
     random_suit_perm, apply_suit_perm,
 )

@@ -22,9 +22,9 @@ import numpy as np
 sys.path.insert(0, '/Users/milansimity/Cuccok/kodok/oldtawer')
 
 from ulti.card import SUITS, RANKS, Card, DECK
-from solvers import pis
-from eval.pimc_matchup import god_says_soloist_wins
-from vnet.pickup.v18 import Exp18Pickup
+from ulti.solvers import pis
+from ulti.eval.pimc_matchup import god_says_soloist_wins
+from ulti.vnet.pickup.v18 import Exp18Pickup
 
 EXP15 = Path(__file__).parent.parent / "15_vnet_pickup"
 EXP18 = Path(__file__).parent

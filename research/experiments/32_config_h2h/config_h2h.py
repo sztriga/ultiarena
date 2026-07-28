@@ -82,7 +82,7 @@ def _play_seat_gp(r, seed):
     import harness27 as h
     from frontier_selfplay import _kontra_decision
     from scorers import resolve_bidset
-    from scoring.oracle import score as osc
+    from ulti.scoring.oracle import score as osc
     bid_fns = [_R if s == r else _C for s in (0, 1, 2)]
     rr = _full_auction(seed, bid_fns)
     if rr["winner"] is None:

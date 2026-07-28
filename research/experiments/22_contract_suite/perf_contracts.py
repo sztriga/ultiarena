@@ -11,8 +11,8 @@ solved with solve_contract's evaluator. multi rows set the weights first.
 import os, sys, time
 sys.path.insert(0, '/Users/milansimity/Cuccok/kodok/oldtawer')
 
-from eval.dojo import deal_ulti_biased
-from solvers import pis
+from ulti.eval.dojo import deal_ulti_biased
+from ulti.solvers import pis
 from trickster._solver_core import solve_best, set_multi_weights
 
 N    = int(os.environ.get('N', '300'))

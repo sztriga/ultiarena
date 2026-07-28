@@ -96,10 +96,10 @@ def _play_score3(rung, trump, sol, d1, d2, talon, seed):
     where spdL = soloist total_per_def GP scored at kontra level L (colored shared)."""
     import random
     from dataclasses import replace
-    from solvers import pis, determinize as _det
-    from eval.pimc_matchup import pimc_pick
+    from ulti.solvers import pis, determinize as _det
+    from ulti.eval.pimc_matchup import pimc_pick
     from trickster._solver_core import set_multi_weights
-    from scoring.oracle import score as score_oracle
+    from ulti.scoring.oracle import score as score_oracle
     from scorers import resolve_bidset, _play_weights, _primary_made
 
     bid = resolve_bidset(rung, sol, trump)
@@ -174,8 +174,8 @@ def _viewer_pool(sol, d1, d2, talon, trump, primary, viewer, rung_index, n_pool,
     index >= rung_index with the sampled soloist 12-hand (auction conditioning).
     Cheat-clean: the viewer only ever sees its own hand."""
     import random
-    from solvers import pis, determinize as _det
-    from eval.pimc_matchup import god_says_soloist_wins
+    from ulti.solvers import pis, determinize as _det
+    from ulti.eval.pimc_matchup import god_says_soloist_wins
     root = pis.build_position(hands=[list(sol), list(d1), list(d2)], soloist=0,
                               leader=0, contract=primary, trump=trump,
                               talon=list(talon), declare_marriages=(trump is not None))
@@ -464,7 +464,7 @@ def _viewer_pool_real(rung, sol, d1, d2, talon, trump, primary, viewer, n_pool, 
     """Sample n_pool worlds from `viewer`'s own-hand info set; PIMC-play each and
     record (made, passes) — made vs REALISTIC defense (not god). Cheat-clean."""
     import random
-    from solvers import pis, determinize as _det
+    from ulti.solvers import pis, determinize as _det
     root = pis.build_position(hands=[list(sol), list(d1), list(d2)], soloist=0,
                               leader=0, contract=primary, trump=trump,
                               talon=list(talon), declare_marriages=(trump is not None))

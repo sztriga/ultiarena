@@ -14,8 +14,8 @@ sys.path.insert(0, '/Users/milansimity/Cuccok/kodok/oldtawer')
 sys.path.insert(0, str(Path(__file__).parent))
 
 from auction_h2h import simulate
-from vnet.pickup.calibration import CalibratedPickupNet
-from vnet.pickup.v17 import Exp17Pickup
+from ulti.vnet.pickup.calibration import CalibratedPickupNet
+from ulti.vnet.pickup.v17 import Exp17Pickup
 
 EXP15_DIR = Path(__file__).parent.parent / "15_vnet_pickup"
 EXP17_WEIGHTS = Path(__file__).parent / "multihead_v17.pt"

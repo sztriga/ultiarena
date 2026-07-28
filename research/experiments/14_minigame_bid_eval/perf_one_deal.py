@@ -15,7 +15,7 @@ from pathlib import Path
 sys.path.insert(0, '/Users/milansimity/Cuccok/kodok/oldtawer')
 
 from ulti.card import Card, SUITS, fresh_deck
-from solvers import pis, pimc as _pimc
+from ulti.solvers import pis, pimc as _pimc
 
 PIMC_N = 32
 SEED   = 42

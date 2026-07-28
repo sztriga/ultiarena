@@ -19,8 +19,8 @@ import torch
 sys.path.insert(0, '/Users/milansimity/Cuccok/kodok/oldtawer')
 sys.path.insert(0, str(Path(__file__).parent))
 
-from eval.dojo import deal_betli
-from solvers import pis, pimc as _pimc
+from ulti.eval.dojo import deal_betli
+from ulti.solvers import pis, pimc as _pimc
 from train_betli import BetliNet
 
 N         = 50

@@ -34,7 +34,7 @@ import game as G                                        # noqa: E402
 from common import (ACTIONS, deal_10_10_10_2, raw_avail,  # noqa: E402
                     action_realization, PASS)
 from bid_agents import CompositeAgent, OracleComposite, CFRAgent  # noqa: E402
-from vnet.pickup.composite import CompositePickup       # noqa: E402
+from ulti.vnet.pickup.composite import CompositePickup       # noqa: E402
 
 EXP18 = Path(__file__).parent.parent / "18_canonical_pickup"
 EXP19 = Path(__file__).parent.parent / "19_colorless_split"

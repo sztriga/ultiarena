@@ -33,8 +33,8 @@ N_DET = int(os.environ.get("N_DET", "8"))
 
 
 def pimc_base_probs(hand10, trump, talon, n_det, seed):
-    from solvers import pis
-    from eval.pimc_matchup import god_says_soloist_wins
+    from ulti.solvers import pis
+    from ulti.eval.pimc_matchup import god_says_soloist_wins
     from trickster._solver_core import set_multi_weights
 
     has40, has20 = sol_marriages(hand10, trump)

@@ -40,9 +40,9 @@ for _p in (_HERE, f"{_REPO}/experiments/37_imperfect_betli", f"{_REPO}/experimen
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from solvers import pis, determinize as _det                       # noqa: E402
-from eval.pimc_matchup import pimc_pick                            # noqa: E402
-from scoring.oracle import score as oracle_score                  # noqa: E402
+from ulti.solvers import pis, determinize as _det                       # noqa: E402
+from ulti.eval.pimc_matchup import pimc_pick                            # noqa: E402
+from ulti.scoring.oracle import score as oracle_score                  # noqa: E402
 
 WORKERS = int(os.environ.get("WORKERS", "8"))
 PIMC_N = int(os.environ.get("PIMC_N", "16"))

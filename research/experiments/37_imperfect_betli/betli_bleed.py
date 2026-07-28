@@ -46,9 +46,9 @@ for _p in (_HERE, f"{_REPO}/experiments/29_frontier_table", f"{_REPO}/experiment
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from solvers import pis, determinize as _det                       # noqa: E402
-from eval.pimc_matchup import god_says_soloist_wins                # noqa: E402
-from vnet.pickup import featurize                                  # noqa: E402
+from ulti.solvers import pis, determinize as _det                       # noqa: E402
+from ulti.eval.pimc_matchup import god_says_soloist_wins                # noqa: E402
+from ulti.vnet.pickup import featurize                                  # noqa: E402
 from _lib import deal_12_10_10                                     # noqa: E402
 
 WORKERS = int(os.environ.get("WORKERS", "8"))
@@ -152,7 +152,7 @@ def _bleed_worker(seed):
         return {"seed": seed, "betli": False}
     import harness27 as h
     from frontier_selfplay import _kontra_decision
-    from scoring.oracle import score as osc
+    from ulti.scoring.oracle import score as osc
     sol, d1, d2, talon = r["sol"], r["def1"], r["def2"], r["talon"]
     # net p_betli the bidder used on the played hand
     xb = featurize(sol, None, False).astype(np.float32)

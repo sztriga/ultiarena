@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from vnet.pickup import (
+from ulti.vnet.pickup import (
     CONTRACT_CONFIGS, ContractCfg,
     featurize, input_dim,
     PickupNet,

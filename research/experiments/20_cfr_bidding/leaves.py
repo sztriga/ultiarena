@@ -23,9 +23,9 @@ sys.path.insert(0, str(Path(__file__).parent))
 sys.path.insert(0, str(Path(__file__).parent.parent / "14_minigame_bid_eval"))
 
 from _lib import _ev_per_def                          # noqa: E402
-from solvers import pis                               # noqa: E402
-from eval.pimc_matchup import god_says_soloist_wins   # noqa: E402
-from vnet.pickup.composite import CompositePickup     # noqa: E402
+from ulti.solvers import pis                               # noqa: E402
+from ulti.eval.pimc_matchup import god_says_soloist_wins   # noqa: E402
+from ulti.vnet.pickup.composite import CompositePickup     # noqa: E402
 
 from common import (ACTIONS, N_ACTIONS, deal_10_10_10_2,           # noqa: E402
                     action_realization)

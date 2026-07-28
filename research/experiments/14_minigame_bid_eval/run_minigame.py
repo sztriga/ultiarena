@@ -19,8 +19,8 @@ sys.path.insert(0, '/Users/milansimity/Cuccok/kodok/oldtawer')
 sys.path.insert(0, str(Path(__file__).parent))
 
 from _lib import deal_12_10_10, eval_one_deal, best_record
-from solvers import pis, pimc as _pimc, determinize as _det
-from scoring.oracle import BidSet, score as score_oracle
+from ulti.solvers import pis, pimc as _pimc, determinize as _det
+from ulti.scoring.oracle import BidSet, score as score_oracle
 
 N         = 300
 PIMC_N    = 32

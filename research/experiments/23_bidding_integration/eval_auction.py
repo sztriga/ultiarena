@@ -58,8 +58,8 @@ def resolve_bidset(rung, sol10, trump):
 
 
 def _god(contract, sol10, d1, d2, trump, talon, restrict=None, multi100=False):
-    from solvers import pis
-    from eval.pimc_matchup import god_says_soloist_wins
+    from ulti.solvers import pis
+    from ulti.eval.pimc_matchup import god_says_soloist_wins
     from trickster._solver_core import set_multi_weights
     if multi100:
         set_multi_weights(score_geq_100=1.0)

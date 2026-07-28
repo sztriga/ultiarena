@@ -30,14 +30,14 @@ _MP = mp.get_context('fork')
 sys.path.insert(0, '/Users/milansimity/Cuccok/kodok/oldtawer')
 sys.path.insert(0, str(Path(__file__).parent))
 
-from eval.dojo import deal_ulti_biased, deal_parti, deal_durchmars_colored
-from eval.pimc_matchup import god_pick
-from solvers import pis as pis_bridge
+from ulti.eval.dojo import deal_ulti_biased, deal_parti, deal_durchmars_colored
+from ulti.eval.pimc_matchup import god_pick
+from ulti.solvers import pis as pis_bridge
 from trickster._solver_core import set_multi_weights
 from trickster.games.ulti.game import (soloist_won_simple, soloist_points,
                                        soloist_tricks, soloist_won_durchmars,
                                        marriage_points)
-from scoring.oracle import score as score_oracle
+from ulti.scoring.oracle import score as score_oracle
 from recipe import sol_marriages
 
 # ── dealers + filters (named so they survive multiprocessing) ──────────────

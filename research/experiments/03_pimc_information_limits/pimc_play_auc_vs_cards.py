@@ -18,10 +18,10 @@ import random
 import time
 from pathlib import Path
 
-from eval.dojo import deal_betli
-from solvers import determinize as _det
-from solvers import pis as pis_bridge
-from solvers import pimc as pimc_player
+from ulti.eval.dojo import deal_betli
+from ulti.solvers import determinize as _det
+from ulti.solvers import pis as pis_bridge
+from ulti.solvers import pimc as pimc_player
 
 _BETLI_WIN_VAL = 10.0
 _CONTRACT = "betli"

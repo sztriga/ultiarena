@@ -9,7 +9,7 @@ from types import SimpleNamespace
 sys.path.insert(0, '/Users/milansimity/Cuccok/kodok/oldtawer')
 
 from trickster.games.ulti.cards import Card, Rank, Suit
-from scoring.oracle import BidSet, score
+from ulti.scoring.oracle import BidSet, score
 
 H, L, A, B = Suit.HEARTS, Suit.LEAVES, Suit.ACORNS, Suit.BELLS
 FILL = Card(B, Rank.SEVEN)

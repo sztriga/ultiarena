@@ -18,12 +18,12 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "15_vnet_pickup"))
 sys.path.insert(0, str(Path(__file__).parent))
 
 from _lib import deal_12_10_10, _ev_per_def
-from solvers import pis, pimc as _pimc, determinize as _det
-from eval.pimc_matchup import god_pick
+from ulti.solvers import pis, pimc as _pimc, determinize as _det
+from ulti.eval.pimc_matchup import god_pick
 from ulti.card import SUITS, DECK, Card
-from vnet.pickup import CONTRACT_CONFIGS, featurize, input_dim
-from vnet.pickup.v17 import Exp17Pickup
-from scoring.oracle import BidSet, score as score_oracle
+from ulti.vnet.pickup import CONTRACT_CONFIGS, featurize, input_dim
+from ulti.vnet.pickup.v17 import Exp17Pickup
+from ulti.scoring.oracle import BidSet, score as score_oracle
 import itertools as _it
 
 import os

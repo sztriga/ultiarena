@@ -11,8 +11,8 @@ import json, time
 from pathlib import Path
 from statistics import mean, median
 
-from eval.dojo import deal_durchmars_colored, deal_durchmars_colorless
-from solvers.pis import build_position, solve_all
+from ulti.eval.dojo import deal_durchmars_colored, deal_durchmars_colorless
+from ulti.solvers.pis import build_position, solve_all
 from trickster._solver_core import set_dm_proven_safe
 
 N        = 200

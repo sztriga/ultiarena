@@ -20,7 +20,7 @@ from typing import Optional
 import numpy as np
 
 from ulti.card import SUITS, fresh_deck
-from vnet.pickup import featurize, CONTRACT_CONFIGS
+from ulti.vnet.pickup import featurize, CONTRACT_CONFIGS
 
 # ── action set (escalating rank, mirrors auction_h2h.contract_rank) ──────────
 ACTIONS = ['parti', 'ulti', 'betli', 'duri', 'ulti_piros']

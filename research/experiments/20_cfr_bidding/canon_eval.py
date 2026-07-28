@@ -26,9 +26,9 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "17_clean_pickup_net"))
 
 from auction_h2h import (simulate, _play_pimc_vs_god, _score,   # noqa: E402
                          DEBIAS_BID, DEBIAS_PCTL)
-from solvers import pis                                         # noqa: E402
-from eval.pimc_matchup import god_says_soloist_wins             # noqa: E402
-from vnet.pickup.composite import CompositePickup               # noqa: E402
+from ulti.solvers import pis                                         # noqa: E402
+from ulti.eval.pimc_matchup import god_says_soloist_wins             # noqa: E402
+from ulti.vnet.pickup.composite import CompositePickup               # noqa: E402
 
 EXP18 = Path(__file__).parent.parent / "18_canonical_pickup"
 EXP19 = Path(__file__).parent.parent / "19_colorless_split"

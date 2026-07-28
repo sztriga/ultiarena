@@ -13,7 +13,7 @@ defense" — systematically wrong vs real (PIMC) defense (ulti: god ~30%, real 8
 per-UNIT, per-ROLE **calibration** of the make-signal to the REAL make rate, then an
 EV-optimal per-unit kontra/rekontra decision by backward induction on calibrated beliefs.
 
-## Foundation (read from scoring/oracle.py — LOCKED)
+## Foundation (read from ulti.scoring/oracle.py — LOCKED)
 - **6 kontra units**: parti, ulti, betli, durchmars, 40_100, 20_100 (`_unit_of`, oracle:33).
   Silent riders (silent_40_100/20_100/durchmars + def_silent_*) ride the PARTI unit;
   silent_ulti rides NO unit. A combined bid = a SET of these units, each kontra'd indep.

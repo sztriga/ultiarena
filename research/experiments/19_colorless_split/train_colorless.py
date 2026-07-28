@@ -18,7 +18,7 @@ import torch.nn as nn
 
 sys.path.insert(0, '/Users/milansimity/Cuccok/kodok/oldtawer')
 
-from vnet.pickup.colorless import (
+from ulti.vnet.pickup.colorless import (
     colorless_features, ColorlessStructNet, N_FEATURES,
 )
 

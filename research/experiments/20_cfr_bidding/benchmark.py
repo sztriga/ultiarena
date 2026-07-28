@@ -28,10 +28,10 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "14_minigame_bid_eval"))
 
 from _lib import _ev_per_def                       # noqa: E402
 from ulti.card import SUITS, fresh_deck            # noqa: E402
-from solvers import pis                            # noqa: E402
-from eval.pimc_matchup import god_says_soloist_wins  # noqa: E402
-from vnet.pickup import featurize, CONTRACT_CONFIGS  # noqa: E402
-from vnet.pickup.composite import CompositePickup  # noqa: E402
+from ulti.solvers import pis                            # noqa: E402
+from ulti.eval.pimc_matchup import god_says_soloist_wins  # noqa: E402
+from ulti.vnet.pickup import featurize, CONTRACT_CONFIGS  # noqa: E402
+from ulti.vnet.pickup.composite import CompositePickup  # noqa: E402
 
 EXP18 = Path(__file__).parent.parent / "18_canonical_pickup"
 EXP19 = Path(__file__).parent.parent / "19_colorless_split"

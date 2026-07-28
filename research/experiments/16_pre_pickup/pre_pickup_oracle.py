@@ -25,7 +25,7 @@ sys.path.insert(0, '/Users/milansimity/Cuccok/kodok/oldtawer')
 sys.path.insert(0, str(Path(__file__).parent.parent / "15_vnet_pickup"))
 sys.path.insert(0, str(Path(__file__).parent.parent / "14_minigame_bid_eval"))
 
-from vnet.pickup import CONTRACT_CONFIGS, PickupNetV2, featurize, input_dim
+from ulti.vnet.pickup import CONTRACT_CONFIGS, PickupNetV2, featurize, input_dim
 from ulti.card import SUITS, DECK, Card
 from _lib import _ev_per_def
 

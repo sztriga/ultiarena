@@ -49,22 +49,22 @@ os.environ.setdefault("DEBIAS_PCTL", "0.85")      # was 0.80
 os.environ.setdefault("DURI_TERIT_MULT", "0.3")   # fixes the terített-duri over-bid leak (exp29/30)
 os.environ.setdefault("KONTRA", "1")   # kontra-aware bidder (passes weak hands)
 
-from bidding.ladder import GPTable, overcalls, contract_name  # noqa: E402
-from bidding.recipe import sol_marriages  # noqa: E402
-from bidding.bidder import rung_ev, _is_simple  # noqa: E402
-from bidding.auction import net_bid_fn, PASS_PENALTY  # noqa: E402
-from bidding.provider import NetProvider  # noqa: E402
-from bidding.scorers import resolve_bidset, _play_weights, _primary_made, _hand_makeability  # noqa: E402
-from bidding.kontra import _sol_ev  # noqa: E402
-from bidding.deal import deal_12_10_10  # noqa: E402
-from solvers import pis as pis_bridge  # noqa: E402
-from solvers import determinize as _det  # noqa: E402
-from eval.pimc_matchup import pimc_pick  # noqa: E402
+from ulti.bidding.ladder import GPTable, overcalls, contract_name  # noqa: E402
+from ulti.bidding.recipe import sol_marriages  # noqa: E402
+from ulti.bidding.bidder import rung_ev, _is_simple  # noqa: E402
+from ulti.bidding.auction import net_bid_fn, PASS_PENALTY  # noqa: E402
+from ulti.bidding.provider import NetProvider  # noqa: E402
+from ulti.bidding.scorers import resolve_bidset, _play_weights, _primary_made, _hand_makeability  # noqa: E402
+from ulti.bidding.kontra import _sol_ev  # noqa: E402
+from ulti.bidding.deal import deal_12_10_10  # noqa: E402
+from ulti.solvers import pis as pis_bridge  # noqa: E402
+from ulti.solvers import determinize as _det  # noqa: E402
+from ulti.eval.pimc_matchup import pimc_pick  # noqa: E402
 try:
-    from betli import defense as _exp36  # noqa: E402  (exp36 betli-defense net; models/betli/betli_defense.pt)
+    from ulti.betli import defense as _exp36  # noqa: E402  (exp36 betli-defense net; models/betli/betli_defense.pt)
 except Exception:  # pragma: no cover
     _exp36 = None
-from scoring.oracle import score as score_oracle  # noqa: E402
+from ulti.scoring.oracle import score as score_oracle  # noqa: E402
 from ultisolver._solver_core import set_multi_weights  # noqa: E402
 from ulti.card import card_from_id  # noqa: E402
 
@@ -516,8 +516,8 @@ def _kontra_units(bid) -> List[str]:
 def _unit_makeability(sess: Session, viewer: int, unit: str, salt: int) -> float:
     """P(soloist makes `unit` | viewer's own hand) — cheat-clean own-hand sampling,
     god-solved for the unit's objective. Handles the 100-games via the multi solver."""
-    from solvers import determinize as _det
-    from eval.pimc_matchup import god_says_soloist_wins
+    from ulti.solvers import determinize as _det
+    from ulti.eval.pimc_matchup import god_says_soloist_wins
     solver, weights, restrict = _UNIT_OBJ[unit]
     build_c = "durchmars" if solver == "durchmars" else ("betli" if solver == "betli" else "parti")
     sol, d1, d2 = sess.play_hands0
@@ -588,8 +588,8 @@ def _unit_makeability_post_trick1(sess: Session, unit: str, salt: int) -> float:
     solver, weights, restrict = _UNIT_OBJ[unit]
     if solver == "multi":            # 100-games: no clean replay path → root signal
         return _unit_makeability(sess, 0, unit, salt)
-    from solvers import determinize as _det
-    from eval.pimc_matchup import god_says_soloist_wins
+    from ulti.solvers import determinize as _det
+    from ulti.eval.pimc_matchup import god_says_soloist_wins
     trump = sess.trump
     plays = [(h["player_id"], card_from_id(h["card"]["id"])) for h in sess.p_history[:3]]
     iset = _det.build_info_set(sess.p_pos, 0, sess.p_solve_contract, voids=sess.voids.as_dict())
