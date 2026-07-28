@@ -1,0 +1,1311 @@
+/* Oldtawer UI styles — visual language lifted from trickster (apps/web/src/ui/styles.css)
+ * and adapted for the spectator view (3 AI agents, no human player).
+ *
+ * Theme: dark, orange accent. Trickster's choices preserved deliberately.
+ */
+
+:root {
+  --bg:        #0b0d10;
+  --panel:     #111315;
+  --panel-2:   #15181c;
+  --text:      #e5e7eb;
+  --muted:     #9ca3af;
+  --border:    #262a30;
+  --accent:    #ff8a3d;
+  --accent-2:  #f4a261;
+  --good:      #4caf50;
+  --bad:       #ef5350;
+}
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  background: radial-gradient(1000px 600px at 30% 10%, #141821 0%, var(--bg) 60%);
+  color: var(--text);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+               Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+}
+
+/* ── Layout ──────────────────────────────────────────────────────────────── */
+
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.topbar {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(17, 19, 21, 0.85);
+  backdrop-filter: blur(10px);
+}
+
+.brand .title {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+}
+
+.brand .subtitle {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.controls {
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.field select,
+.field input {
+  background: #0f1114;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 10px;
+  outline: none;
+  font: inherit;
+  text-transform: none;
+  letter-spacing: 0;
+  min-width: 140px;
+}
+
+.btn {
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: #0f1114;
+  color: var(--text);
+  cursor: pointer;
+  font: inherit;
+}
+.btn:hover         { border-color: #3a3f46; }
+.btn:disabled      { cursor: not-allowed; opacity: 0.5; }
+
+.btn-primary {
+  background: linear-gradient(180deg, var(--accent) 0%, #ff7a1a 100%);
+  border-color: #ff7a1a;
+  color: #1f2937;
+  font-weight: 700;
+}
+
+.main {
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  gap: 14px;
+  padding: 14px;
+  flex: 1;
+  align-items: stretch;
+  max-width: 1400px;
+  width: 100%;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 14px;
+  overflow: hidden;
+}
+
+.panel-title {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.error {
+  color: #fecaca;
+  background: rgba(127, 29, 29, 0.25);
+  border: 1px solid rgba(127, 29, 29, 0.6);
+  padding: 10px 12px;
+  border-radius: 14px;
+  margin-bottom: 12px;
+}
+
+/* ── Table (the green-felt centerpiece) ──────────────────────────────────── */
+
+.table {
+  background: linear-gradient(180deg, var(--panel) 0%, var(--panel-2) 100%);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow: hidden;
+  position: relative;
+  min-height: 600px;
+}
+
+/* ── Card images (lifted from trickster sizing) ──────────────────────────── */
+
+.card-micro,
+.card-thumb,
+.card-hand,
+.card-trick {
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: #0f1114;
+  display: block;
+  user-select: none;
+}
+
+.card-micro { width: 28px;  border-radius: 4px; }
+.card-thumb { width: 56px;  border-radius: 7px; }
+.card-hand  { width: 90px;  border-radius: 12px; box-shadow: 0 8px 22px rgba(0, 0, 0, 0.35); }
+.card-trick { width: 120px; border-radius: 14px; box-shadow: 0 8px 22px rgba(0, 0, 0, 0.4); }
+
+.card-clickable { cursor: pointer; transition: transform 120ms ease, border-color 120ms ease; }
+.card-clickable:hover { transform: translateY(-4px); border-color: var(--accent-2); }
+
+.card-highlight {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+  border-color: var(--accent);
+}
+/* Illegal cards in the active player's hand. Kept readable; the playable
+   cards are what pops out, not the dim ones that disappear. */
+.card-dim     { opacity: 0.78; filter: saturate(0.7); }
+
+/* Playable cards sit slightly above the row with a soft accent glow so the
+   eye lands on them without needing to dim the rest into invisibility. */
+.card-playable {
+  transform: translateY(-8px);
+  box-shadow:
+    0 0 0 1px rgba(120, 200, 255, 0.55),
+    0 10px 22px rgba(0, 0, 0, 0.45),
+    0 0 18px rgba(120, 200, 255, 0.25);
+}
+.card-clickable.card-playable:hover { transform: translateY(-14px); }
+
+.card-points  { box-shadow: 0 0 0 1px rgba(255, 220, 120, 0.3), 0 8px 22px rgba(0, 0, 0, 0.35); }
+
+/* Talon marker — cards you just picked up (bid phase). */
+.card-marked { box-shadow: 0 0 0 2px rgba(46, 170, 96, 0.95), 0 8px 22px rgba(0, 0, 0, 0.4); }
+.card-mark-wrap { position: relative; display: inline-block; }
+.card-mark-badge {
+  position: absolute; top: -7px; left: 50%; transform: translateX(-50%);
+  background: #2eaa60; color: #fff; font-size: 9px; font-weight: 800;
+  letter-spacing: 0.05em; text-transform: uppercase;
+  padding: 1px 6px; border-radius: 7px; pointer-events: none; z-index: 6;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+/* Discard selection — chosen cards lift with a green accent ring. */
+.card-selected {
+  transform: translateY(-22px);
+  box-shadow: 0 0 0 2px #5cc98a, 0 14px 26px rgba(0, 0, 0, 0.5);
+  z-index: 6;
+}
+.card-clickable.card-selected:hover { transform: translateY(-26px); }
+
+/* ── Spectator: 3-AI table layout ────────────────────────────────────────── */
+
+/* Defenders row (top) — two side-by-side hands like trickster's AI row */
+.ulti-ai-row {
+  display: flex;
+  justify-content: space-around;
+  gap: 24px;
+  padding: 8px 0;
+}
+
+.ulti-ai-hand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-height: 80px;
+}
+
+.ulti-ai-label {
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 600;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ulti-ai-hand.is-active .ulti-ai-label {
+  color: var(--accent-2);
+}
+
+.ulti-ai-hand.is-active::after {
+  content: "";
+  position: relative;
+  width: 6px;
+  height: 6px;
+  background: var(--accent);
+  border-radius: 50%;
+  margin-top: 4px;
+  box-shadow: 0 0 12px var(--accent);
+}
+
+/* Fanned card row — small thumbnails overlapping (researcher mode = always open) */
+.ulti-card-row {
+  display: flex;
+  align-items: flex-start;
+}
+.ulti-card-row .card-thumb {
+  margin-left: -22px;
+  transition: margin-left 80ms ease;
+}
+.ulti-card-row .card-thumb:first-child { margin-left: 0; }
+.ulti-card-row .card-thumb:hover       { margin-left: -8px; z-index: 2; }
+
+/* Trick area — center stage, 3 slots */
+.ulti-trick-area {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 32px;
+  min-height: 180px;
+  padding: 16px 0;
+  position: relative;
+}
+
+.ulti-trick-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 120px;
+}
+
+.ulti-trick-player {
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.ulti-trick-slot.is-winner .ulti-trick-player {
+  color: var(--accent-2);
+  font-weight: 700;
+}
+
+.ulti-trick-empty {
+  width: 120px;
+  height: 168px;
+  border-radius: 14px;
+  border: 1px dashed #2a3142;
+  background: rgba(15, 17, 20, 0.4);
+}
+
+/* Declarer / human-like hand at the bottom */
+.ulti-player-role {
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  padding: 6px 0 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+}
+
+.ulti-hand,
+.hand-row {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  align-items: center;
+  padding: 4px 0;
+  flex-wrap: wrap;
+}
+
+/* Fanned variant — cards overlap left-to-right; the hovered card lifts and
+   nudges its neighbours out of the way. Sized for the .card-hand width
+   (90px); tweak --fan-overlap if you change card-hand width. */
+.hand-fan {
+  gap: 0;
+  flex-wrap: nowrap;
+  padding: 8px 0 4px;
+  --fan-overlap: 38px;
+  --fan-lift:    14px;
+}
+.hand-fan > * {
+  margin-left: calc(var(--fan-overlap) * -1);
+  transition: margin 140ms ease, transform 140ms ease, box-shadow 140ms ease;
+  position: relative;
+}
+.hand-fan > *:first-child { margin-left: 0; }
+.hand-fan > *:hover {
+  transform: translateY(calc(var(--fan-lift) * -1));
+  z-index: 10;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.5);
+}
+/* Make room around the hovered card so the whole face is visible. */
+.hand-fan > *:hover + *      { margin-left: calc(var(--fan-overlap) * -0.4); }
+.hand-fan > *:has(+ :hover)  { margin-right: calc(var(--fan-overlap) * 0.6); }
+
+/* ── Trump / contract badge ──────────────────────────────────────────────── */
+
+.ulti-contract-badge {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 14px;
+  padding: 8px 0 4px;
+  flex-wrap: wrap;
+}
+
+.ulti-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  background: rgba(100, 180, 255, 0.12);
+  border: 1px solid rgba(100, 180, 255, 0.28);
+  color: #8ec5fc;
+}
+
+.ulti-badge.is-piros {
+  background: rgba(231, 76, 60, 0.12);
+  border-color: rgba(231, 76, 60, 0.32);
+  color: #ff8b80;
+}
+
+.trump-symbol  { font-size: 18px; font-weight: 800; }
+.trump-hearts  { color: #e74c3c; }
+.trump-bells   { color: #e8a838; }
+.trump-leaves  { color: #27ae60; }
+.trump-acorns  { color: #b58a4f; }
+
+/* Suit-coloured chip for the trump pill */
+.suit-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+/* ── Scoreboard / status row ─────────────────────────────────────────────── */
+
+.ulti-scores {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  padding: 6px 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.ulti-score-sep { opacity: 0.3; }
+
+.ulti-role-tag {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.ulti-role-soloist  { background: #ef5350; color: #fff; }
+.ulti-role-defender { background: #42a5f5; color: #fff; }
+
+.status-bar {
+  text-align: center;
+  font-size: 13px;
+  color: var(--muted);
+  letter-spacing: 0.3px;
+  padding: 4px 0;
+}
+
+/* ── Talon (declarer's two discards) ─────────────────────────────────────── */
+
+.ulti-talon-inline {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  padding: 4px 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.ulti-talon-inline .ulti-talon-card { width: 36px; border-radius: 5px; }
+
+/* ── Speech bubble (lifted) ──────────────────────────────────────────────── */
+
+.ulti-bubble-anchor {
+  position: relative;
+  height: 0;
+}
+
+.ulti-speech-bubble {
+  position: absolute;
+  top: -52px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, #1e2a3a 0%, #1a2332 100%);
+  border: 1px solid var(--accent);
+  border-radius: 14px;
+  padding: 6px 14px;
+  color: var(--accent-2);
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.2px;
+  box-shadow: 0 4px 20px rgba(255, 138, 61, 0.18);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.ulti-speech-bubble::after {
+  content: "";
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0; height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-top: 8px solid var(--accent);
+}
+
+.ulti-bubble-in  { animation: bubble-in  220ms ease-out forwards; }
+.ulti-bubble-out { animation: bubble-out 320ms ease-in  forwards; }
+
+@keyframes bubble-in {
+  0%   { opacity: 0; transform: translate(-50%, 6px) scale(0.92); }
+  100% { opacity: 1; transform: translate(-50%, 0)   scale(1); }
+}
+@keyframes bubble-out {
+  0%   { opacity: 1; transform: translate(-50%, 0)   scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -6px) scale(0.95); }
+}
+
+/* ── Move log (spectator's right column) ─────────────────────────────────── */
+
+.move-log {
+  max-height: calc(100vh - 200px);
+  overflow-y: auto;
+  font-family: "JetBrains Mono", ui-monospace, "SF Mono", monospace;
+  font-size: 12px;
+}
+
+.move-row {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.move-row:hover      { background: rgba(255, 255, 255, 0.04); }
+.move-row.is-current { background: rgba(255, 138, 61, 0.10); }
+.move-row.is-alt {
+  border-left: 3px solid var(--accent);
+  padding-left: 5px;
+  background: rgba(255, 138, 61, 0.04);
+}
+
+.alt-tag {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  background: var(--accent);
+  color: #1f2937;
+}
+
+.move-tag {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+.move-tag.phase-TRUMP   { background: #5e48a1; color: white; }
+.move-tag.phase-DISCARD { background: #5e7a4a; color: white; }
+.move-tag.phase-PLAY    { background: #2c4769; color: white; }
+
+.move-step {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.uber-reason {
+  font-size: 11px;
+  color: var(--muted);
+  font-style: italic;
+}
+
+/* ── Result panel ────────────────────────────────────────────────────────── */
+
+.result-banner {
+  text-align: center;
+  font-size: 18px;
+  font-weight: 800;
+  padding: 14px;
+  border-radius: 12px;
+  margin-bottom: 12px;
+  letter-spacing: 0.4px;
+}
+.result-banner.declarer-wins  { background: rgba(76, 175, 80, 0.16); color: var(--good); border: 1px solid rgba(76, 175, 80, 0.35); }
+.result-banner.declarer-loses { background: rgba(239, 83, 80, 0.16); color: var(--bad);  border: 1px solid rgba(239, 83, 80, 0.35); }
+
+.scoreboard-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.scoreboard-table th,
+.scoreboard-table td { padding: 6px 10px; text-align: right; }
+.scoreboard-table th:first-child,
+.scoreboard-table td:first-child { text-align: left; }
+.scoreboard-table th {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  font-weight: 700;
+  border-bottom: 1px solid var(--border);
+}
+.gp-pos { color: var(--good); font-weight: 700; }
+.gp-neg { color: var(--bad);  font-weight: 700; }
+
+/* ── Misc ────────────────────────────────────────────────────────────────── */
+
+.kbd {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 11px;
+}
+
+.muted { color: var(--muted); }
+.row   { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+
+/* ── Tab nav ─────────────────────────────────────────────────────────────── */
+
+.tab-nav {
+  display: flex;
+  gap: 4px;
+  padding: 8px 14px 0;
+  border-bottom: 1px solid var(--border);
+  background: rgba(17, 19, 21, 0.85);
+}
+
+.tab-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  border-bottom: none;
+  border-radius: 8px 8px 0 0;
+  padding: 8px 16px;
+  color: var(--muted);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.tab-btn:hover  { color: var(--text); }
+.tab-btn.is-active {
+  color: var(--text);
+  background: var(--panel);
+  border-color: var(--border);
+  border-bottom: 1px solid var(--panel);
+  margin-bottom: -1px;
+}
+
+/* ── betli.hu splash ──────────────────────────────────────────────────── */
+
+.betli-hu-splash {
+  position: relative;
+  overflow: hidden;
+  min-height: 90vh;
+}
+
+.betli-hu-splash-main {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  /* Override .main's 2-column layout so splash sections stack vertically. */
+  grid-template-columns: 1fr;
+  gap: 28px;
+  padding-top: 32px;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.betli-hu-title {
+  font-size: 64px;
+  font-weight: 800;
+  letter-spacing: -2px;
+  margin: 8px 0 6px;
+  background: linear-gradient(135deg, #34d399 0%, #16a34a 50%, #047857 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 4px 16px rgba(22, 163, 74, 0.30));
+}
+
+.betli-hu-tagline {
+  color: #9aa1aa;
+  font-size: 14px;
+  line-height: 1.7;
+  margin-top: 0;
+}
+
+.betli-hu-section-label {
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #6a727c;
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+.betli-hu-tile-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.betli-hu-tile {
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 14px;
+  padding: 18px 16px 16px;
+  cursor: pointer;
+  text-align: center;
+  color: #ddd;
+  transition: transform 140ms ease, border-color 140ms ease, box-shadow 220ms ease;
+  font-family: inherit;
+}
+
+.betli-hu-tile:hover {
+  transform: translateY(-3px);
+  border-color: rgba(255,255,255,0.18);
+}
+
+.betli-hu-tile.is-active {
+  color: #fff;
+  border-color: rgba(255,255,255,0.35);
+  transform: translateY(-3px);
+}
+
+.betli-hu-tile-symbol {
+  font-size: 32px;
+  line-height: 1;
+  margin-bottom: 6px;
+  opacity: 0.92;
+}
+
+.betli-hu-tile-title {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  margin-bottom: 4px;
+}
+
+.betli-hu-tile-flavor {
+  font-size: 11px;
+  line-height: 1.5;
+  opacity: 0.85;
+}
+
+.betli-hu-deal-btn {
+  font-family: inherit;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  color: #fff;
+  background: #2f7d4f;            /* tasteful, consistent — no per-seat purple accent */
+  border: none;
+  border-radius: 10px;
+  padding: 12px 24px;
+  cursor: pointer;
+  transition: filter 140ms ease;
+}
+/* Compact variant for the sidebar result box. */
+.betli-hu-deal-btn--sm { font-size: 13px; padding: 6px 14px; border-radius: 7px; }
+
+/* Bare topbar (game views — no titles, just the buttons on the right). */
+.topbar-bare { justify-content: flex-end; }
+
+.betli-hu-deal-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  filter: brightness(1.08);
+}
+
+.betli-hu-deal-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+/* Tighter, fixed-column grids for the splash pickers. */
+.betli-hu-tile-grid-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  max-width: 480px;
+  margin: 0 auto;
+}
+.betli-hu-tile-grid-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  max-width: 720px;
+  margin: 0 auto;
+}
+.betli-hu-tile-grid-4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  max-width: 860px;
+  margin: 0 auto;
+}
+
+@media (max-width: 720px) {
+  .betli-hu-tile-grid-3,
+  .betli-hu-tile-grid-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Slightly tighter title + a hair more breathing room on tiles. */
+.betli-hu-title {
+  font-size: 56px;
+  margin-top: 4px;
+}
+.betli-hu-tile {
+  padding: 16px 14px 14px;
+}
+.betli-hu-tile-symbol { font-size: 28px; margin-bottom: 4px; }
+.betli-hu-tile-title  { font-size: 15px; }
+.betli-hu-tile-flavor { font-size: 11px; line-height: 1.45; min-height: 32px; }
+
+/* ── betli.hu in-game extras ─────────────────────────────────────────── */
+
+/* Scrollable play log — caps height so it doesn't push the page taller
+   than the play area on long games. */
+.betli-hu-log-panel {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 140px);
+}
+.betli-hu-log-scroll {
+  flex: 1;
+  overflow-y: auto;
+  margin-top: 6px;
+  padding-right: 4px;
+}
+.betli-hu-log-scroll::-webkit-scrollbar      { width: 8px; }
+.betli-hu-log-scroll::-webkit-scrollbar-thumb { background: #2a2f36; border-radius: 4px; }
+.betli-hu-log-scroll::-webkit-scrollbar-track { background: transparent; }
+
+/* End-of-hand banner that sits below the user's fanned hand, holds the
+   "You win / You lose" headline plus the Play again CTA. */
+.betli-hu-result {
+  margin-top: 16px;
+  padding: 16px 20px;
+  border-radius: 12px;
+  text-align: center;
+  border: 1px solid var(--border);
+  background: transparent;
+}
+.betli-hu-result.is-win  { border-color: rgba(58, 174, 101, 0.35); }
+.betli-hu-result.is-loss { border-color: rgba(210, 53, 82, 0.30); }
+.betli-hu-result-headline {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  color: var(--text, #e7ebef);
+  margin-bottom: 3px;
+}
+.betli-hu-result.is-win  .betli-hu-result-headline { color: #74c187; }
+.betli-hu-result.is-loss .betli-hu-result-headline { color: #d68f9b; }
+.betli-hu-result-sub {
+  font-size: 13px;
+  color: #aab1ba;
+}
+
+/* In-game layout: don't stretch the play area to fill the viewport. Let
+   the table and result banner be their *natural* height, and have the
+   right-column play log scroll internally. The whole .app is capped at
+   100vh so nothing pushes past the fold. */
+.betli-hu-game {
+  height: 100vh;
+  overflow: hidden;
+}
+.betli-hu-game .main {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  /* Each column sized to its own content; no stretching the play area to
+     match the log column's height. */
+  align-items: start;
+  padding: 10px 14px;
+  gap: 12px;
+}
+.betli-hu-game .main > section {
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  /* Left/right columns are capped at the viewport so the inner play log
+     becomes the only scrolling thing. */
+  max-height: 100%;
+  overflow: hidden;
+}
+/* Play area: natural height (cards + trick + cards), no forced stretch. */
+.betli-hu-game .table {
+  min-height: 0;
+  padding: 10px;
+  gap: 6px;
+}
+/* Play log: fills whatever vertical space its column allows. */
+.betli-hu-game .betli-hu-log-panel {
+  flex: 1;
+  max-height: 100%;
+}
+
+.betli-hu-game .topbar          { padding: 8px 14px; }
+.betli-hu-game .panel           { padding: 10px 12px; }
+
+/* Default card sizes, just more breathing room around them. */
+.betli-hu-game .ulti-ai-row     { padding: 14px 0; gap: 40px; }
+.betli-hu-game .ulti-trick-area { padding: 20px 0; gap: 48px; }
+.betli-hu-game .hand-fan        { padding: 18px 0 8px; }
+.betli-hu-game .ulti-player-role { padding-top: 6px; font-size: 13px; }
+
+/* Slim result banner so the end-of-hand UI doesn't push things off-screen. */
+.betli-hu-game .betli-hu-result          { margin-top: 10px; padding: 12px 18px 14px; }
+.betli-hu-game .betli-hu-result-headline { font-size: 22px; margin-bottom: 2px; }
+.betli-hu-game .betli-hu-result-sub      { font-size: 12px; }
+.betli-hu-game .betli-hu-result .betli-hu-deal-btn {
+  padding: 10px 22px;
+  font-size: 15px;
+  margin-top: 10px !important;
+}
+
+/* ── Ulti vs AI — bidding-panel contract dropdown ─────────────────────── */
+.ulti-bid-select {
+  background: var(--panel-2, #16181d);
+  color: var(--text, #e6e6e6);
+  border: 1px solid var(--border, #2a2a2a);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.ulti-bid-select:focus { outline: none; border-color: var(--accent, #5089d6); }
+
+/* ── Ulti vs AI — trickster-style centered auction overlay ─────────────── */
+.play-auction-overlay {
+  max-width: 660px;
+  margin: 22px auto;
+  padding: 20px 26px 24px;
+  background: var(--panel, #14161b);
+  border: 1px solid var(--border, #2a2a2a);
+  border-radius: 16px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.42);
+}
+.play-auction-title {
+  text-align: center;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  margin-bottom: 4px;
+}
+.play-auction-sub { text-align: center; font-size: 12.5px; color: var(--muted, #8b93a1); margin-bottom: 14px; }
+.play-auction-sub b { color: var(--text, #e6e6e6); }
+.play-auction-history {
+  display: flex; flex-direction: column; gap: 3px;
+  margin: 0 auto 18px; padding: 8px 14px; max-width: 320px;
+  background: rgba(0, 0, 0, 0.22); border-radius: 8px;
+}
+.play-hist-row { display: flex; gap: 12px; align-items: center; font-size: 13px; }
+.play-hist-who { font-weight: 700; min-width: 30px; color: var(--text, #e6e6e6); }
+.play-hist-act { font-size: 12px; font-weight: 600; }
+.play-hist-act.pass { color: var(--muted, #8b93a1); }
+.play-hist-act.bid  { color: #c07ee0; }
+.play-auction-controls {
+  display: flex; gap: 8px; justify-content: center; align-items: center; flex-wrap: wrap; margin-bottom: 16px;
+}
+.play-bid-hand { display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; }
+.play-bid-card { position: relative; transition: transform .12s; }
+.play-bid-card.is-picked { transform: translateY(-16px); }
+.play-bid-badge {
+  position: absolute; top: -6px; left: 50%; transform: translateX(-50%);
+  font-size: 9px; padding: 0 4px; border-radius: 3px; background: #3a6; color: #fff; white-space: nowrap;
+}
+.play-bid-drop {
+  position: absolute; bottom: -13px; left: 50%; transform: translateX(-50%);
+  font-size: 9px; color: #f3963d;
+}
+
+/* Contract badge + live scoreboard (trickster style) */
+.play-contract-badge { display: flex; justify-content: center; gap: 8px; align-items: center; padding: 6px 0 2px; flex-wrap: wrap; }
+.play-badge {
+  display: inline-block; padding: 4px 16px; border-radius: 10px; font-size: 13px; font-weight: 700;
+  letter-spacing: 0.3px; background: rgba(100, 180, 255, 0.15);
+  border: 1px solid rgba(100, 180, 255, 0.3); color: #8ec5fc;
+}
+.play-badge.is-piros { background: rgba(210, 53, 82, 0.15); border-color: rgba(210, 53, 82, 0.4); color: #f0879b; }
+.play-badge.is-betli { background: rgba(255, 160, 100, 0.15); border-color: rgba(255, 160, 100, 0.3); color: #ffa064; }
+.play-badge-kontra { color: #d23552; font-weight: 800; }
+.play-badge-value { font-size: 12px; color: var(--muted, #8b93a1); font-weight: 600; }
+
+.play-scores {
+  display: flex; justify-content: center; gap: 12px; padding: 8px 0 2px;
+  font-size: 14px; font-weight: 600; color: var(--muted, #8b93a1); flex-wrap: wrap;
+}
+.play-score-sep { opacity: 0.3; }
+.play-score-me { color: #fbbf24; }
+
+/* Match tally + scorecard across rounds */
+.play-match-line {
+  display: flex; justify-content: center; gap: 14px; font-size: 12px;
+  color: var(--muted, #8b93a1); padding: 4px 0 0;
+}
+.play-match-line b { color: var(--text, #e6e6e6); }
+.play-scorecard { margin: 14px auto 0; max-width: 460px; }
+.play-sc-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.play-sc-table th, .play-sc-table td { padding: 4px 8px; text-align: right; }
+.play-sc-table th:first-child, .play-sc-table td:first-child,
+.play-sc-table th:nth-child(2), .play-sc-table td:nth-child(2) { text-align: left; }
+.play-sc-table thead th { color: var(--muted, #8b93a1); border-bottom: 1px solid var(--border, #2a2a2a); font-weight: 600; }
+.play-sc-table tfoot td { border-top: 1px solid var(--border, #2a2a2a); font-weight: 800; }
+.play-sc-pos { color: #5cc98a; }
+.play-sc-neg { color: #ef6b6b; }
+.play-sc-you { background: rgba(251, 191, 36, 0.08); }
+
+/* Scorecard popup */
+.play-modal-backdrop {
+  position: fixed; inset: 0; background: rgba(0, 0, 0, 0.6);
+  display: flex; align-items: center; justify-content: center; z-index: 100;
+}
+.play-modal {
+  background: var(--panel-2, #15181c); border: 1px solid var(--border, #262a30);
+  border-radius: 12px; padding: 16px 20px; min-width: 320px; max-width: 90vw;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+.play-modal-head {
+  display: flex; justify-content: space-between; align-items: center;
+  font-weight: 700; margin-bottom: 12px; font-size: 15px;
+}
+.play-modal .play-sc-table { width: 100%; }
+
+/* Captured (won) tricks strip — face-down groups of 3, click to reveal */
+.play-captured {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+  margin: 12px auto 0; max-width: 900px; padding: 8px 12px;
+  background: rgba(0, 0, 0, 0.18); border: 1px solid var(--border, #262a30);
+  border-radius: 8px; cursor: pointer;
+}
+.play-captured:hover { border-color: var(--accent, #ff8a3d); }
+.play-captured-label { color: var(--muted, #9ca3af); font-size: 12px; font-weight: 600; margin-right: 4px; }
+
+/* Play log — moves grouped into tricks of 3, roles + coloured suit icons. */
+.play-log { display: flex; flex-direction: column; gap: 9px; }
+.play-log-trick { border-left: 2px solid rgba(255, 255, 255, 0.10); padding-left: 9px; }
+.play-log-trick-head {
+  font-size: 10px; text-transform: uppercase; letter-spacing: 0.07em;
+  color: var(--muted, #9ca3af); margin-bottom: 3px;
+}
+.play-log-move {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px; padding: 2px 0; font-size: 12.5px;
+}
+.play-log-player { color: #cbd5e1; }
+.play-log-player.is-me { font-weight: 700; color: #fff; }
+.play-log-card { display: inline-flex; align-items: center; gap: 5px; }
+.play-log-card .trump-symbol { font-size: 15px; line-height: 1; }
+.play-log-rank { font-size: 12.5px; color: #e5e7eb; min-width: 34px; }
+
+/* Silent (csendes) contracts surfaced in the result + scorecard. */
+.play-silents {
+  margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px 10px;
+  justify-content: center; align-items: baseline; font-size: 12.5px;
+}
+.play-silents-label { color: var(--muted, #9ca3af); text-transform: uppercase; letter-spacing: 0.05em; font-size: 10px; }
+.play-silent-item {
+  background: rgba(255, 255, 255, 0.07); border-radius: 6px;
+  padding: 1px 7px; color: #e5e7eb; font-weight: 600;
+}
+.play-sc-silent { color: var(--muted, #9ca3af); font-size: 11px; font-style: italic; }
+.play-captured-trick { display: flex; gap: 1px; }               /* one won trick = 3 backs */
+.play-captured-reveal { display: flex; flex-direction: column; gap: 8px; max-height: 60vh; overflow-y: auto; }
+.play-captured-trick-row { display: flex; gap: 4px; }
+
+/* Kontra decision — non-modal sign hovering at the bottom of the screen */
+.play-kontra-bar {
+  position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); z-index: 90;
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: center;
+  background: var(--panel-2, #15181c); border: 1px solid #d23552; border-radius: 10px;
+  padding: 10px 16px; box-shadow: 0 10px 40px rgba(210, 53, 82, 0.35); max-width: 92vw;
+}
+.play-kontra-text { font-size: 13px; }
+
+/* Talon pile — floats on the LEFT, vertically centered, out of the table's flow (so it
+   never shifts the opponent row / hand). Face-down during play, face-up at game end. */
+.play-talon-pile {
+  position: absolute; left: 44px; top: 50%; transform: translateY(-50%); z-index: 3;
+  display: flex; flex-direction: column; align-items: center; gap: 5px;
+}
+.play-talon-label { color: var(--muted, #9ca3af); font-size: 11px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.5px; }
+.play-talon-cards { display: flex; gap: 4px; }
+
+/* Fixed-size play area — IDENTICAL structure in bidding and play so nothing jumps:
+   a fixed-height table with the opponent row pinned at the top, the fanned hand at the
+   bottom, and a flex-filling middle band that holds the auction overlay (bid) or the
+   trick area (play) — same band, same size, both phases. */
+/* Fit the playing area to the screen (topbar removed). Same fixed viewport-based height in
+   bidding and play → fills the screen, no bottom gap, and no jump between phases. */
+.play-vs-ai .table { height: calc(100vh - 104px); min-height: 460px; max-height: 820px; }
+.play-vs-ai .main { align-items: start; height: 100%; }
+.play-col-main { min-height: 0; }
+/* Persistent contract + score panel in the sidebar (moved off the table). */
+.play-info-panel { display: flex; flex-direction: column; align-items: center; gap: 7px;
+  text-align: center; margin-bottom: 10px; padding: 12px 14px; }
+.play-info-contract { display: flex; gap: 8px; align-items: center; justify-content: center; flex-wrap: wrap; }
+.play-info-scores { font-size: 14px; color: var(--muted, #9ca3af); }
+.play-info-scores b { color: var(--text, #e7ebef); }
+.play-info-scores .play-score-me b { color: #fbbf24; }
+.play-info-scores .play-score-sep { margin: 0 6px; opacity: 0.5; }
+.play-vs-ai .ulti-ai-row { min-height: 92px; align-items: flex-start; }
+.play-vs-ai .ulti-trick-area { flex: 1 1 auto; min-height: 0; }
+/* Bidding overlay: fills the same middle band as the trick area, centered; the history
+   scrolls internally so the overlay never changes the layout. */
+.play-vs-ai .ulti-auction-overlay { padding: 12px 18px; margin: 0 auto; max-width: 560px;
+  flex: 1 1 auto; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; }
+.play-vs-ai .ulti-auction-title   { font-size: 16px; margin-bottom: 8px; }
+.play-vs-ai .ulti-auction-current { margin-bottom: 8px; }
+.play-vs-ai .ulti-auction-history { max-height: 56px; margin-bottom: 8px; }
+
+/* All-passed left panel (no play happened). */
+.play-passed-note { padding: 48px 20px; text-align: center; color: var(--muted, #9ca3af);
+  font-size: 15px; border: 1px dashed var(--border); border-radius: 12px; }
+
+/* End-of-hand action buttons — Következő full width, secondary buttons share the next row.
+   Kept small so the box doesn't feel crowded. */
+.play-side-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+.play-side-actions .betli-hu-deal-btn { flex: 1 1 100%; margin-bottom: 2px; }
+.play-side-actions .btn { flex: 1 1 0; white-space: nowrap; font-size: 12px; padding: 7px 10px; height: auto; }
+
+/* Sidebar box above the Játékmenet log — hosts the kontra decision and the
+   end-of-hand result instead of a bottom-floating popup. Empty/idle otherwise. */
+.play-side-box {
+  min-height: 84px; margin-bottom: 12px; border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.08); background: var(--panel-2, #15181c);
+  display: flex; align-items: center; justify-content: center; padding: 16px 16px 18px;
+}
+.play-side-inner { width: 100%; }
+.play-side-title { font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.4px; color: #d23552; margin-bottom: 5px; }
+.play-side-result { padding: 2px; }
+.play-side-result .betli-hu-result-headline { font-size: 16px; margin-bottom: 2px; }
+.play-side-result .betli-hu-result-sub { font-size: 11px; }
+.play-side-idle { color: var(--muted, #5b636e); font-size: 12px; font-weight: 700;
+  letter-spacing: 1px; opacity: 0.5; }
+
+/* Per-unit kontra picker (combined games) — pill toggles, one per live unit. */
+.play-kontra-units { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.play-kontra-unit {
+  padding: 4px 10px; border-radius: 999px; border: 1px solid var(--border, #333);
+  background: transparent; color: var(--text, #dfe3e8); font-size: 12px; font-weight: 700;
+  cursor: pointer; transition: background 0.12s, border-color 0.12s;
+}
+.play-kontra-unit:hover:not(:disabled) { border-color: #d23552; }
+.play-kontra-unit.is-sel { background: #d23552; border-color: #d23552; color: #fff; }
+.play-kontra-unit:disabled { opacity: 0.5; cursor: default; }
+
+/* ─── Trickster-ported bidding overlays (auction / bid / trump) ─────────────── */
+.ulti-auction-overlay {
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px 24px;
+  margin: 12px auto;
+  max-width: 620px;
+}
+.ulti-auction-title { font-size: 18px; font-weight: 700; margin-bottom: 12px; text-align: center; letter-spacing: 0.5px; }
+.ulti-auction-current { text-align: center; margin-bottom: 12px; font-size: 14px; }
+.ulti-auction-label { color: var(--muted); }
+.ulti-auction-bid-text { color: var(--accent); font-weight: 700; }
+.ulti-auction-holder { color: var(--muted); font-size: 12px; }
+.ulti-auction-history {
+  display: flex; flex-direction: column; gap: 4px; margin-bottom: 16px;
+  padding: 8px 12px; background: rgba(0, 0, 0, 0.2); border-radius: 8px;
+  max-height: 150px; overflow-y: auto;
+}
+.ulti-auction-history-entry { display: flex; gap: 8px; align-items: center; font-size: 13px; }
+.ulti-auction-player { font-weight: 600; min-width: 50px; }
+.ulti-auction-action { padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; }
+.ulti-auction-action.pass { color: var(--muted); }
+.ulti-auction-action.hold { color: #66bb6a; }
+.ulti-auction-action.bid { color: var(--accent); }
+.ulti-auction-action.pickup { color: #42a5f5; }
+
+.ulti-auction-actions { display: flex; flex-direction: column; gap: 10px; }
+.ulti-bid-select-row { display: flex; gap: 10px; align-items: flex-start; justify-content: center; flex-wrap: wrap; }
+.ulti-bid-confirm {
+  padding: 10px 20px; background: var(--accent); color: #fff; border: none;
+  border-radius: 6px; font-weight: 700; cursor: pointer; white-space: nowrap;
+}
+.ulti-bid-confirm:hover:not(:disabled) { filter: brightness(1.15); }
+.ulti-bid-confirm:disabled { opacity: 0.5; cursor: default; }
+.ulti-bid-bottom-row { display: flex; gap: 10px; justify-content: center; margin-top: 8px; }
+.ulti-bid-hold {
+  padding: 8px 20px; background: #2e7d32; color: white; border: none;
+  border-radius: 6px; font-weight: 700; cursor: pointer;
+}
+.ulti-bid-hold:hover:not(:disabled) { background: #388e3c; }
+/* Auction-step buttons: Elfogadom/Passz green, Felveszem yellow (on the right). */
+.ulti-bid-accept {
+  padding: 8px 20px; background: #2e7d32; color: #fff; border: none;
+  border-radius: 6px; font-weight: 700; cursor: pointer;
+}
+.ulti-bid-accept:hover:not(:disabled) { background: #388e3c; }
+.ulti-bid-felvesz {
+  padding: 8px 20px; background: #e0a800; color: #1a1a1a; border: none;
+  border-radius: 6px; font-weight: 700; cursor: pointer;
+}
+.ulti-bid-felvesz:hover:not(:disabled) { background: #f2ba1a; }
+.ulti-bid-accept:disabled, .ulti-bid-felvesz:disabled { opacity: 0.5; cursor: default; }
+.ulti-bid-pass {
+  padding: 8px 20px; background: #424242; color: var(--text); border: none;
+  border-radius: 6px; font-weight: 600; cursor: pointer;
+}
+.ulti-bid-pass:hover:not(:disabled) { background: #616161; }
+.ulti-auction-waiting {
+  text-align: center; color: var(--muted); font-style: italic;
+  margin-top: 12px; font-size: 14px;
+}
+.ulti-bid-phase-info { text-align: center; font-size: 14px; color: var(--muted); margin-bottom: 10px; }
+
+.ulti-trump-buttons { display: flex; gap: 12px; justify-content: center; margin-top: 12px; }
+.ulti-trump-btn {
+  padding: 10px 20px; font-size: 16px; background: var(--panel);
+  border: 1px solid var(--border); color: var(--text); border-radius: 8px;
+  cursor: pointer; transition: background 0.15s, border-color 0.15s;
+}
+.ulti-trump-btn:hover:not(:disabled) { background: #1e2228; border-color: var(--accent); }
+.ulti-trump-symbol { font-size: 20px; }
+.ulti-trump-btn.trump-bells .ulti-trump-symbol { color: #ffd54f; }
+.ulti-trump-btn.trump-leaves .ulti-trump-symbol { color: #66bb6a; }
+.ulti-trump-btn.trump-acorns .ulti-trump-symbol { color: #a1887f; }
+
+/* Persistent declared-marriage badges (during play/kontra/done) */
+.ulti-declared-marriages { display: flex; justify-content: center; gap: 12px; margin: 4px auto 6px; flex-wrap: wrap; }
+.ulti-marriage-badge {
+  display: inline-block; padding: 3px 10px;
+  background: rgba(255, 215, 0, 0.12); border: 1px solid rgba(255, 215, 0, 0.35);
+  border-radius: 6px; color: #ffd54f; font-weight: 600; font-size: 13px;
+}
+
+/* ── Villámtalon (puzzle rush) ─────────────────────────────────────────── */
+.puzzle-rush .puzzle-main {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 16px; padding: 22px 18px; max-width: 860px; margin: 0 auto;
+  justify-content: flex-start;
+}
+.puzzle-card {
+  max-width: 460px; width: 100%; text-align: center;
+  padding: 30px 28px; display: flex; flex-direction: column; align-items: center; gap: 14px;
+}
+.puzzle-card .betli-hu-title { margin: 0; }
+.puzzle-lead { color: var(--muted); font-size: 15px; margin: 0; }
+.puzzle-rules {
+  text-align: left; color: var(--text); line-height: 1.7;
+  margin: 4px 0; padding-left: 20px; font-size: 14px;
+}
+.puzzle-rules b { color: #a78bfa; }
+.puzzle-actions { display: flex; gap: 12px; align-items: center; margin-top: 10px; }
+.puzzle-back { background: transparent; }
+
+/* HUD bar */
+.puzzle-hud {
+  display: flex; align-items: center; gap: 18px; width: 100%; max-width: 760px;
+  padding: 10px 16px; background: var(--panel); border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.puzzle-timer {
+  font-size: 30px; font-weight: 800; font-variant-numeric: tabular-nums;
+  color: var(--text); min-width: 74px;
+}
+.puzzle-timer.is-low { color: var(--bad); animation: puzzle-pulse 1s infinite; }
+@keyframes puzzle-pulse { 50% { opacity: 0.5; } }
+.puzzle-score { display: flex; flex-direction: column; line-height: 1.05; }
+.puzzle-score b { font-size: 24px; color: var(--accent); font-variant-numeric: tabular-nums; }
+.puzzle-score span { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+.puzzle-combo { font-size: 17px; font-weight: 700; color: #f59e0b; }
+.puzzle-spacer { flex: 1; }
+.puzzle-solved { color: var(--muted); font-size: 13px; }
+.puzzle-quit { background: transparent; }
+
+/* stage */
+.puzzle-stage {
+  width: 100%; max-width: 760px; position: relative;
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: 26px 18px 30px; min-height: 340px; justify-content: center;
+}
+.puzzle-prompt { font-size: 27px; font-weight: 700; text-align: center; }
+.puzzle-prompt-lead { color: var(--muted); font-weight: 500; }
+.puzzle-contract { color: var(--text); text-transform: capitalize; }
+.puzzle-adu { color: var(--muted); font-size: 21px; font-weight: 500; }
+.puzzle-instruction { color: var(--muted); font-size: 13px; margin-bottom: 10px; }
+.puzzle-hand { margin-top: 6px; }
+
+/* flash feedback (fades via JS timeout) */
+.puzzle-flash {
+  position: absolute; top: 10px; right: 14px;
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 14px; border-radius: 12px; background: var(--panel-2);
+  border: 1px solid var(--border); animation: puzzle-flash-in 0.2s ease;
+}
+.puzzle-flash.is-perfect { border-color: var(--good); }
+.puzzle-flash.is-good    { border-color: #f59e0b; }
+.puzzle-flash.is-miss    { border-color: var(--bad); }
+.puzzle-flash-points { font-size: 22px; font-weight: 800; color: var(--good); }
+.puzzle-flash.is-miss .puzzle-flash-points { color: var(--muted); }
+.puzzle-flash-msg { display: flex; flex-direction: column; gap: 3px; font-size: 13px; color: var(--text); }
+.puzzle-flash-opt { display: flex; gap: 4px; }
+@keyframes puzzle-flash-in { from { transform: translateY(-6px); opacity: 0; } to { transform: none; opacity: 1; } }
+
+.puzzle-chip {
+  display: inline-flex; align-items: center; gap: 2px; padding: 1px 5px;
+  border-radius: 5px; background: rgba(255, 255, 255, 0.06); font-size: 13px; font-weight: 700;
+}
+.puzzle-chip-rank { color: var(--text); }
+
+/* final screen */
+.puzzle-final-score { font-size: 62px; font-weight: 800; color: var(--accent); line-height: 1; }
+.puzzle-final-label { color: var(--muted); text-transform: uppercase; letter-spacing: 0.09em; font-size: 12px; margin-top: -2px; }
+.puzzle-final-stats { display: flex; gap: 22px; color: var(--muted); font-size: 14px; margin-top: 6px; }
+.puzzle-final-stats b { color: var(--text); }
