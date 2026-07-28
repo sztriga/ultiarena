@@ -1,0 +1,45 @@
+10 deals: α=0.0 n=2, α=0.3 n=2, α=0.5 n=2, α=0.7 n=2, α=1.0 n=2
+
+Correctness check (max-value across orderings must match per deal):
+  ✅ α=0.0 seed=42: def=10.00 pts_first=10.00 winner=10.00
+  ✅ α=0.0 seed=43: def=40.00 pts_first=40.00 winner=40.00
+  ✅ α=0.3 seed=3042: def=80.00 pts_first=80.00 winner=80.00
+  ✅ α=0.3 seed=3043: def=30.00 pts_first=30.00 winner=30.00
+  ✅ α=0.5 seed=5042: def=70.00 pts_first=70.00 winner=70.00
+  ✅ α=0.5 seed=5043: def=40.00 pts_first=40.00 winner=40.00
+  ✅ α=0.7 seed=7042: def=70.00 pts_first=70.00 winner=70.00
+  ✅ α=0.7 seed=7043: def=30.00 pts_first=30.00 winner=30.00
+  ✅ α=1.0 seed=10042: def=70.00 pts_first=70.00 winner=70.00
+  ✅ α=1.0 seed=10043: def=30.00 pts_first=30.00 winner=30.00
+
+Per-deal wall time (s):
+     α    seed          default       pts_first winner_strength
+   0.0      42            0.017           0.014           0.017
+   0.0      43            0.075           0.058           0.073
+   0.3    3042            0.011           0.006           0.012
+   0.3    3043            0.052           0.030           0.054
+   0.5    5042            0.014           0.014           0.014
+   0.5    5043            0.014           0.010           0.014
+   0.7    7042            0.009           0.005           0.009
+   0.7    7043            0.029           0.018           0.030
+   1.0   10042           16.862           5.453          17.145
+   1.0   10043            0.417           0.193           0.416
+
+Per-deal nodes explored (lower = better):
+     α    seed          default       pts_first winner_strength
+   0.0      42          273,943         221,893         273,943
+   0.0      43        1,369,774       1,052,320       1,369,774
+   0.3    3042          178,789          58,161         178,789
+   0.3    3043        1,176,415         621,315       1,176,415
+   0.5    5042          228,287         237,208         228,287
+   0.5    5043          190,476         124,552         190,476
+   0.7    7042           93,890          40,518          93,890
+   0.7    7043          621,565         321,458         621,565
+   1.0   10042      486,434,792     164,427,912     486,434,792
+   1.0   10043        9,927,686       4,552,099       9,927,686
+
+Aggregate (sum across all 10 deals):
+              ordering      wall (s)             nodes    speedup vs default
+               default        17.500       500,495,617                 1.00x
+             pts_first         5.802       171,657,436                 3.02x
+       winner_strength        17.783       500,495,617                 0.98x
