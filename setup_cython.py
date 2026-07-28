@@ -28,13 +28,16 @@ extensions = [
         sources=["snapszer/trickster/games/snapszer/_fast_minimax.pyx"],
     ),
 ]
-package_dir = {"": "snapszer"}
+# per-package dirs: snapszer's `trickster` lives under snapszer/, `ultisolver` at repo root
+package_dir = {"trickster": "snapszer/trickster"}
 packages = ["trickster", "trickster.games.snapszer"]
 
 # The decoupled Ulti solver core (Stage 2+). Guarded so the snapszer build works before it lands.
 if os.path.exists("ultisolver/_solver_core.pyx"):
     extensions.append(Extension(name="ultisolver._solver_core",
                                 sources=["ultisolver/_solver_core.pyx"]))
+    package_dir["ultisolver"] = "ultisolver"
+    packages += ["ultisolver", "ultisolver.games", "ultisolver.games.ulti"]
 
 setup(
     name="trickster-cython-ext",
