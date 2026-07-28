@@ -27,6 +27,7 @@ from trickster.bidding.constants import BID_TEMP_END, BID_TEMP_START, MIN_BID_PT
 from trickster.games.ulti.adapter import UltiGame
 from trickster.hybrid import SOLVER_ENGINE
 from trickster.train_utils import _GAME_PTS_MAX
+from trickster.bidding.talon_prior import TalonPrior
 from trickster.training.bidding_loop import (
     BiddingTrainConfig,
     DISPLAY_ORDER,
@@ -157,11 +158,37 @@ def train_tier(tier_name: str, args) -> None:
         print("  Opponent pool: none (pure self-play)")
     print()
 
+    # ── Hand evaluators (specialized per-contract NNs) ──
+    hand_evaluators = None
+    if args.betli_eval:
+        from trickster.betli.hand_evaluator import BetliHandEvaluator
+        from trickster.betli.model import BetliNet, load_model as load_betli
+        if args.betli_eval == "new":
+            betli_net = BetliNet()
+            print("  BetliNet: fresh weights (online training enabled)")
+        else:
+            betli_net = load_betli(args.betli_eval)
+            print(f"  BetliNet: loaded from {args.betli_eval}")
+        hand_evaluators = {
+            "betli": BetliHandEvaluator(betli_net, device=resolved_device),
+        }
+
+    # ── Talon prior (load from warm-start source if available) ──
+    tp = None
+    if args.from_model:
+        tp_path = Path(f"models/ulti/{args.from_model}/final/talon_prior.pkl")
+        if tp_path.exists():
+            tp = TalonPrior.load(tp_path)
+            print(f"  Talon prior loaded from {tp_path} "
+                  f"({len(tp.contract_keys)} contracts)")
+
     progress_fn = (bidding_progress_verbose if args.verbose else bidding_progress_bar)(cfg)
     slots, final_stats = train_with_bidding(
         cfg,
         initial_nets=initial_nets,
         on_progress=progress_fn,
+        hand_evaluators=hand_evaluators,
+        talon_prior=tp,
     )
 
     # Save
@@ -183,6 +210,24 @@ def train_tier(tier_name: str, args) -> None:
             "total_samples": slot.samples,
             "total_sgd_steps": slot.sgd_steps,
         }, out_dir / "model.pt")
+
+    # Save talon prior
+    if final_stats._talon_prior is not None:
+        tp_save = save_base / "talon_prior.pkl"
+        final_stats._talon_prior.save(tp_save)
+        tp_info = ", ".join(
+            f"{k}: {final_stats._talon_prior.sample_count(k)}"
+            for k in final_stats._talon_prior.contract_keys
+        )
+        print(f"  Talon prior saved to {tp_save} ({tp_info})")
+
+    # Save BetliNet if trained
+    if hand_evaluators and "betli" in hand_evaluators:
+        from trickster.betli.model import save_model as save_betli
+        betli_path = save_base / "betli_eval.pt"
+        save_betli(hand_evaluators["betli"].net, betli_path)
+        print(f"  BetliNet saved to {betli_path} "
+              f"(buffer: {hand_evaluators['betli'].buffer_size} samples)")
 
     # Final Summary
     elapsed = time.perf_counter() - t0
@@ -243,6 +288,11 @@ def main() -> None:
     parser.add_argument(
         "--pool-frac", type=float, default=0.5,
         help="Fraction of games played vs pool opponents (default 0.5)",
+    )
+    parser.add_argument(
+        "--betli-eval", type=str, default=None, metavar="PATH",
+        help="Use specialized BetliNet for betli hand evaluation + online training. "
+             "Pass a model path to warm-start, or 'new' for fresh weights.",
     )
     args = parser.parse_args()
 

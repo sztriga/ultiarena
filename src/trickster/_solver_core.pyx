@@ -423,6 +423,28 @@ cdef void _legal(CState* s, Moves* m) noexcept nogil:
                     m.c[j] = m.c[j + 1]
                 break
 
+    # Betli soloist: only keep highest-strength card per suit (dominant)
+    cdef int best_str[4]
+    cdef int best_card[4]
+    cdef int si, bs, k
+    if s.betli and p == s.soloist and n > 1:
+        for si in range(4):
+            best_str[si] = -1
+            best_card[si] = -1
+        for i in range(n):
+            si = _suit(m.c[i])
+            bs = _str_b(m.c[i])
+            if bs > best_str[si]:
+                best_str[si] = bs
+                best_card[si] = m.c[i]
+        # Compact: write saved card IDs back
+        k = 0
+        for si in range(4):
+            if best_card[si] >= 0:
+                m.c[k] = best_card[si]
+                k += 1
+        n = k
+
     m.n = n
 
 # ===========================================================================
@@ -754,6 +776,8 @@ cdef CState _to_cs(object gs):
 
 def _detect_contract(gs):
     """Auto-detect contract type from GameState flags."""
+    if getattr(gs, 'training_mode', None) == "durchmars":
+        return "durchmars"
     if gs.betli:
         return "betli"
     if getattr(gs, 'has_ulti', False):

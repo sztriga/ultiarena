@@ -56,6 +56,7 @@ from trickster.training.bidding_loop import (
 )
 from trickster.training.model_io import (
     DK_LABELS,
+    load_talon_prior,
     load_wrappers,
     list_available_sources,
 )
@@ -165,6 +166,9 @@ def _play_one_deal(
     pass_penalty: float,
     min_bid_pts: float,
     seat_cfr: list[CFRStrategy | None] | None = None,
+    hand_evaluators: dict | None = None,
+    pickup_thresholds: dict[str, float] | None = None,
+    talon_prior: object | None = None,
 ) -> DealResult:
     rng = random.Random(seed)
     dealer = deal_index % 3
@@ -179,6 +183,9 @@ def _play_one_deal(
         rng=rng,
         bidding_strategy=bidding_strategy,
         cfr_strategies=seat_cfr,
+        hand_evaluators=hand_evaluators,
+        pickup_thresholds=pickup_thresholds,
+        talon_prior=talon_prior,
     )
     soloist = auction_result.soloist
     bid = auction_result.bid
@@ -266,14 +273,33 @@ _TW_GAME: UltiGame | None = None
 _TW_ALL_WRAPPERS: dict[str, dict[str, UltiNetWrapper]] = {}
 _TW_ALL_PRESETS: dict[str, SearchPreset] = {}
 _TW_ALL_CFR: dict[str, CFRStrategy | None] = {}
+_TW_HAND_EVALUATORS: dict | None = None
+_TW_PICKUP_THRESHOLDS: dict[str, float] | None = None
+_TW_ALL_TALON_PRIORS: dict[str, object] = {}
+
+
+def _load_hand_evaluators() -> dict | None:
+    """Auto-detect and load BetliNet from model folders."""
+    from pathlib import Path as _P
+    from trickster.betli.hand_evaluator import BetliHandEvaluator
+    from trickster.betli.model import BetliNet, load_model as load_betli
+    # Look for betli_hand_eval.pt in any loaded model's betli folder
+    for src in _TW_ALL_WRAPPERS:
+        p = _P(f"models/ulti/{src}/final/betli/betli_hand_eval.pt")
+        if p.exists():
+            net = load_betli(p)
+            return {"betli": BetliHandEvaluator(net)}
+    return None
 
 
 def _init_worker(
     model_sources: list[str],
     model_presets_raw: dict[str, tuple],
     cfr_paths: dict[str, str | None] | None = None,
+    pickup_thresholds: dict[str, float] | None = None,
 ) -> None:
     global _TW_GAME, _TW_ALL_WRAPPERS, _TW_ALL_PRESETS, _TW_ALL_CFR
+    global _TW_HAND_EVALUATORS, _TW_PICKUP_THRESHOLDS, _TW_ALL_TALON_PRIORS
     _TW_GAME = UltiGame()
     _TW_ALL_WRAPPERS = {src: load_wrappers(src) for src in model_sources}
     _TW_ALL_PRESETS = {src: SearchPreset(*t) for src, t in model_presets_raw.items()}
@@ -284,6 +310,13 @@ def _init_worker(
                 _TW_ALL_CFR[src] = load_cfr_strategy(path)
             else:
                 _TW_ALL_CFR[src] = None
+    _TW_HAND_EVALUATORS = _load_hand_evaluators()
+    _TW_PICKUP_THRESHOLDS = pickup_thresholds
+    _TW_ALL_TALON_PRIORS = {}
+    for src in model_sources:
+        tp = load_talon_prior(src)
+        if tp is not None:
+            _TW_ALL_TALON_PRIORS[src] = tp
 
 
 def _worker_fn(args: tuple) -> DealResult:
@@ -291,10 +324,19 @@ def _worker_fn(args: tuple) -> DealResult:
     seat_wrappers = [_TW_ALL_WRAPPERS[m] for m in seat_models]
     seat_presets = [_TW_ALL_PRESETS[m] for m in seat_models]
     seat_cfr = [_TW_ALL_CFR.get(m) for m in seat_models] if _TW_ALL_CFR else None
+    # Use any available talon prior (first match among seat models)
+    tp = None
+    for m in seat_models:
+        tp = _TW_ALL_TALON_PRIORS.get(m)
+        if tp is not None:
+            break
     return _play_one_deal(
         _TW_GAME, seat_wrappers, seat_presets, seat_models,
         seed, deal_index, pass_penalty, min_bid_pts,
         seat_cfr=seat_cfr,
+        hand_evaluators=_TW_HAND_EVALUATORS,
+        pickup_thresholds=_TW_PICKUP_THRESHOLDS,
+        talon_prior=tp,
     )
 
 
@@ -543,6 +585,11 @@ def main() -> None:
         "--cfr-path", type=str, default=None,
         help="Path to CFR strategy file (default: models/ulti/<source>/cfr_strategy.pkl)",
     )
+    parser.add_argument(
+        "--pickup-thresholds", nargs="*", default=None, metavar="KEY=VAL",
+        help="Per-contract pickup thresholds (e.g. --pickup-thresholds betli=0.5). "
+             "Quantile game_pts must exceed the threshold for that contract.",
+    )
     args = parser.parse_args()
 
     # Parse entrants (support model:speed:bidding syntax)
@@ -651,6 +698,15 @@ def main() -> None:
             sp = SPEEDS[args.speed]
             model_presets_raw[m] = (sp.sims, sp.dets, sp.pimc_dets, sp.endgame_tricks)
 
+    # Parse pickup thresholds (e.g. --pickup-thresholds betli=0.5)
+    pickup_thresholds: dict[str, float] | None = None
+    if args.pickup_thresholds:
+        pickup_thresholds = {}
+        for item in args.pickup_thresholds:
+            key, val = item.split("=")
+            pickup_thresholds[key] = float(val)
+        print(f"  Pickup thresholds: {pickup_thresholds}")
+
     results: list[DealResult] = []
     t0 = time.perf_counter()
 
@@ -659,7 +715,7 @@ def main() -> None:
         with ProcessPoolExecutor(
             max_workers=args.workers,
             initializer=_init_worker,
-            initargs=(unique, model_presets_raw, cfr_paths),
+            initargs=(unique, model_presets_raw, cfr_paths, pickup_thresholds),
         ) as pool:
             for i, result in enumerate(pool.map(_worker_fn, work_args, chunksize=4), 1):
                 results.append(result)
@@ -689,6 +745,19 @@ def main() -> None:
                     all_cfr[src] = None
             else:
                 all_cfr[src] = None
+
+        # Auto-detect BetliNet hand evaluator
+        hand_evaluators = None
+        from pathlib import Path as _P2
+        for src in unique:
+            p = _P2(f"models/ulti/{src}/final/betli/betli_hand_eval.pt")
+            if p.exists():
+                from trickster.betli.hand_evaluator import BetliHandEvaluator
+                from trickster.betli.model import load_model as load_betli
+                net = load_betli(p)
+                hand_evaluators = {"betli": BetliHandEvaluator(net)}
+                print(f"    BetliNet: loaded from {p}")
+                break
         print()
 
         for i, wa in enumerate(work_args, 1):
@@ -700,6 +769,8 @@ def main() -> None:
                 game, seat_wrappers, seat_presets, seat_models,
                 wa[1], wa[2], args.pass_penalty, args.min_bid_pts,
                 seat_cfr=seat_cfr,
+                hand_evaluators=hand_evaluators,
+                pickup_thresholds=pickup_thresholds,
             )
             results.append(result)
             if i % 20 == 0 or i == total_deals:

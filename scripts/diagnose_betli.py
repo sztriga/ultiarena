@@ -61,7 +61,7 @@ from trickster.games.ulti.rewards import simple_outcome
 from trickster.hybrid import HybridPlayer
 from trickster.mcts import MCTSConfig
 from trickster.model import UltiNetWrapper
-from trickster.training.model_io import load_wrappers
+from trickster.training.model_io import load_talon_prior, load_wrappers
 
 
 # ---------------------------------------------------------------------------
@@ -191,6 +191,7 @@ def run_auction_test(
     search: SearchPreset,
     n_deals: int,
     seed: int,
+    talon_prior: object | None = None,
 ) -> tuple[list[AuctionBetliResult], dict]:
     """Run N deals through the auction, collect betli outcomes."""
 
@@ -212,6 +213,7 @@ def run_auction_test(
             min_bid_pts=MIN_BID_PTS,
             pickup_quantile=0.5,
             rng=rng,
+            talon_prior=talon_prior,
         )
 
         if result.bid is None:
@@ -589,8 +591,10 @@ def main():
 
     # Test 1: Auction
     print(f"  Running auction test ({args.deals} deals)...")
+    tp = load_talon_prior(args.model)
     betli_results, summary = run_auction_test(
         game, wrappers, search, args.deals, args.seed,
+        talon_prior=tp,
     )
     t1 = time.perf_counter()
     print_auction_report(betli_results, summary)

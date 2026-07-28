@@ -20,11 +20,14 @@ class ContractDef:
     model_dir: str        # subdirectory under models/ (e.g. "parti")
     display_name: str     # human-readable, e.g. "Parti", "40-100"
     is_betli: bool = False  # betli has special rules (no trump, pick up talon)
+    is_durchmars: bool = False  # durchmars: colorless, win all 10 tricks
     piros_only: bool = False  # can only be played as piros (Hearts trump)
 
     @property
     def components(self) -> frozenset[str]:
         """Win-condition component set for this contract."""
+        if self.is_durchmars:
+            return frozenset({"durchmars"})
         if self.is_betli:
             return frozenset({"betli"})
         comps: set[str] = {"parti"}
@@ -77,9 +80,16 @@ CONTRACT_DEFS: dict[str, ContractDef] = {
         display_name="Betli",
         is_betli=True,
     ),
+    "durchmars": ContractDef(
+        key="durchmars",
+        training_mode="durchmars",
+        model_dir="durchmars",
+        display_name="Duri",
+        is_betli=True,
+        is_durchmars=True,
+    ),
     # Future:
     # "20-100": ContractDef(key="20-100", training_mode="20-100", ...),
-    # "durchmars": ContractDef(key="durchmars", training_mode="durchmars", ...),
 }
 
 
@@ -97,6 +107,7 @@ BID_TO_CONTRACT: dict[int, tuple[str, bool]] = {
     3:  ("40-100", False),   # 40-100
     4:  ("ulti",   False),   # Ulti
     5:  ("betli",  False),   # Betli
+    6:  ("durchmars", False),  # Durchmars (Duri)
     8:  ("40-100", True),    # Piros 40-100
     10: ("ulti",   True),    # Piros ulti
     11: ("betli",  True),    # Piros betli / Rebetli (10/10 pts)

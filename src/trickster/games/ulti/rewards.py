@@ -51,7 +51,18 @@ def simple_outcome(state: UltiNode, player: int) -> float:
     kontras = state.component_kontras
     piros_mult = 2.0 if state.is_red else 1.0
 
-    # ── Betli: binary win/loss (0 tricks = win) ────────────────────
+    # ── Standalone Durchmars (Duri): binary, 6 pts per defender ───
+    if "durchmars" in comps and gs.betli:
+        soloist_wins = soloist_won_durchmars(gs)
+        k = kontras.get("durchmars", 0)
+        mult = 2 ** k
+        raw_per_def = (6.0 if soloist_wins else -6.0) * mult
+        if player == gs.soloist:
+            return (raw_per_def * 2) / _GAME_PTS_MAX
+        else:
+            return -raw_per_def / _GAME_PTS_MAX
+
+    # ── Betli: binary win/loss ─────────────────────────────────────
     if gs.betli:
         soloist_wins = not soloist_lost_betli(gs)
         k = kontras.get("betli", 0)
@@ -135,6 +146,37 @@ def simple_outcome(state: UltiNode, player: int) -> float:
     return raw / _GAME_PTS_MAX
 
 
+def shaped_outcome(state: UltiNode, player: int) -> float:
+    """Like ``simple_outcome`` but with shaped betli loss reward for training.
+
+    For betli losses, gives partial credit based on tricks survived so the
+    value head gets gradient signal.  All non-betli contracts are identical
+    to ``simple_outcome``.
+    """
+    gs = state.gs
+    if not gs.betli or "durchmars" in (state.contract_components or frozenset()):
+        return simple_outcome(state, player)
+
+    from trickster.games.ulti.game import TRICKS_PER_GAME, soloist_tricks
+    soloist_wins = not soloist_lost_betli(gs)
+    kontras = state.component_kontras
+    k = kontras.get("betli", 0)
+    mult = 2 ** k
+    piros_mult = 2.0 if state.is_red else 1.0
+
+    if soloist_wins:
+        raw_per_def = 5.0 * mult * piros_mult
+    else:
+        survived = gs.trick_no - soloist_tricks(gs)
+        survived_frac = survived / TRICKS_PER_GAME
+        raw_per_def = -5.0 * (1.0 - 0.9 * survived_frac) * mult * piros_mult
+
+    if player == gs.soloist:
+        return (raw_per_def * 2) / _GAME_PTS_MAX
+    else:
+        return -raw_per_def / _GAME_PTS_MAX
+
+
 def solver_value_to_reward(
     solver_val: float,
     player: int,
@@ -149,7 +191,9 @@ def solver_value_to_reward(
     This function normalises the solver value to the same scale
     as ``simple_outcome`` (using _GAME_PTS_MAX).
     """
-    if gs.betli:
+    if gs.training_mode == "durchmars":
+        advantage = (solver_val - 5.0) / 5.0
+    elif gs.betli:
         advantage = (solver_val - 5.0) / 5.0
     else:
         advantage = (solver_val - 45.0) / 45.0

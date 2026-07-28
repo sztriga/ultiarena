@@ -32,7 +32,6 @@ class UltiNetWrapper:
     Auction phase:
       - ``predict_auction(state_feats) → np.ndarray`` (legacy 5 probs)
       - ``predict_auction_components(state_feats) → (trump_probs, flag_probs)``
-      - ``batch_bid_value(state_batch) → np.ndarray``
     """
 
     # Index of the is_soloist flag in encoded state features
@@ -118,14 +117,6 @@ class UltiNetWrapper:
             log_probs, values = self.net.forward_dual(x, m, is_sol)
             probs = log_probs.exp()
         return values.cpu().numpy(), probs.cpu().numpy()
-
-    def batch_bid_value(self, states: np.ndarray) -> np.ndarray:
-        """Evaluate the dedicated bid value head on a batch of states."""
-        self.net.eval()
-        with torch.inference_mode():
-            x = torch.from_numpy(states).float().to(self.device)
-            values = self.net.forward_bid_value(x)
-        return values.cpu().numpy()
 
     def batch_value_soloist(self, states: np.ndarray) -> np.ndarray:
         """Evaluate the soloist value head on a batch of states."""

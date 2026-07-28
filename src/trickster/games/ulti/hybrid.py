@@ -44,11 +44,11 @@ except ImportError:
 def _detect_contract(state: UltiNode) -> str:
     """Infer the contract type from UltiNode metadata."""
     gs = state.gs
+    if gs.training_mode == "durchmars":
+        return "durchmars"
     if gs.betli:
         return "betli"
     comps = state.contract_components or frozenset()
-    if "durchmars" in comps:
-        return "durchmars"
     if "ulti" in comps:
         return "parti_ulti"
     return "parti"

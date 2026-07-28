@@ -55,6 +55,7 @@ from trickster.training.bidding_loop import (
 )
 from trickster.training.model_io import (
     DK_LABELS,
+    load_talon_prior,
     load_wrappers,
 )
 
@@ -166,6 +167,7 @@ def _play_one_deal(
     deal_index: int,
     pass_penalty: float,
     min_bid_pts: float,
+    talon_prior: object | None = None,
 ) -> DealResult:
     rng = random.Random(seed)
     dealer = deal_index % 3
@@ -179,6 +181,7 @@ def _play_one_deal(
         gs, talon, dealer, seat_wrappers,
         min_bid_pts=min_bid_pts,
         pickup_quantile=seat_quantiles,
+        talon_prior=talon_prior,
     )
     soloist = auction_result.soloist
     bid = auction_result.bid
@@ -264,13 +267,15 @@ def _play_one_deal(
 _TW_GAME: UltiGame | None = None
 _TW_WRAPPERS: dict[str, UltiNetWrapper] = {}
 _TW_PRESET: SearchPreset | None = None
+_TW_TALON_PRIOR: object | None = None
 
 
 def _init_worker(model_source: str, preset_raw: tuple) -> None:
-    global _TW_GAME, _TW_WRAPPERS, _TW_PRESET
+    global _TW_GAME, _TW_WRAPPERS, _TW_PRESET, _TW_TALON_PRIOR
     _TW_GAME = UltiGame()
     _TW_WRAPPERS = load_wrappers(model_source)
     _TW_PRESET = SearchPreset(*preset_raw)
+    _TW_TALON_PRIOR = load_talon_prior(model_source)
 
 
 def _worker_fn(args: tuple) -> DealResult:
@@ -280,6 +285,7 @@ def _worker_fn(args: tuple) -> DealResult:
         _TW_GAME, _TW_WRAPPERS, _TW_PRESET,
         seat_preset_names, seat_quantiles,
         seed, deal_index, pass_penalty, min_bid_pts,
+        talon_prior=_TW_TALON_PRIOR,
     )
 
 

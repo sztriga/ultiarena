@@ -126,6 +126,8 @@ def main():
     print(f"  Loaded: {list(wrappers.keys())}")
 
     from trickster.bidding.auction_runner import run_auction
+    from trickster.training.model_io import load_talon_prior
+    _tp = load_talon_prior("trinity")
 
     base_seed = int(sys.argv[1]) if len(sys.argv) > 1 else 42
     max_betli = int(sys.argv[2]) if len(sys.argv) > 2 else 15
@@ -145,6 +147,7 @@ def main():
             gs_auction, talon, dealer, seat_wrappers,
             pickup_quantile=0.5,
             rng=random.Random(seed),
+            talon_prior=_tp,
         )
         if result.bid is None or result.bid.contract_key != "betli":
             continue

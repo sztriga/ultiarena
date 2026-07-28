@@ -14,10 +14,9 @@ C(12,2)=66 discard pairs with zero deepcopy overhead.
 """
 from __future__ import annotations
 
-import copy
 from dataclasses import dataclass
 from itertools import combinations
-from typing import Sequence
+from typing import Protocol, Sequence, runtime_checkable
 
 import numpy as np
 
@@ -64,6 +63,36 @@ class ContractEval:
 
 
 # ---------------------------------------------------------------------------
+#  Hand evaluator protocol
+# ---------------------------------------------------------------------------
+
+
+@runtime_checkable
+class HandEvaluator(Protocol):
+    """Contract-specific hand evaluator.
+
+    Implementations replace the default UltiNet-based evaluation for
+    a specific contract.  Used by ``evaluate_all_contracts`` when a
+    specialized evaluator is registered for a contract key.
+    """
+
+    def evaluate_contract(
+        self,
+        gs: GameState,
+        soloist: int,
+        dealer: int,
+        contract_def: ContractDef,
+        trump: Suit | None,
+        is_piros: bool,
+    ) -> ContractEval | None:
+        """Evaluate a 12-card hand for a single contract + trump.
+
+        Returns None if the contract is infeasible.
+        """
+        ...
+
+
+# ---------------------------------------------------------------------------
 #  Setup helpers
 # ---------------------------------------------------------------------------
 
@@ -87,7 +116,7 @@ def _make_eval_state(
     Creates a deep copy of *gs*, applies discard + contract + marriages,
     and wraps in a UltiNode with the right metadata.
     """
-    gs2 = copy.deepcopy(gs)
+    gs2 = gs.clone()
     gs2.soloist = soloist
 
     # Discard
@@ -302,10 +331,12 @@ def evaluate_all_contracts(
     wrappers: dict[str, UltiNetWrapper],
     *,
     min_bid_rank: int = 0,
+    hand_evaluators: dict[str, HandEvaluator] | None = None,
 ) -> list[ContractEval]:
     """Evaluate all feasible contracts for the soloist's 12-card hand.
 
-    Each contract × trump variant evaluates all C(12,2)=66 discard pairs.
+    Each contract × trump variant evaluates all C(12,2)=66 discard pairs
+    (or fewer when a specialized :class:`HandEvaluator` is registered).
 
     Parameters
     ----------
@@ -317,6 +348,9 @@ def evaluate_all_contracts(
         Skip contracts whose bid rank is at or below this value.
         Used by ``evaluate_pickup`` to avoid evaluating contracts
         that cannot legally overbid the current bid.
+    hand_evaluators : optional dict of contract_key → HandEvaluator
+        When a HandEvaluator is registered for a contract key, it is
+        used instead of the default UltiNet-based evaluation.
 
     Returns
     -------
@@ -325,9 +359,11 @@ def evaluate_all_contracts(
     hand = gs.hands[soloist]
     suits_in_hand = list(set(c.suit for c in hand))
     results: list[ContractEval] = []
+    _he = hand_evaluators or {}
 
     for contract_key, wrapper in wrappers.items():
         cdef = CONTRACT_DEFS[contract_key]
+        he = _he.get(contract_key)
 
         if cdef.is_betli:
             for is_piros in (False, True):
@@ -335,11 +371,17 @@ def evaluate_all_contracts(
                     rank = CONTRACT_TO_BID_RANK.get((contract_key, is_piros))
                     if rank is None or rank <= min_bid_rank:
                         continue
-                ev = evaluate_contract(
-                    gs, soloist, dealer, cdef,
-                    trump=None, is_piros=is_piros,
-                    wrapper=wrapper,
-                )
+                if he is not None:
+                    ev = he.evaluate_contract(
+                        gs, soloist, dealer, cdef,
+                        trump=None, is_piros=is_piros,
+                    )
+                else:
+                    ev = evaluate_contract(
+                        gs, soloist, dealer, cdef,
+                        trump=None, is_piros=is_piros,
+                        wrapper=wrapper,
+                    )
                 if ev is not None:
                     results.append(ev)
         elif cdef.piros_only:
@@ -347,11 +389,17 @@ def evaluate_all_contracts(
                 rank = CONTRACT_TO_BID_RANK.get((contract_key, True))
                 if rank is None or rank <= min_bid_rank:
                     continue
-            ev = evaluate_contract(
-                gs, soloist, dealer, cdef,
-                trump=Suit.HEARTS, is_piros=True,
-                wrapper=wrapper,
-            )
+            if he is not None:
+                ev = he.evaluate_contract(
+                    gs, soloist, dealer, cdef,
+                    trump=Suit.HEARTS, is_piros=True,
+                )
+            else:
+                ev = evaluate_contract(
+                    gs, soloist, dealer, cdef,
+                    trump=Suit.HEARTS, is_piros=True,
+                    wrapper=wrapper,
+                )
             if ev is not None:
                 results.append(ev)
         else:
@@ -361,11 +409,17 @@ def evaluate_all_contracts(
                     rank = CONTRACT_TO_BID_RANK.get((contract_key, is_piros))
                     if rank is None or rank <= min_bid_rank:
                         continue
-                ev = evaluate_contract(
-                    gs, soloist, dealer, cdef,
-                    trump=suit, is_piros=is_piros,
-                    wrapper=wrapper,
-                )
+                if he is not None:
+                    ev = he.evaluate_contract(
+                        gs, soloist, dealer, cdef,
+                        trump=suit, is_piros=is_piros,
+                    )
+                else:
+                    ev = evaluate_contract(
+                        gs, soloist, dealer, cdef,
+                        trump=suit, is_piros=is_piros,
+                        wrapper=wrapper,
+                    )
                 if ev is not None:
                     results.append(ev)
 

@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 #
-# Training pipeline: rook → morpheus + tournament.
+# Training pipeline: bishop → trinity + tournament.
 #
-# Rook (512×6) trains from scratch, morpheus warm-starts from rook.
+# Bishop (384×4) trains from scratch, trinity warm-starts from bishop.
 #
 # Usage:
 #   ./scripts/train_pipeline.sh              # default 6 workers
@@ -17,26 +17,26 @@ TOURNEY_GAMES="${GAMES:-500}"
 echo ""
 echo "╔══════════════════════════════════════════════════════════════╗"
 echo "║  ULTI TRAINING PIPELINE                                     ║"
-echo "║  rook → morpheus + tournament                               ║"
+echo "║  bishop → trinity + tournament                              ║"
 echo "║  Workers: $WORKERS                                              ║"
 echo "╚══════════════════════════════════════════════════════════════╝"
 echo ""
 
-# ── 1. Rook: 512×6 net, from scratch ──
-echo "━━━ Stage 1/2: rook (from scratch) ━━━"
-python3 scripts/train_e2e.py rook \
+# ── 1. Bishop: 384×4 net, from scratch ──
+echo "━━━ Stage 1/2: bishop (from scratch) ━━━"
+python3 scripts/train_e2e.py bishop \
     --workers "$WORKERS"
 
-# ── 2. Morpheus: warm-start from rook ──
-echo "━━━ Stage 2/2: morpheus (from rook) ━━━"
-python3 scripts/train_e2e.py morpheus \
-    --from rook \
+# ── 2. Trinity: warm-start from bishop ──
+echo "━━━ Stage 2/2: trinity (from bishop) ━━━"
+python3 scripts/train_e2e.py trinity \
+    --from bishop \
     --workers "$WORKERS"
 
 # ── Tournament ──
 echo ""
 echo "━━━ TOURNAMENT ━━━"
-python3 scripts/tournament.py trinity rook morpheus random \
+python3 scripts/tournament.py bishop trinity random \
     --games "$TOURNEY_GAMES" \
     --workers "$WORKERS"
 

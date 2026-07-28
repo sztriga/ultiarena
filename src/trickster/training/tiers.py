@@ -26,6 +26,7 @@ CONTRACTS: dict[str, ContractSpec] = {
     "ulti": ContractSpec("ULTI", "ulti"),
     "40-100": ContractSpec("40-100", "40-100"),
     "betli": ContractSpec("BETLI", "betli"),
+    "durchmars": ContractSpec("DURI", "durchmars"),
 }
 
 CONTRACT_KEYS = list(CONTRACTS.keys())

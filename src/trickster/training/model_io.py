@@ -58,7 +58,7 @@ def auto_device(
 #  Path conventions
 # ---------------------------------------------------------------------------
 
-_CONTRACT_KEYS = ["parti", "ulti", "40-100", "betli"]
+_CONTRACT_KEYS = ["parti", "ulti", "40-100", "betli", "durchmars"]
 
 _ULTI_ROOT = Path("models/ulti")
 
@@ -115,8 +115,20 @@ def load_net(model_dir: str | Path, device: str = "cpu") -> UltiNet | None:
         body_layers=cp.get("body_layers", 4),
         action_dim=cp.get("action_dim", game.action_space_size),
     )
-    net.load_state_dict(cp["model_state_dict"])
+    state_dict = cp["model_state_dict"]
+    # Drop removed bid_value_fc keys from old checkpoints
+    state_dict = {k: v for k, v in state_dict.items() if not k.startswith("bid_value_fc.")}
+    net.load_state_dict(state_dict)
     return net
+
+
+def load_talon_prior(source: str) -> object | None:
+    """Load a TalonPrior for a named source, or None if not found."""
+    path = _ULTI_ROOT / source / "final" / "talon_prior.pkl"
+    if not path.exists():
+        return None
+    from trickster.bidding.talon_prior import TalonPrior
+    return TalonPrior.load(path)
 
 
 def load_wrappers(
@@ -148,4 +160,5 @@ DK_LABELS: dict[str, str] = {
     "p.40-100": "P.40-100",
     "p.ulti":   "P.Ulti",
     "p.betli":  "P.Betli",
+    "durchmars": "Duri",
 }

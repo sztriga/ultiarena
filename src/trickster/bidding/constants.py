@@ -24,9 +24,8 @@ REKONTRA_THRESHOLD: float = 0.8
 PASS_PENALTY: float = 2.0
 
 #: Minimum expected per-defender game points to place a bid.
-#: Set to -PASS_PENALTY so the first bidder bids whenever the expected
-#: outcome is better than the guaranteed pass penalty.
-MIN_BID_PTS: float = -PASS_PENALTY
+#: 0 means the first bidder only bids when the expected outcome is positive.
+MIN_BID_PTS: float = 0.0
 
 # ---------------------------------------------------------------------------
 #  Softmax temperature for contract selection during training

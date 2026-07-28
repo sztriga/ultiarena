@@ -48,7 +48,6 @@ from trickster.games.ulti.game import GameState, deal, next_player, pickup_talon
 def _make_mock_wrapper(value: float = 0.5) -> MagicMock:
     """Create a mock UltiNetWrapper that returns a constant value."""
     w = MagicMock()
-    w.batch_bid_value = lambda states: np.full(len(states), value)
     w.batch_value_soloist = lambda states: np.full(len(states), value)
     w.batch_value_defender = lambda states: np.full(len(states), value)
     w.predict_value = lambda feats: value

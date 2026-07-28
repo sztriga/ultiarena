@@ -393,7 +393,9 @@ def is_terminal(state: GameState) -> bool:
     """
     if state.trick_no >= TRICKS_PER_GAME:
         return True
-    if state.betli and soloist_lost_betli(state):
+    if state.training_mode == "durchmars" and soloist_lost_durchmars(state):
+        return True
+    if state.betli and state.training_mode != "durchmars" and soloist_lost_betli(state):
         return True
     return False
 
@@ -440,6 +442,11 @@ def soloist_won_durchmars(state: GameState) -> bool:
 def soloist_lost_betli(state: GameState) -> bool:
     """Did the soloist lose Betli (won at least 1 trick)?"""
     return soloist_tricks(state) > 0
+
+
+def soloist_lost_durchmars(state: GameState) -> bool:
+    """Did the soloist lose Durchmars (any defender won a trick)?"""
+    return soloist_tricks(state) < state.trick_no
 
 
 def marriage_points(state: GameState, player: int) -> int:

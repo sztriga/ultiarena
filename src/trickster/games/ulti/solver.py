@@ -205,7 +205,11 @@ def _terminal_value(gs: GameState) -> float:
 
     Parti:  soloist's card points (0-90).  Higher = better for soloist.
     Betli:  (10 - soloist_tricks).  10 = perfect Betli, 0 = took all.
+    Durchmars: 10 if all tricks won, 0 otherwise.
     """
+    if getattr(gs, 'training_mode', None) == "durchmars":
+        sol_tricks = len(gs.captured[gs.soloist]) // NUM_PLAYERS
+        return 10.0 if sol_tricks == TRICKS_PER_GAME else 0.0
     if gs.betli:
         sol_tricks = len(gs.captured[gs.soloist]) // NUM_PLAYERS
         return float(TRICKS_PER_GAME - sol_tricks)
@@ -237,6 +241,17 @@ def _ordered_moves(gs: GameState, maximising: bool) -> list[Card]:
     trump = gs.trump
     betli = gs.betli
 
+    # Betli soloist dominant strategy: only play highest card per suit
+    if betli and maximising:
+        best: dict[Suit, Card] = {}
+        for c in moves:
+            s = c.suit
+            if s not in best or BETLI_STRENGTH[c.rank] > BETLI_STRENGTH[best[s].rank]:
+                best[s] = c
+        moves = list(best.values())
+        if len(moves) <= 1:
+            return moves
+
     def _key(c: Card) -> tuple[int, int, int]:
         is_trump = 1 if (trump is not None and c.suit == trump) else 0
         strength = BETLI_STRENGTH[c.rank] if betli else c.rank.value
@@ -259,9 +274,13 @@ def _greedy_playout(gs: GameState) -> float:
     Only used when max_exact_tricks < TRICKS_PER_GAME (depth-limited mode).
     """
     undos: list[tuple] = []
+    is_dm = getattr(gs, 'training_mode', None) == "durchmars"
     while gs.trick_no < TRICKS_PER_GAME:
         # Betli early termination
         if gs.betli and len(gs.captured[gs.soloist]) > 0:
+            break
+        # Durchmars early termination
+        if is_dm and len(gs.captured[gs.soloist]) // NUM_PLAYERS < gs.trick_no:
             break
         player = current_player(gs)
         moves = _ordered_moves(gs, player == gs.soloist)
@@ -321,6 +340,12 @@ def _alphabeta(
     if gs.betli and len(gs.captured[gs.soloist]) > 0:
         return _terminal_value(gs)
 
+    # Durchmars early termination: soloist lost a trick → lost.
+    if getattr(gs, 'training_mode', None) == "durchmars":
+        sol_tricks = len(gs.captured[gs.soloist]) // NUM_PLAYERS
+        if sol_tricks < gs.trick_no:
+            return 0.0
+
     # Depth limit: use greedy playout for positions in the approximate zone.
     if exact_from_trick > 0:
         tc_len = len(gs.trick_cards)
@@ -329,7 +354,7 @@ def _alphabeta(
                 return _greedy_playout(gs)
 
     # --- Score-bounds (futility) pruning ---
-    if not gs.betli:
+    if not gs.betli and getattr(gs, 'training_mode', None) != "durchmars":
         sol_score = gs.scores[gs.soloist]
         remaining = _remaining_card_points(gs)
         max_possible = float(sol_score + remaining)

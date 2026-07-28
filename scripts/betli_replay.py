@@ -119,6 +119,9 @@ def _run_auction_mode(game, net, wrapper, mcts_cfg, base_seed):
     print(f"  Loaded wrappers: {list(wrappers.keys())}")
     print()
 
+    from trickster.training.model_io import load_talon_prior
+    tp = load_talon_prior("trinity")
+
     betli_played = 0
     betli_wins = 0
     rng = random.Random(base_seed)
@@ -134,6 +137,7 @@ def _run_auction_mode(game, net, wrapper, mcts_cfg, base_seed):
             gs, talon, dealer, seat_wrappers,
             pickup_quantile=0.5,
             rng=random.Random(seed),
+            talon_prior=tp,
         )
         if result.bid is None or result.bid.contract_key != "betli":
             continue

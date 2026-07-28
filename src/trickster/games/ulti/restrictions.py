@@ -37,7 +37,7 @@ def apply_restrictions(
 
 def betli_play_highest(gs: GameState, player: int, cards: list[Card]) -> list[Card]:
     """Betli soloist: only play the highest card per suit to shed danger."""
-    if not gs.betli or player != gs.soloist:
+    if not gs.betli or player != gs.soloist or gs.training_mode == "durchmars":
         return cards
 
     # Group by suit, keep only the highest-strength card per suit

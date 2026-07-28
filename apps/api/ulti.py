@@ -31,6 +31,7 @@ from trickster.mcts import MCTSConfig, _run_mcts_dispatch as _mcts_dispatch
 from trickster.model import UltiNetWrapper
 from trickster.training.model_io import (
     list_available_sources,
+    load_talon_prior,
     load_wrappers,
 )
 
@@ -130,6 +131,8 @@ _ulti_game: UltiGame | None = None
 
 # Cache: source name → {contract_key → UltiNetWrapper}
 _wrapper_cache: dict[str, dict[str, UltiNetWrapper]] = {}
+# Cache: source name → TalonPrior | None
+_talon_prior_cache: dict[str, object] = {}
 
 def _get_ulti_game() -> UltiGame:
     global _ulti_game
@@ -155,6 +158,15 @@ def _get_wrappers(source: str) -> dict[str, UltiNetWrapper]:
             log.exception("Failed to load models for '%s'", source)
             _wrapper_cache[source] = {}
     return _wrapper_cache[source]
+
+
+def _get_talon_prior(source: str) -> object | None:
+    """Load (or return cached) TalonPrior for a model source."""
+    if source == "random":
+        return None
+    if source not in _talon_prior_cache:
+        _talon_prior_cache[source] = load_talon_prior(source)
+    return _talon_prior_cache[source]
 
 
 def _get_wrapper_for_contract(
@@ -884,6 +896,7 @@ def _advance_ai_auction(sess: UltiSession) -> None:
             pe = decide_pickup(
                 sess.state, player, sess.dealer, wrappers, a,
                 min_bid_pts=MIN_BID_PTS,
+                talon_prior=_get_talon_prior(sess.opponent_sources[player - 1]),
             )
             if pe is not None:
                 hand.extend(a.talon)

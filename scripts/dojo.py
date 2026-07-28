@@ -348,12 +348,75 @@ class UltiDojo(ContractDojo):
 
 
 # ---------------------------------------------------------------------------
+#  Durchmars (Duri) dojo
+# ---------------------------------------------------------------------------
+
+
+class DurchmarsDojo(ContractDojo):
+
+    def deal(self, rng, alpha, suit_sigma):
+        deck = make_deck()
+        alpha = self._randomize_alpha(rng, alpha)
+        suit_mult = {s: math.exp(rng.gauss(0, suit_sigma)) for s in ALL_SUITS}
+        # Bias toward HIGH betli-strength cards (soloist wants to win all tricks)
+        weights = [
+            math.exp(alpha * BETLI_STRENGTH[c.rank]) * suit_mult[c.suit]
+            for c in deck
+        ]
+        sol_hand, rest = _weighted_sample_without_replacement(deck, weights, 10, rng)
+        def_hands, talon = _deal_rest(rest, rng)
+        return [sol_hand] + def_hands, talon
+
+    def hand_quality(self, hand):
+        return sum(BETLI_STRENGTH[c.rank] for c in hand) / 70.0
+
+    def best_discard(self, gs, soloist, wrapper, game):
+        hand = gs.hands[soloist]
+        assert len(hand) == 12
+        cdef = CONTRACT_DEFS["durchmars"]
+        best_val = -float("inf")
+        best_pair = (hand[0], hand[1])
+        for c1, c2 in combinations(hand, 2):
+            node = _make_eval_state(
+                gs, soloist, trump=None, discards=(c1, c2),
+                contract_def=cdef, is_piros=False, dealer=gs.dealer,
+            )
+            feats = game.encode_state(node, soloist)
+            val = wrapper.predict_value(feats)
+            if val > best_val:
+                best_val = val
+                best_pair = (c1, c2)
+        return list(best_pair)
+
+    def setup_node(self, gs, soloist, dealer):
+        set_contract(gs, soloist, trump=None, betli=True)
+        gs.training_mode = "durchmars"
+        declare_all_marriages(gs, soloist_marriage_restrict=None)
+        return UltiNode(
+            gs=gs,
+            known_voids=(frozenset(), frozenset(), frozenset()),
+            bid_rank=0, is_red=False,
+            contract_components=frozenset({"durchmars"}),
+            dealer=dealer,
+        )
+
+    @property
+    def kontra_key(self):
+        return "durchmars"
+
+    @property
+    def training_mode(self):
+        return "durchmars"
+
+
+# ---------------------------------------------------------------------------
 #  Dojo registry
 # ---------------------------------------------------------------------------
 
 DOJO_REGISTRY: dict[str, type[ContractDojo]] = {
     "betli": BetliDojo,
     "ulti": UltiDojo,
+    "durchmars": DurchmarsDojo,
 }
 
 
@@ -371,10 +434,12 @@ def play_one_dojo_game(
     suit_sigma: float,
     kontra: bool,
     dojo: ContractDojo,
-) -> tuple[list[_Sample], float]:
-    """Play one biased game, return (samples, quality).
+) -> tuple[list[_Sample], float, float, list[Card]]:
+    """Play one biased game, return (samples, quality, sol_eval, sol_hand_10).
 
     Each sample: (state_feats, action_mask, policy, reward, is_soloist).
+    sol_eval: soloist value head prediction before play.
+    sol_hand_10: soloist's 10-card hand after discard.
     """
     # 1. Biased deal
     hands, talon = dojo.deal(rng, alpha, suit_sigma)
@@ -391,8 +456,15 @@ def play_one_dojo_game(
     discards = dojo.best_discard(gs, soloist, wrapper, game)
     discard_talon(gs, discards)
 
+    # Capture 10-card hand after discard (for hand evaluator training)
+    sol_hand_10 = list(gs.hands[soloist])
+
     # 3. Set contract and build UltiNode
     node = dojo.setup_node(gs, soloist, dealer)
+
+    # Soloist eval score (value head prediction before play)
+    sol_feats = game.encode_state(node, soloist)
+    sol_eval = wrapper.predict_value(sol_feats)
 
     # Kontra decision (simple: defenders kontra if their value > 0.4)
     if kontra:
@@ -430,7 +502,7 @@ def play_one_dojo_game(
         reward = simple_outcome(state, player_for_reward)
         labeled.append((feats, mask, pi, reward, is_sol))
 
-    return labeled, quality
+    return labeled, quality, sol_eval, sol_hand_10
 
 
 # ---------------------------------------------------------------------------
@@ -443,13 +515,10 @@ _W_NET: UltiNet | None = None
 _W_WRAPPER = None
 
 
-_W_RESTRICTIONS: list | None = None
-
-
 def _init_worker(net_kwargs: dict) -> None:
     """Called once per worker process to create game + network."""
     global _W_GAME, _W_NET, _W_WRAPPER
-    _W_GAME = UltiGame(restrictions=_W_RESTRICTIONS if _W_RESTRICTIONS is not None else None)
+    _W_GAME = UltiGame(restrictions=[])
     _W_NET = UltiNet(**net_kwargs)
     _W_NET.eval()
     _W_WRAPPER = make_wrapper(_W_NET, device="cpu")
@@ -457,7 +526,7 @@ def _init_worker(net_kwargs: dict) -> None:
 
 def _play_batch_in_worker(
     args: tuple,
-) -> list[tuple[list[_Sample], float]]:
+) -> list[tuple[list[_Sample], float, float, list[Card]]]:
     """Worker entry-point: play a batch of games with one weight load."""
     (weights, sol_cfg, def_cfg, game_seeds, alpha, suit_sigma,
      kontra, endgame_tricks, pimc_dets, solver_temp, contract) = args
@@ -532,14 +601,14 @@ class DojoConfig:
     # Kontra
     kontra: bool = True
 
+    # Start from random weights (ignore checkpoint)
+    from_scratch: bool = False
+
     # Freeze value head (only train policy)
     freeze_value: bool = False
 
     # Workers
     num_workers: int = 1
-
-    # Restrictions
-    no_restrictions: bool = False
 
     # Device
     device: str = "cpu"
@@ -557,25 +626,55 @@ def train_dojo(cfg: DojoConfig) -> None:
     dojo = DOJO_REGISTRY[cfg.contract]()
 
     # ── Load model ────────────────────────────────────────────────
-    model_dir = Path(f"models/ulti/{cfg.source}/final/{cfg.contract}")
-    model_pt = model_dir / "model.pt"
-    if not model_pt.exists():
-        print(f"Error: no model found at {model_dir}")
-        sys.exit(1)
+    game = UltiGame(restrictions=[])
 
-    cp = torch.load(model_pt, weights_only=False, map_location=cfg.device)
-    restrictions = [] if cfg.no_restrictions else None
-    game = UltiGame(restrictions=restrictions)
-    net = UltiNet(
-        input_dim=cp.get("input_dim", game.state_dim),
-        body_units=cp.get("body_units", 256),
-        body_layers=cp.get("body_layers", 4),
-        action_dim=cp.get("action_dim", game.action_space_size),
-    )
-    net.load_state_dict(cp["model_state_dict"], strict=False)
+    if cfg.from_scratch:
+        tier = TIERS.get(cfg.source)
+        if tier is None:
+            print(f"Error: unknown tier '{cfg.source}' for --from-scratch. "
+                  f"Available: {', '.join(TIERS)}")
+            sys.exit(1)
+        net = UltiNet(
+            input_dim=game.state_dim,
+            body_units=tier.body_units,
+            body_layers=tier.body_layers,
+            action_dim=game.action_space_size,
+        )
+        print(f"  Starting from random weights ({tier.body_units}×{tier.body_layers})")
+    else:
+        model_dir = Path(f"models/ulti/{cfg.source}/final/{cfg.contract}")
+        model_pt = model_dir / "model.pt"
+        if not model_pt.exists():
+            print(f"Error: no model found at {model_dir}")
+            sys.exit(1)
+
+        cp = torch.load(model_pt, weights_only=False, map_location=cfg.device)
+        net = UltiNet(
+            input_dim=cp.get("input_dim", game.state_dim),
+            body_units=cp.get("body_units", 256),
+            body_layers=cp.get("body_layers", 4),
+            action_dim=cp.get("action_dim", game.action_space_size),
+        )
+        net.load_state_dict(cp["model_state_dict"], strict=False)
 
     net.to(cfg.device)
     wrapper = make_wrapper(net, device=cfg.device)
+
+    # ── BetliNet hand evaluator (betli dojo only) ───────────────
+    betli_he = None
+    if cfg.contract == "betli":
+        from trickster.betli.hand_evaluator import BetliHandEvaluator
+        from trickster.betli.model import BetliNet as BetliNetModel
+        from trickster.betli.model import load_model as load_betli, save_model as save_betli
+
+        betli_eval_path = Path(f"models/ulti/{cfg.source}/final/betli/betli_hand_eval.pt")
+        if betli_eval_path.exists() and not cfg.from_scratch:
+            betli_net = load_betli(betli_eval_path)
+            print(f"  BetliNet: loaded from {betli_eval_path}")
+        else:
+            betli_net = BetliNetModel()
+            print(f"  BetliNet: fresh weights (online training enabled)")
+        betli_he = BetliHandEvaluator(betli_net, device=cfg.device)
 
     # ── Setup ─────────────────────────────────────────────────────
     optimizer = torch.optim.Adam(net.parameters(), lr=cfg.lr_start)
@@ -646,9 +745,6 @@ def train_dojo(cfg: DojoConfig) -> None:
     if cfg.num_workers > 1:
         from concurrent.futures import ProcessPoolExecutor
 
-        global _W_RESTRICTIONS
-        _W_RESTRICTIONS = restrictions
-
         executor = ProcessPoolExecutor(
             max_workers=cfg.num_workers,
             initializer=_init_worker,
@@ -674,6 +770,7 @@ def train_dojo(cfg: DojoConfig) -> None:
             def _collect_result(
                 samples: list[_Sample],
                 quality: float,
+                sol_hand_10: list[Card] | None = None,
             ) -> None:
                 nonlocal step_wins, step_kontras, step_samples
 
@@ -691,6 +788,10 @@ def train_dojo(cfg: DojoConfig) -> None:
 
                 if abs(sol_reward) > 1.1:
                     step_kontras += 1
+
+                # Feed BetliNet hand evaluator
+                if betli_he is not None and sol_hand_10 is not None:
+                    betli_he.record_outcome(sol_hand_10, sol_reward)
 
                 for feats, mask, pi, reward, is_sol in samples:
                     buf.push(feats, mask, pi, reward, is_sol)
@@ -720,8 +821,8 @@ def train_dojo(cfg: DojoConfig) -> None:
                     base += n
 
                 for batch_results in executor.map(_play_batch_in_worker, batches):
-                    for samples, quality in batch_results:
-                        _collect_result(samples, quality)
+                    for samples, quality, _sol_eval, sol_hand_10 in batch_results:
+                        _collect_result(samples, quality, sol_hand_10)
             else:
                 # --- Sequential self-play ---
                 wrapper = make_wrapper(net, device=cfg.device)
@@ -738,11 +839,11 @@ def train_dojo(cfg: DojoConfig) -> None:
                     solver_temperature=cfg.solver_temp,
                 )
                 for g in range(cfg.games_per_step):
-                    samples, quality = play_one_dojo_game(
+                    samples, quality, _sol_eval, sol_hand_10 = play_one_dojo_game(
                         game, wrapper, sol_player, def_player, rng,
                         cfg.alpha, cfg.suit_sigma, cfg.kontra, dojo,
                     )
-                    _collect_result(samples, quality)
+                    _collect_result(samples, quality, sol_hand_10)
 
             total_games += cfg.games_per_step
             total_wins += step_wins
@@ -786,6 +887,10 @@ def train_dojo(cfg: DojoConfig) -> None:
             if sgd_count > 0:
                 v_loss_avg /= sgd_count
                 p_loss_avg /= sgd_count
+
+            # ── BetliNet SGD ─────────────────────────────────────────
+            if betli_he is not None:
+                betli_he.train_step()
 
             # ── Progress bar ─────────────────────────────────────────
             elapsed = time.perf_counter() - t0
@@ -833,6 +938,11 @@ def train_dojo(cfg: DojoConfig) -> None:
         "dojo_total_games": total_games,
     }, out_dir / "model.pt")
 
+    # Save BetliNet if trained
+    if betli_he is not None:
+        betli_eval_out = out_dir / "betli_hand_eval.pt"
+        save_betli(betli_he.net, betli_eval_out)
+
     elapsed = time.perf_counter() - t0
     overall_wr = total_wins / total_games if total_games > 0 else 0
 
@@ -849,6 +959,9 @@ def train_dojo(cfg: DojoConfig) -> None:
             print(f"  │    {tier_labels[i]}: {tw:>4.0%}  ({tier_wins[i]}/{tier_total[i]})")
     print(f"  │")
     print(f"  │  Saved: {out_dir}/model.pt")
+    if betli_he is not None:
+        print(f"  │  BetliNet: {out_dir}/betli_hand_eval.pt "
+              f"(buffer: {betli_he.buffer_size} samples)")
     print(f"  └─────────────────────────────────────────────────")
 
 
@@ -881,12 +994,12 @@ def main() -> None:
     parser.add_argument("--solver-temp", type=float, default=0.5)
     parser.add_argument("--kontra", action="store_true", default=True)
     parser.add_argument("--no-kontra", dest="kontra", action="store_false")
+    parser.add_argument("--from-scratch", action="store_true", default=False,
+                        help="Start from random weights (uses tier architecture)")
     parser.add_argument("--freeze-value", action="store_true", default=False,
                         help="Freeze value head, only train policy")
     parser.add_argument("--save-as", default=None, help="Target model name (default: same as source)")
     parser.add_argument("--workers", type=int, default=1, help="Number of parallel workers")
-    parser.add_argument("--no-restrictions", action="store_true", default=False,
-                        help="Disable AI play restrictions")
     parser.add_argument("--device", default=None)
     parser.add_argument("--seed", type=int, default=42)
 
@@ -922,8 +1035,8 @@ def main() -> None:
         pimc_dets=args.pimc_dets,
         solver_temp=args.solver_temp,
         kontra=args.kontra,
+        from_scratch=args.from_scratch,
         freeze_value=args.freeze_value,
-        no_restrictions=args.no_restrictions,
         num_workers=args.workers,
         device=device,
         seed=args.seed,

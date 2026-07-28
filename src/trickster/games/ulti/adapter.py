@@ -48,6 +48,8 @@ from trickster.games.ulti.game import (
     play_card,
     set_contract,
     soloist_lost_betli,
+    soloist_lost_durchmars,
+    soloist_won_durchmars,
     soloist_won_simple,
 )
 from trickster.games.ulti.restrictions import (
@@ -262,7 +264,9 @@ class UltiGame:
         possible outcome (piros soloist win) maps to +1.0.
         """
         gs = state.gs
-        if gs.betli:
+        if gs.training_mode == "durchmars":
+            soloist_wins = soloist_won_durchmars(gs)
+        elif gs.betli:
             soloist_wins = not soloist_lost_betli(gs)
         else:
             soloist_wins = soloist_won_simple(gs)
@@ -477,6 +481,26 @@ class UltiGame:
         gs.training_mode = training_mode
         soloist = next_player(dealer)  # first bidder
         gs.soloist = soloist
+
+        if training_mode == "durchmars":
+            # Durchmars: colorless (like betli), pickup talon, random discard
+            pickup_talon(gs, soloist, talon)
+            set_contract(gs, soloist, trump=None, betli=True)
+            gs.training_mode = "durchmars"
+            discards = rng.sample(gs.hands[soloist], 2)
+            discard_talon(gs, discards)
+            comps = frozenset({"durchmars"})
+            declare_all_marriages(gs)
+            constraints = build_auction_constraints(gs, comps)
+            return UltiNode(
+                gs=gs,
+                known_voids=EMPTY_VOIDS,
+                bid_rank=1,
+                is_red=False,
+                contract_components=comps,
+                dealer=dealer,
+                must_have=constraints,
+            )
 
         if training_mode in ("simple", "ulti", "40-100"):
             # ---- Parti / Ulti / 40-100: no talon interaction ----
