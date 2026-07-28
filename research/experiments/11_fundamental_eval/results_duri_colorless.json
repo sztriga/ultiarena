@@ -1,0 +1,52 @@
+{
+  "contract": "durchmars",
+  "n_per_alpha": 200,
+  "pimc_n": 32,
+  "n_workers": 8,
+  "seed_base": 83000000,
+  "wall_s": 5884.971483540998,
+  "rows": [
+    {
+      "alpha": 0.8,
+      "n": 200,
+      "n_sol_fav": 52,
+      "n_def_fav": 148,
+      "sol_hold": 1.0,
+      "sol_hold_se": 0.0,
+      "def_stop": 0.9662162162162162,
+      "def_stop_se": 0.014851162420842076,
+      "value_auc": 0.9762214137214137,
+      "value_mean_solfav": 7.962740384615385,
+      "value_mean_deffav": 0.6482263513513513,
+      "brier": 0.05306640625
+    },
+    {
+      "alpha": 1.5,
+      "n": 200,
+      "n_sol_fav": 129,
+      "n_def_fav": 71,
+      "sol_hold": 1.0,
+      "sol_hold_se": 0.0,
+      "def_stop": 0.9154929577464789,
+      "def_stop_se": 0.03300994345777757,
+      "value_auc": 0.9855879462823453,
+      "value_mean_solfav": 9.445251937984496,
+      "value_mean_deffav": 1.4920774647887325,
+      "brier": 0.04455078125
+    },
+    {
+      "alpha": 2.5,
+      "n": 200,
+      "n_sol_fav": 183,
+      "n_def_fav": 17,
+      "sol_hold": 1.0,
+      "sol_hold_se": 0.0,
+      "def_stop": 0.8823529411764706,
+      "def_stop_se": 0.07814248990059665,
+      "value_auc": 0.962230793956927,
+      "value_mean_solfav": 9.504781420765028,
+      "value_mean_deffav": 3.3088235294117645,
+      "brier": 0.042431640625
+    }
+  ]
+}

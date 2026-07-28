@@ -1,0 +1,16 @@
+=== full-ladder kontra (SCORER=kontra, god play, N=3000) START 2026 júl.  5 V 21:48:57 CEST ===
+>>> KONTRA=0 (bidder kontra-aware), FLOOR=0.7
+METRIC mean soloist GP/game -2.434   (floor-dominated; vs god defenders)
+NON-FLOOR GP/game +4.469  (n=883) — escalations above piros parti; the discriminating signal
+GP/seat  P0 -2.910  P1 +1.659  P2 +1.251  | pass 0.000  avg bids 1.17
+  0 piros parti                           2117 70.6%  0.22    -5.31
+  9 piros ulti                             616 20.5%  0.80    +2.58
+
+>>> KONTRA=1 (bidder kontra-aware), FLOOR=0.7
+METRIC mean soloist GP/game -1.892   (floor-dominated; vs god defenders)
+NON-FLOOR GP/game +6.008  (n=472) — escalations above piros parti; the discriminating signal
+GP/seat  P0 -1.890  P1 +1.016  P2 +0.874  | pass 0.687  avg bids 1.06
+  0 piros parti                            467 15.6%  0.62    -0.57
+  9 piros ulti                             342 11.4%  0.82    +4.13
+
+=== done 2026 júl.  5 V 21:49:37 CEST ===

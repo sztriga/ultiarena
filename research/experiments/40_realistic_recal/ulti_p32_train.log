@@ -1,0 +1,32 @@
+=== exp40 train realistic head: ulti ===  data=ulti_real_p32.npz  N=20000  dim=36
+  realistic make-rate=0.5147  dd-lost=0.5525  dd-lost&made=0.0925
+  pos_weight=0.94  train=18000  val=2000
+  ep  1  loss=0.6696  val_brier=0.2478  val_auc=0.6497
+  ep  5  loss=0.5101  val_brier=0.1496  val_auc=0.8753
+  ep 10  loss=0.3561  val_brier=0.1051  val_auc=0.9303
+  ep 15  loss=0.3312  val_brier=0.1026  val_auc=0.9325
+  ep 20  loss=0.3124  val_brier=0.1021  val_auc=0.9332
+  ep 25  loss=0.3031  val_brier=0.1035  val_auc=0.9334
+  ep 30  loss=0.2945  val_brier=0.1029  val_auc=0.9333
+  ep 35  loss=0.2896  val_brier=0.1023  val_auc=0.9332
+  ep 40  loss=0.2832  val_brier=0.1027  val_auc=0.9333
+
+  REALISTIC head  best ep17  val_auc=0.9337  val_brier=0.1013  ECE_raw=0.0113  ECE_cal=0.0295
+  reliability (calibrated):  [lo,hi)  mean_pred  emp_rate   n
+    [0.0,0.1)   0.026     0.015     539
+    [0.1,0.2)   0.163     0.127     126
+    [0.2,0.3)   0.242     0.205      83
+    [0.3,0.4)   0.356     0.161      31  <-- off
+    [0.4,0.5)   0.468     0.410     117
+    [0.5,0.6)   0.526     0.484      62
+    [0.6,0.7)   0.629     0.603      73
+    [0.7,0.8)   0.755     0.712     257
+    [0.8,0.9)   0.864     0.804     107  <-- off
+    [0.9,1.0)   0.958     0.940     605
+
+  GOD head 'ulti' (vs realistic outcome)  val_auc=0.9417  val_brier=0.1232  mean_pred=0.3953 vs actual make-rate 0.5030  → UNDER-predicts by 0.108
+  GAP hands (dd-lost but realistically MADE): n=176 in val
+    god head mean p      = 0.281
+    realistic head mean p= 0.591
+
+  saved ulti_real_baseline.pt + ulti_real_isotonic.npz

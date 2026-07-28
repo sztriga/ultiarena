@@ -32,8 +32,6 @@ from dataclasses import dataclass
 from typing import List, Optional, Tuple
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
-if _HERE not in sys.path:
-    pass
 
 from bidding.ladder import (  # noqa: E402
     LADDER, Rung, GPTable, overcalls, PASS_VALUE_PER_DEF,

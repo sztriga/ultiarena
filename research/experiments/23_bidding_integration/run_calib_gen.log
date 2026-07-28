@@ -1,0 +1,143 @@
+=== calib datagen START 2026 jún. 18 Cs 20:42:41 CEST ===
+=== base-event datagen: HEAD=reach100_40 ===
+  dealer=ulti  need=has_40  restrict=40  solver=multi  weights={'score_geq_100': 1.0}
+  N(kept target via scan)=80000  ALPHA=0.0  workers=8
+  out=reach100_40_god_a0_80k.npz
+  kept 2000/80000  scanned 15439  keep=0.13  pos=0.114  wall=4s  eta=168s
+  kept 4000/80000  scanned 30900  keep=0.13  pos=0.108  wall=8s  eta=143s
+  kept 6000/80000  scanned 46704  keep=0.13  pos=0.106  wall=11s  eta=137s
+  kept 8000/80000  scanned 62499  keep=0.13  pos=0.105  wall=15s  eta=131s
+  kept 10000/80000  scanned 78365  keep=0.13  pos=0.106  wall=18s  eta=124s
+  kept 12000/80000  scanned 94115  keep=0.13  pos=0.105  wall=21s  eta=118s
+  kept 14000/80000  scanned 109813  keep=0.13  pos=0.104  wall=24s  eta=113s
+  kept 16000/80000  scanned 125230  keep=0.13  pos=0.104  wall=27s  eta=108s
+  kept 18000/80000  scanned 141375  keep=0.13  pos=0.103  wall=31s  eta=105s
+  kept 20000/80000  scanned 157647  keep=0.13  pos=0.103  wall=34s  eta=103s
+  kept 22000/80000  scanned 173117  keep=0.13  pos=0.103  wall=39s  eta=102s
+  kept 24000/80000  scanned 188604  keep=0.13  pos=0.104  wall=43s  eta=100s
+  kept 26000/80000  scanned 204441  keep=0.13  pos=0.103  wall=46s  eta=97s
+  kept 28000/80000  scanned 219642  keep=0.13  pos=0.102  wall=50s  eta=93s
+  kept 30000/80000  scanned 234636  keep=0.13  pos=0.102  wall=54s  eta=90s
+  kept 32000/80000  scanned 250134  keep=0.13  pos=0.102  wall=57s  eta=85s
+  kept 34000/80000  scanned 265268  keep=0.13  pos=0.102  wall=61s  eta=83s
+  kept 36000/80000  scanned 281657  keep=0.13  pos=0.103  wall=65s  eta=80s
+  kept 38000/80000  scanned 297206  keep=0.13  pos=0.103  wall=68s  eta=76s
+  kept 40000/80000  scanned 313084  keep=0.13  pos=0.103  wall=72s  eta=72s
+  kept 42000/80000  scanned 328572  keep=0.13  pos=0.103  wall=75s  eta=68s
+  kept 44000/80000  scanned 344542  keep=0.13  pos=0.103  wall=78s  eta=64s
+  kept 46000/80000  scanned 360454  keep=0.13  pos=0.103  wall=81s  eta=60s
+  kept 48000/80000  scanned 375965  keep=0.13  pos=0.102  wall=84s  eta=56s
+  kept 50000/80000  scanned 392040  keep=0.13  pos=0.102  wall=87s  eta=52s
+  kept 52000/80000  scanned 407280  keep=0.13  pos=0.102  wall=91s  eta=49s
+  kept 54000/80000  scanned 424209  keep=0.13  pos=0.102  wall=95s  eta=46s
+  kept 56000/80000  scanned 439400  keep=0.13  pos=0.102  wall=98s  eta=42s
+  kept 58000/80000  scanned 454446  keep=0.13  pos=0.102  wall=102s  eta=39s
+  kept 60000/80000  scanned 470396  keep=0.13  pos=0.102  wall=105s  eta=35s
+  kept 62000/80000  scanned 486169  keep=0.13  pos=0.102  wall=108s  eta=31s
+  kept 64000/80000  scanned 501339  keep=0.13  pos=0.102  wall=111s  eta=28s
+  kept 66000/80000  scanned 516558  keep=0.13  pos=0.102  wall=115s  eta=24s
+  kept 68000/80000  scanned 532476  keep=0.13  pos=0.102  wall=119s  eta=21s
+  kept 70000/80000  scanned 548155  keep=0.13  pos=0.102  wall=122s  eta=17s
+  kept 72000/80000  scanned 563649  keep=0.13  pos=0.102  wall=126s  eta=14s
+  kept 74000/80000  scanned 578905  keep=0.13  pos=0.102  wall=129s  eta=10s
+  kept 76000/80000  scanned 594273  keep=0.13  pos=0.102  wall=133s  eta=7s
+  kept 78000/80000  scanned 609985  keep=0.13  pos=0.101  wall=136s  eta=3s
+  kept 80000/80000  scanned 625566  keep=0.13  pos=0.101  wall=140s  eta=0s
+
+  saved 80000 records  scanned 625566  keep=0.128  wall=140s
+  positive rate: 0.1013  (8101 pos)
+=== base-event datagen: HEAD=reach100_20 ===
+  dealer=ulti  need=has_20  restrict=20  solver=multi  weights={'score_geq_100': 1.0}
+  N(kept target via scan)=80000  ALPHA=0.0  workers=8
+  out=reach100_20_god_a0_80k.npz
+  kept 2000/80000  scanned 7888  keep=0.25  pos=0.013  wall=0s  eta=19s
+  kept 4000/80000  scanned 15618  keep=0.26  pos=0.010  wall=1s  eta=18s
+  kept 6000/80000  scanned 23122  keep=0.26  pos=0.009  wall=1s  eta=17s
+  kept 8000/80000  scanned 30855  keep=0.26  pos=0.008  wall=2s  eta=16s
+  kept 10000/80000  scanned 38593  keep=0.26  pos=0.009  wall=2s  eta=15s
+  kept 12000/80000  scanned 46522  keep=0.26  pos=0.009  wall=3s  eta=15s
+  kept 14000/80000  scanned 54299  keep=0.26  pos=0.009  wall=3s  eta=14s
+  kept 16000/80000  scanned 61842  keep=0.26  pos=0.009  wall=3s  eta=14s
+  kept 18000/80000  scanned 69614  keep=0.26  pos=0.009  wall=4s  eta=13s
+  kept 20000/80000  scanned 77543  keep=0.26  pos=0.009  wall=4s  eta=13s
+  kept 22000/80000  scanned 85352  keep=0.26  pos=0.009  wall=5s  eta=13s
+  kept 24000/80000  scanned 92954  keep=0.26  pos=0.009  wall=5s  eta=12s
+  kept 26000/80000  scanned 100470  keep=0.26  pos=0.009  wall=6s  eta=12s
+  kept 28000/80000  scanned 108115  keep=0.26  pos=0.009  wall=6s  eta=11s
+  kept 30000/80000  scanned 115614  keep=0.26  pos=0.009  wall=6s  eta=11s
+  kept 32000/80000  scanned 123575  keep=0.26  pos=0.009  wall=7s  eta=10s
+  kept 34000/80000  scanned 131199  keep=0.26  pos=0.009  wall=7s  eta=10s
+  kept 36000/80000  scanned 139056  keep=0.26  pos=0.008  wall=8s  eta=9s
+  kept 38000/80000  scanned 146788  keep=0.26  pos=0.008  wall=8s  eta=9s
+  kept 40000/80000  scanned 154528  keep=0.26  pos=0.008  wall=8s  eta=8s
+  kept 42000/80000  scanned 162389  keep=0.26  pos=0.008  wall=9s  eta=8s
+  kept 44000/80000  scanned 170156  keep=0.26  pos=0.008  wall=9s  eta=8s
+  kept 46000/80000  scanned 178081  keep=0.26  pos=0.008  wall=10s  eta=7s
+  kept 48000/80000  scanned 185929  keep=0.26  pos=0.009  wall=10s  eta=7s
+  kept 50000/80000  scanned 193684  keep=0.26  pos=0.009  wall=10s  eta=6s
+  kept 52000/80000  scanned 201449  keep=0.26  pos=0.009  wall=11s  eta=6s
+  kept 54000/80000  scanned 209311  keep=0.26  pos=0.009  wall=11s  eta=5s
+  kept 56000/80000  scanned 216883  keep=0.26  pos=0.009  wall=12s  eta=5s
+  kept 58000/80000  scanned 224534  keep=0.26  pos=0.009  wall=12s  eta=5s
+  kept 60000/80000  scanned 232219  keep=0.26  pos=0.008  wall=12s  eta=4s
+  kept 62000/80000  scanned 239817  keep=0.26  pos=0.008  wall=13s  eta=4s
+  kept 64000/80000  scanned 247509  keep=0.26  pos=0.008  wall=13s  eta=3s
+  kept 66000/80000  scanned 255431  keep=0.26  pos=0.009  wall=14s  eta=3s
+  kept 68000/80000  scanned 263079  keep=0.26  pos=0.008  wall=14s  eta=2s
+  kept 70000/80000  scanned 271000  keep=0.26  pos=0.008  wall=15s  eta=2s
+  kept 72000/80000  scanned 278690  keep=0.26  pos=0.009  wall=15s  eta=2s
+  kept 74000/80000  scanned 286114  keep=0.26  pos=0.009  wall=15s  eta=1s
+  kept 76000/80000  scanned 294014  keep=0.26  pos=0.009  wall=16s  eta=1s
+  kept 78000/80000  scanned 301503  keep=0.26  pos=0.009  wall=16s  eta=0s
+  kept 80000/80000  scanned 309273  keep=0.26  pos=0.009  wall=17s  eta=0s
+
+  saved 80000 records  scanned 309273  keep=0.259  wall=17s
+  positive rate: 0.0087  (692 pos)
+=== base-event datagen: HEAD=duri_colored ===
+  dealer=duri  need=None  restrict=None  solver=durchmars  weights=None
+  N(kept target via scan)=80000  ALPHA=0.0  workers=8
+  out=duri_colored_god_a0_80k.npz
+  kept 2000/80000  scanned 2000  keep=1.00  pos=0.008  wall=0s  eta=13s
+  kept 4000/80000  scanned 4000  keep=1.00  pos=0.007  wall=1s  eta=11s
+  kept 6000/80000  scanned 6000  keep=1.00  pos=0.007  wall=1s  eta=10s
+  kept 8000/80000  scanned 8000  keep=1.00  pos=0.007  wall=1s  eta=10s
+  kept 10000/80000  scanned 10000  keep=1.00  pos=0.007  wall=1s  eta=10s
+  kept 12000/80000  scanned 12000  keep=1.00  pos=0.008  wall=2s  eta=10s
+  kept 14000/80000  scanned 14000  keep=1.00  pos=0.008  wall=2s  eta=10s
+  kept 16000/80000  scanned 16000  keep=1.00  pos=0.008  wall=2s  eta=10s
+  kept 18000/80000  scanned 18000  keep=1.00  pos=0.008  wall=3s  eta=9s
+  kept 20000/80000  scanned 20000  keep=1.00  pos=0.008  wall=3s  eta=9s
+  kept 22000/80000  scanned 22000  keep=1.00  pos=0.008  wall=3s  eta=9s
+  kept 24000/80000  scanned 24000  keep=1.00  pos=0.008  wall=4s  eta=8s
+  kept 26000/80000  scanned 26000  keep=1.00  pos=0.008  wall=4s  eta=8s
+  kept 28000/80000  scanned 28000  keep=1.00  pos=0.008  wall=4s  eta=8s
+  kept 30000/80000  scanned 30000  keep=1.00  pos=0.008  wall=4s  eta=7s
+  kept 32000/80000  scanned 32000  keep=1.00  pos=0.008  wall=5s  eta=7s
+  kept 34000/80000  scanned 34000  keep=1.00  pos=0.008  wall=5s  eta=7s
+  kept 36000/80000  scanned 36000  keep=1.00  pos=0.008  wall=5s  eta=6s
+  kept 38000/80000  scanned 38000  keep=1.00  pos=0.008  wall=5s  eta=6s
+  kept 40000/80000  scanned 40000  keep=1.00  pos=0.008  wall=6s  eta=6s
+  kept 42000/80000  scanned 42000  keep=1.00  pos=0.008  wall=6s  eta=5s
+  kept 44000/80000  scanned 44000  keep=1.00  pos=0.008  wall=6s  eta=5s
+  kept 46000/80000  scanned 46000  keep=1.00  pos=0.008  wall=7s  eta=5s
+  kept 48000/80000  scanned 48000  keep=1.00  pos=0.008  wall=7s  eta=5s
+  kept 50000/80000  scanned 50000  keep=1.00  pos=0.008  wall=7s  eta=4s
+  kept 52000/80000  scanned 52000  keep=1.00  pos=0.008  wall=7s  eta=4s
+  kept 54000/80000  scanned 54000  keep=1.00  pos=0.008  wall=8s  eta=4s
+  kept 56000/80000  scanned 56000  keep=1.00  pos=0.008  wall=8s  eta=3s
+  kept 58000/80000  scanned 58000  keep=1.00  pos=0.008  wall=8s  eta=3s
+  kept 60000/80000  scanned 60000  keep=1.00  pos=0.008  wall=8s  eta=3s
+  kept 62000/80000  scanned 62000  keep=1.00  pos=0.008  wall=9s  eta=3s
+  kept 64000/80000  scanned 64000  keep=1.00  pos=0.008  wall=9s  eta=2s
+  kept 66000/80000  scanned 66000  keep=1.00  pos=0.008  wall=9s  eta=2s
+  kept 68000/80000  scanned 68000  keep=1.00  pos=0.008  wall=10s  eta=2s
+  kept 70000/80000  scanned 70000  keep=1.00  pos=0.008  wall=10s  eta=1s
+  kept 72000/80000  scanned 72000  keep=1.00  pos=0.008  wall=10s  eta=1s
+  kept 74000/80000  scanned 74000  keep=1.00  pos=0.008  wall=10s  eta=1s
+  kept 76000/80000  scanned 76000  keep=1.00  pos=0.008  wall=11s  eta=1s
+  kept 78000/80000  scanned 78000  keep=1.00  pos=0.008  wall=11s  eta=0s
+  kept 80000/80000  scanned 80000  keep=1.00  pos=0.008  wall=11s  eta=0s
+
+  saved 80000 records  scanned 80000  keep=1.000  wall=11s
+  positive rate: 0.0080  (637 pos)
+=== calib datagen DONE 2026 jún. 18 Cs 20:45:31 CEST ===

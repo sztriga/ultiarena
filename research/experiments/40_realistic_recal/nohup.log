@@ -1,0 +1,50 @@
+===== exp40 run START 2026-07-25 08:45:39  workers=8 pimc_n=8 =====
+[2026-07-25 08:45:39] >>> colorless_duri  datagen N=40000 seed=400000000
+      saved 40000 records (0 skipped, 0 errored)  wall=926s
+      realistic make-rate=0.2235  dd-lost=0.8221  dd-lost&made=0.0457  (= the realistic headroom the god head is blind to)
+[2026-07-25 09:01:05] >>> colorless_duri  train
+      REALISTIC head  best ep23  val_auc=0.9236  val_brier=0.1015  ECE_raw=0.0689  ECE_cal=0.0213
+      GOD head 'colorless_duri' (vs realistic outcome)  val_auc=0.8070  val_brier=0.1926  mean_pred=0.0651 vs actual make-rate 0.2385  → UNDER-predicts by 0.173
+        realistic head mean p= 0.384
+[2026-07-25 09:01:08] <<< colorless_duri done
+[2026-07-25 09:01:08] >>> reach100_40  datagen N=25000 seed=450000000
+      saved 25000 records (0 skipped, 0 errored)  wall=3508s
+      realistic make-rate=0.4284  dd-lost=0.5902  dd-lost&made=0.0688  (= the realistic headroom the god head is blind to)
+[2026-07-25 09:59:36] >>> reach100_40  train
+      REALISTIC head  best ep37  val_auc=0.9060  val_brier=0.1240  ECE_raw=0.0361  ECE_cal=0.0406
+      GOD head 'reach100_40' (vs realistic outcome)  val_auc=0.9103  val_brier=0.1220  mean_pred=0.4282 vs actual make-rate 0.4104  → over-predicts by 0.018
+        realistic head mean p= 0.453
+[2026-07-25 09:59:38] <<< reach100_40 done
+[2026-07-25 09:59:38] >>> reach100_20  datagen N=15000 seed=500000000
+      saved 5804 records (9196 skipped, 0 errored)  wall=631s
+      realistic make-rate=0.0910  dd-lost=0.9135  dd-lost&made=0.0171  (= the realistic headroom the god head is blind to)
+[2026-07-25 10:10:10] >>> reach100_20  train
+      REALISTIC head  best ep35  val_auc=0.8847  val_brier=0.0932  ECE_raw=0.1052  ECE_cal=0.0487
+      GOD head 'reach100_20' (vs realistic outcome)  val_auc=0.9450  val_brier=0.0458  mean_pred=0.1184 vs actual make-rate 0.1017  → over-predicts by 0.017
+        realistic head mean p= 0.086
+[2026-07-25 10:10:11] <<< reach100_20 done
+[2026-07-25 10:10:11] >>> parti  datagen N=15000 seed=550000000
+      saved 15000 records (0 skipped, 0 errored)  wall=2045s
+      realistic make-rate=0.6448  dd-lost=0.3128  dd-lost&made=0.0462  (= the realistic headroom the god head is blind to)
+[2026-07-25 10:44:17] >>> parti  train
+      REALISTIC head  best ep20  val_auc=0.8612  val_brier=0.1475  ECE_raw=0.0605  ECE_cal=0.0704
+      GOD head 'parti' (vs realistic outcome)  val_auc=0.8218  val_brier=0.1773  mean_pred=0.6794 vs actual make-rate 0.6540  → over-predicts by 0.025
+        realistic head mean p= 0.556
+[2026-07-25 10:44:19] <<< parti done
+[2026-07-25 10:44:19] >>> duri_colored  datagen N=10000 seed=600000000
+      saved 10000 records (0 skipped, 0 errored)  wall=9384s
+      realistic make-rate=0.1457  dd-lost=0.9300  dd-lost&made=0.0762  (= the realistic headroom the god head is blind to)
+[2026-07-25 13:20:43] >>> duri_colored  train
+      REALISTIC head  best ep32  val_auc=0.9037  val_brier=0.0992  ECE_raw=0.1019  ECE_cal=0.0883
+      GOD head 'duri_colored' (vs realistic outcome)  val_auc=0.9387  val_brier=0.0856  mean_pred=0.0520 vs actual make-rate 0.1350  → UNDER-predicts by 0.083
+        realistic head mean p= 0.558
+[2026-07-25 13:20:45] <<< duri_colored done
+[2026-07-25 13:20:45] >>> ulti  datagen N=20000 seed=650000000
+      saved 20000 records (0 skipped, 0 errored)  wall=3055s
+      realistic make-rate=0.4773  dd-lost=0.5567  dd-lost&made=0.0739  (= the realistic headroom the god head is blind to)
+[2026-07-25 14:11:40] >>> ulti  train
+      REALISTIC head  best ep17  val_auc=0.9380  val_brier=0.0995  ECE_raw=0.0200  ECE_cal=0.0352
+      GOD head 'ulti' (vs realistic outcome)  val_auc=0.9430  val_brier=0.1106  mean_pred=0.4066 vs actual make-rate 0.4840  → UNDER-predicts by 0.077
+        realistic head mean p= 0.613
+[2026-07-25 14:11:42] <<< ulti done
+===== exp40 run DONE 2026-07-25 14:11:42 =====

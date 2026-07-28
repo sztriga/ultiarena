@@ -1,0 +1,45 @@
+=== exp40 realistic datagen: HEAD=colorless_duri ===
+  N=40000 ALPHA_MAX=2.5 PIMC_N=32 workers=8 colored=False out=colorless_duri_real_p32.npz
+  1000 kept (0 skip, 0 err)  wall=102s eta=3959s  real-made=0.194  dd-lost=0.831  dd-lost&made=0.025
+  2000 kept (0 skip, 0 err)  wall=199s eta=3788s  real-made=0.199  dd-lost=0.826  dd-lost&made=0.024
+  3000 kept (0 skip, 0 err)  wall=294s eta=3632s  real-made=0.201  dd-lost=0.823  dd-lost&made=0.023
+  4000 kept (0 skip, 0 err)  wall=385s eta=3465s  real-made=0.197  dd-lost=0.825  dd-lost&made=0.021
+  5000 kept (0 skip, 0 err)  wall=480s eta=3361s  real-made=0.203  dd-lost=0.821  dd-lost&made=0.024
+  6000 kept (0 skip, 0 err)  wall=572s eta=3241s  real-made=0.202  dd-lost=0.823  dd-lost&made=0.025
+  7000 kept (0 skip, 0 err)  wall=660s eta=3111s  real-made=0.205  dd-lost=0.821  dd-lost&made=0.025
+  8000 kept (0 skip, 0 err)  wall=753s eta=3013s  real-made=0.207  dd-lost=0.819  dd-lost&made=0.026
+  9000 kept (0 skip, 0 err)  wall=844s eta=2906s  real-made=0.203  dd-lost=0.823  dd-lost&made=0.026
+  10000 kept (0 skip, 0 err)  wall=934s eta=2803s  real-made=0.203  dd-lost=0.823  dd-lost&made=0.026
+  11000 kept (0 skip, 0 err)  wall=1026s eta=2705s  real-made=0.204  dd-lost=0.822  dd-lost&made=0.026
+  12000 kept (0 skip, 0 err)  wall=1115s eta=2602s  real-made=0.203  dd-lost=0.823  dd-lost&made=0.025
+  13000 kept (0 skip, 0 err)  wall=1212s eta=2518s  real-made=0.203  dd-lost=0.822  dd-lost&made=0.025
+  14000 kept (0 skip, 0 err)  wall=1304s eta=2422s  real-made=0.203  dd-lost=0.822  dd-lost&made=0.025
+  15000 kept (0 skip, 0 err)  wall=1396s eta=2326s  real-made=0.204  dd-lost=0.821  dd-lost&made=0.025
+  16000 kept (0 skip, 0 err)  wall=1490s eta=2235s  real-made=0.205  dd-lost=0.820  dd-lost&made=0.025
+  17000 kept (0 skip, 0 err)  wall=1583s eta=2142s  real-made=0.204  dd-lost=0.821  dd-lost&made=0.025
+  18000 kept (0 skip, 0 err)  wall=1676s eta=2048s  real-made=0.203  dd-lost=0.822  dd-lost&made=0.025
+  19000 kept (0 skip, 0 err)  wall=1766s eta=1952s  real-made=0.203  dd-lost=0.822  dd-lost&made=0.025
+  20000 kept (0 skip, 0 err)  wall=1859s eta=1859s  real-made=0.205  dd-lost=0.821  dd-lost&made=0.026
+  21000 kept (0 skip, 0 err)  wall=1953s eta=1767s  real-made=0.204  dd-lost=0.821  dd-lost&made=0.026
+  22000 kept (0 skip, 0 err)  wall=2043s eta=1671s  real-made=0.205  dd-lost=0.821  dd-lost&made=0.026
+  23000 kept (0 skip, 0 err)  wall=2123s eta=1569s  real-made=0.204  dd-lost=0.823  dd-lost&made=0.026
+  24000 kept (0 skip, 0 err)  wall=2221s eta=1481s  real-made=0.204  dd-lost=0.822  dd-lost&made=0.026
+  25000 kept (0 skip, 0 err)  wall=2318s eta=1391s  real-made=0.205  dd-lost=0.822  dd-lost&made=0.026
+  26000 kept (0 skip, 0 err)  wall=2406s eta=1295s  real-made=0.204  dd-lost=0.822  dd-lost&made=0.026
+  27000 kept (0 skip, 0 err)  wall=2496s eta=1202s  real-made=0.204  dd-lost=0.822  dd-lost&made=0.026
+  28000 kept (0 skip, 0 err)  wall=2585s eta=1108s  real-made=0.204  dd-lost=0.822  dd-lost&made=0.026
+  29000 kept (0 skip, 0 err)  wall=2678s eta=1016s  real-made=0.204  dd-lost=0.822  dd-lost&made=0.026
+  30000 kept (0 skip, 0 err)  wall=2771s eta=924s  real-made=0.205  dd-lost=0.821  dd-lost&made=0.026
+  31000 kept (0 skip, 0 err)  wall=2858s eta=830s  real-made=0.205  dd-lost=0.821  dd-lost&made=0.026
+  32000 kept (0 skip, 0 err)  wall=2947s eta=737s  real-made=0.205  dd-lost=0.821  dd-lost&made=0.026
+  33000 kept (0 skip, 0 err)  wall=3038s eta=644s  real-made=0.205  dd-lost=0.821  dd-lost&made=0.026
+  34000 kept (0 skip, 0 err)  wall=3131s eta=553s  real-made=0.205  dd-lost=0.821  dd-lost&made=0.026
+  35000 kept (0 skip, 0 err)  wall=3224s eta=461s  real-made=0.205  dd-lost=0.821  dd-lost&made=0.026
+  36000 kept (0 skip, 0 err)  wall=3315s eta=368s  real-made=0.205  dd-lost=0.821  dd-lost&made=0.026
+  37000 kept (0 skip, 0 err)  wall=3411s eta=277s  real-made=0.206  dd-lost=0.820  dd-lost&made=0.026
+  38000 kept (0 skip, 0 err)  wall=3499s eta=184s  real-made=0.206  dd-lost=0.820  dd-lost&made=0.026
+  39000 kept (0 skip, 0 err)  wall=3591s eta=92s  real-made=0.205  dd-lost=0.820  dd-lost&made=0.026
+  40000 kept (0 skip, 0 err)  wall=3674s eta=0s  real-made=0.206  dd-lost=0.820  dd-lost&made=0.026
+
+  saved 40000 records (0 skipped, 0 errored)  wall=3674s
+  realistic make-rate=0.2056  dd-lost=0.8203  dd-lost&made=0.0259  (= the realistic headroom the god head is blind to)

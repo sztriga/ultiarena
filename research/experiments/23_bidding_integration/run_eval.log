@@ -1,0 +1,77 @@
+=== eval START 2026 jún. 18 Cs 20:46:51 CEST ===
+>>> CALIBRATED
+=== eval auction | N=600 CALIBRATE=True workers=8 ===
+  50/600  2s  31.9/s
+  100/600  2s  51.0/s
+  150/600  2s  64.6/s
+  200/600  3s  73.5/s
+  250/600  3s  78.9/s
+  300/600  4s  83.3/s
+  350/600  4s  87.9/s
+  400/600  4s  92.1/s
+  450/600  5s  93.3/s
+  500/600  5s  97.0/s
+  550/600  6s  98.0/s
+  600/600  6s  100.9/s
+
+=== results | N=600  wall=6s ===
+pass rate      0.000
+soundness P(make|bid)   0.263   (component-wise god)
+avg bids/auction         1.42
+GP/seat-deal   P0 -1.277  P1 +1.088  P2 +0.188   (Σ +0.000, should ≈0)
+
+bid distribution (winning contract):
+    385 (64.2%)  made 0.19  piros parti
+     73 (12.2%)  made 0.34  piros ulti
+     34 ( 5.7%)  made 0.29  rebetli
+     22 ( 3.7%)  made 0.82  piros ulti-40-100
+     21 ( 3.5%)  made 0.00  piros 40-100-duri ≡ piros ulti-duri
+     15 ( 2.5%)  made 1.00  piros 40-100
+     12 ( 2.0%)  made 0.17  piros 20-100-duri
+      9 ( 1.5%)  made 0.56  piros 20-100
+      7 ( 1.2%)  made 0.71  betli
+      7 ( 1.2%)  made 0.29  piros ulti-20-100-duri
+      5 ( 0.8%)  made 0.00  20-100-duri
+      4 ( 0.7%)  made 0.00  ulti
+      3 ( 0.5%)  made 0.33  piros ulti-20-100
+      2 ( 0.3%)  made 0.00  colorless duri
+      1 ( 0.2%)  made 0.00  piros ulti-40-100-duri
+
+>>> UNCALIBRATED (for comparison)
+=== eval auction | N=600 CALIBRATE=False workers=8 ===
+  50/600  1s  35.4/s
+  100/600  2s  54.3/s
+  150/600  2s  61.9/s
+  200/600  3s  68.7/s
+  250/600  3s  72.1/s
+  300/600  4s  73.6/s
+  350/600  5s  76.2/s
+  400/600  5s  81.0/s
+  450/600  6s  81.7/s
+  500/600  6s  83.4/s
+  550/600  7s  83.4/s
+  600/600  7s  86.4/s
+
+=== results | N=600  wall=7s ===
+pass rate      0.000
+soundness P(make|bid)   0.115   (component-wise god)
+avg bids/auction         2.28
+GP/seat-deal   P0 -1.052  P1 +0.918  P2 +0.133   (Σ +0.000, should ≈0)
+
+bid distribution (winning contract):
+    164 (27.3%)  made 0.14  piros parti
+    105 (17.5%)  made 0.04  piros 40-100-duri ≡ piros ulti-duri
+     89 (14.8%)  made 0.09  rebetli
+     79 (13.2%)  made 0.05  piros 20-100-duri
+     48 ( 8.0%)  made 0.12  piros ulti-20-100-duri
+     26 ( 4.3%)  made 0.54  piros ulti-40-100
+     20 ( 3.3%)  made 0.10  piros ulti
+     18 ( 3.0%)  made 0.17  piros ulti-40-100-duri
+     16 ( 2.7%)  made 0.00  20-100-duri
+     11 ( 1.8%)  made 0.36  piros 20-100
+      9 ( 1.5%)  made 0.00  betli
+      7 ( 1.2%)  made 0.00  ulti-20-100
+      4 ( 0.7%)  made 0.00  piros ulti-20-100
+      3 ( 0.5%)  made 0.00  ulti
+      1 ( 0.2%)  made 1.00  piros 40-100
+=== eval DONE 2026 jún. 18 Cs 20:47:04 CEST ===

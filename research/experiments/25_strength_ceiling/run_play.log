@@ -1,0 +1,15 @@
+play ceiling start 2026 júl.  5 V 21:33:08 CEST
+=== PLAY CEILING | N=120 PIMC_N=16 ===
+  25  17s
+  50  34s
+  75  45s
+  100  54s
+
+=== results | played 120 | wall=64s ===
+  (pimc-sol, pimc-def) realistic     +0.900 GP/def
+  (god-sol,  pimc-def) perfect play  +0.383 GP/def
+  (god-sol,  god-def)  both perfect  -1.050 GP/def
+
+  SOLOIST-PLAY headroom (pimc→god sol) -0.517 GP/def
+  defender-strength (pimc→god def)     +1.433 GP/def
+play done 2026 júl.  5 V 21:34:12 CEST

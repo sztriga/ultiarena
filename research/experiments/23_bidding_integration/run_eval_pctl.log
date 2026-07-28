@@ -1,0 +1,64 @@
+=== pctl sweep START 2026 jún. 18 Cs 20:50:55 CEST ===
+>>> DEBIAS_PCTL=1.0 (calibrated)
+pass rate      0.000
+soundness P(make|bid)   0.263   (component-wise god)
+avg bids/auction         1.42
+GP/seat-deal   P0 -1.277  P1 +1.088  P2 +0.188   (Σ +0.000, should ≈0)
+    385 (64.2%)  made 0.19  piros parti
+     73 (12.2%)  made 0.34  piros ulti
+     34 ( 5.7%)  made 0.29  rebetli
+     22 ( 3.7%)  made 0.82  piros ulti-40-100
+     21 ( 3.5%)  made 0.00  piros 40-100-duri ≡ piros ulti-duri
+     15 ( 2.5%)  made 1.00  piros 40-100
+     12 ( 2.0%)  made 0.17  piros 20-100-duri
+      9 ( 1.5%)  made 0.56  piros 20-100
+      7 ( 1.2%)  made 0.71  betli
+      7 ( 1.2%)  made 0.29  piros ulti-20-100-duri
+      5 ( 0.8%)  made 0.00  20-100-duri
+      4 ( 0.7%)  made 0.00  ulti
+      3 ( 0.5%)  made 0.33  piros ulti-20-100
+      2 ( 0.3%)  made 0.00  colorless duri
+      1 ( 0.2%)  made 0.00  piros ulti-40-100-duri
+
+>>> DEBIAS_PCTL=0.90 (calibrated)
+pass rate      0.000
+soundness P(make|bid)   0.290   (component-wise god)
+avg bids/auction         1.12
+GP/seat-deal   P0 -1.140  P1 +0.795  P2 +0.345   (Σ +0.000, should ≈0)
+    473 (78.8%)  made 0.22  piros parti
+     86 (14.3%)  made 0.56  piros ulti
+     10 ( 1.7%)  made 0.90  piros 40-100
+      9 ( 1.5%)  made 0.44  rebetli
+      9 ( 1.5%)  made 1.00  piros ulti-40-100
+      6 ( 1.0%)  made 0.17  ulti
+      4 ( 0.7%)  made 0.25  betli
+      1 ( 0.2%)  made 0.00  piros 20-100-duri
+      1 ( 0.2%)  made 0.00  piros 20-100
+      1 ( 0.2%)  made 0.00  20-100
+
+>>> DEBIAS_PCTL=0.80 (calibrated)
+pass rate      0.000
+soundness P(make|bid)   0.287   (component-wise god)
+avg bids/auction         1.06
+GP/seat-deal   P0 -1.343  P1 +0.977  P2 +0.367   (Σ +0.000, should ≈0)
+    501 (83.5%)  made 0.23  piros parti
+     81 (13.5%)  made 0.60  piros ulti
+      7 ( 1.2%)  made 0.29  ulti
+      4 ( 0.7%)  made 1.00  piros ulti-40-100
+      4 ( 0.7%)  made 1.00  piros 40-100
+      2 ( 0.3%)  made 0.00  rebetli
+      1 ( 0.2%)  made 0.00  betli
+
+>>> DEBIAS_PCTL=0.70 (calibrated)
+pass rate      0.000
+soundness P(make|bid)   0.288   (component-wise god)
+avg bids/auction         1.03
+GP/seat-deal   P0 -1.373  P1 +0.872  P2 +0.502   (Σ +0.000, should ≈0)
+    538 (89.7%)  made 0.23  piros parti
+     50 ( 8.3%)  made 0.74  piros ulti
+      7 ( 1.2%)  made 0.71  ulti
+      3 ( 0.5%)  made 1.00  piros ulti-40-100
+      1 ( 0.2%)  made 1.00  rebetli
+      1 ( 0.2%)  made 1.00  piros 40-100
+
+=== pctl sweep DONE 2026 jún. 18 Cs 20:51:17 CEST ===

@@ -1,0 +1,74 @@
+=== baseline training START 2026 jún. 18 Cs 06:07:47 CEST ===
+>>> training reach100_40
+=== train reach100_40 ===  data=reach100_40_god_a1_1M.npz  N=1000000  base_rate=0.4122
+  pos_weight=1.43  train=900000  val=100000
+  ep  1  loss=0.4015  val_brier=0.0875  val_auc=0.9540
+  ep  5  loss=0.3144  val_brier=0.0828  val_auc=0.9586
+  ep 10  loss=0.3066  val_brier=0.0830  val_auc=0.9595
+  ep 15  loss=0.3042  val_brier=0.0815  val_auc=0.9597
+  ep 20  loss=0.3027  val_brier=0.0819  val_auc=0.9596
+  ep 25  loss=0.3013  val_brier=0.0812  val_auc=0.9599
+
+  BEST ep24  val_auc=0.9598  val_brier=0.0808  ECE=0.0231
+  calibration (conf → acc):
+    [0.0,0.1)  n= 38067  conf=0.014  acc=0.011
+    [0.1,0.2)  n=  5739  conf=0.148  acc=0.106
+    [0.2,0.3)  n=  4320  conf=0.249  acc=0.203
+    [0.3,0.4)  n=  4463  conf=0.351  acc=0.292
+    [0.4,0.5)  n=  4262  conf=0.447  acc=0.371
+    [0.5,0.6)  n=  3282  conf=0.548  acc=0.471
+    [0.6,0.7)  n=  3676  conf=0.652  acc=0.591
+    [0.7,0.8)  n=  5077  conf=0.755  acc=0.699
+    [0.8,0.9)  n=  7342  conf=0.850  acc=0.809
+    [0.9,1.0)  n= 23772  conf=0.979  acc=0.976
+  saved reach100_40_baseline.pt
+
+>>> training duri_colored
+=== train duri_colored ===  data=duri_colored_god_a4_1M.npz  N=1000000  base_rate=0.1008
+  pos_weight=8.93  train=900000  val=100000
+  ep  1  loss=0.5633  val_brier=0.0728  val_auc=0.9793
+  ep  5  loss=0.2857  val_brier=0.0535  val_auc=0.9867
+  ep 10  loss=0.2624  val_brier=0.0459  val_auc=0.9874
+  ep 15  loss=0.2563  val_brier=0.0480  val_auc=0.9876
+  ep 20  loss=0.2523  val_brier=0.0481  val_auc=0.9878
+  ep 25  loss=0.2485  val_brier=0.0459  val_auc=0.9878
+
+  BEST ep24  val_auc=0.9879  val_brier=0.0440  ECE=0.0612
+  calibration (conf → acc):
+    [0.0,0.1)  n= 75058  conf=0.005  acc=0.001
+    [0.1,0.2)  n=  2803  conf=0.146  acc=0.022
+    [0.2,0.3)  n=  1872  conf=0.249  acc=0.052
+    [0.3,0.4)  n=  2306  conf=0.351  acc=0.075
+    [0.4,0.5)  n=  2349  conf=0.450  acc=0.091
+    [0.5,0.6)  n=  2067  conf=0.550  acc=0.131
+    [0.6,0.7)  n=  1717  conf=0.646  acc=0.184
+    [0.7,0.8)  n=  1668  conf=0.752  acc=0.322
+    [0.8,0.9)  n=  2646  conf=0.853  acc=0.469
+    [0.9,1.0)  n=  7514  conf=0.990  acc=0.957
+  saved duri_colored_baseline.pt
+
+>>> training reach100_20
+=== train reach100_20 ===  data=reach100_20_god_a3_1M.npz  N=1000000  base_rate=0.0684
+  pos_weight=13.60  train=900000  val=100000
+  ep  1  loss=0.5887  val_brier=0.0698  val_auc=0.9680
+  ep  5  loss=0.3696  val_brier=0.0710  val_auc=0.9740
+  ep 10  loss=0.3464  val_brier=0.0673  val_auc=0.9759
+  ep 15  loss=0.3377  val_brier=0.0648  val_auc=0.9758
+  ep 20  loss=0.3321  val_brier=0.0637  val_auc=0.9764
+  ep 25  loss=0.3280  val_brier=0.0658  val_auc=0.9764
+
+  BEST ep19  val_auc=0.9763  val_brier=0.0555  ECE=0.0726
+  calibration (conf → acc):
+    [0.0,0.1)  n= 77372  conf=0.006  acc=0.001
+    [0.1,0.2)  n=  3986  conf=0.146  acc=0.022
+    [0.2,0.3)  n=  2668  conf=0.246  acc=0.034
+    [0.3,0.4)  n=  1864  conf=0.346  acc=0.049
+    [0.4,0.5)  n=  1172  conf=0.446  acc=0.081
+    [0.5,0.6)  n=   776  conf=0.551  acc=0.117
+    [0.6,0.7)  n=   789  conf=0.652  acc=0.175
+    [0.7,0.8)  n=  1528  conf=0.756  acc=0.247
+    [0.8,0.9)  n=  3140  conf=0.854  acc=0.342
+    [0.9,1.0)  n=  6705  conf=0.954  acc=0.690
+  saved reach100_20_baseline.pt
+
+=== baseline training DONE 2026 jún. 18 Cs 06:09:02 CEST ===

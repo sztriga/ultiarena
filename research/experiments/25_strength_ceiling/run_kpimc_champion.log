@@ -1,0 +1,16 @@
+=== realistic+kontra champion (SCORER=kpimc, N=200) START 2026 júl.  5 V 22:17:37 CEST ===
+>>> KONTRA=0 (bidder), FLOOR=0.7, PIMC play + hand-based kontra
+METRIC mean soloist GP/game +6.280   (floor-dominated; vs god defenders)
+NON-FLOOR GP/game +27.091  (n=66) — escalations above piros parti; the discriminating signal
+GP/seat  P0 +0.400  P1 +0.040  P2 -0.440  | pass 0.000  avg bids 1.18
+  0 piros parti                            134 67.0%  0.25    -3.97
+  9 piros ulti                              38 19.0%  0.79   +32.84
+
+>>> KONTRA=1 (bidder), FLOOR=0.7, PIMC play + hand-based kontra
+METRIC mean soloist GP/game +5.740   (floor-dominated; vs god defenders)
+NON-FLOOR GP/game +37.000  (n=40) — escalations above piros parti; the discriminating signal
+GP/seat  P0 +3.340  P1 -1.670  P2 -1.670  | pass 0.650  avg bids 1.06
+  0 piros parti                             30 15.0%  0.47    +6.27
+  9 piros ulti                              26 13.0%  0.77   +34.92
+
+=== done 2026 júl.  5 V 22:19:33 CEST ===

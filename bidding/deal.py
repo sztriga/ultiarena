@@ -19,7 +19,6 @@ from __future__ import annotations
 import itertools, random, sys
 from pathlib import Path
 
-pass
 
 from ulti.card import SUITS, fresh_deck
 from solvers import pis, pimc as _pimc

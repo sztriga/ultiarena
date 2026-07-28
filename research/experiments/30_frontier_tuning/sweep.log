@@ -1,0 +1,39 @@
+config sweep: 9 configs × N=1200 (pimc scorer)
+
+[1/9] FLOOR=0.60 DEBIAS=0.75  (elapsed 0m)
+FLOOR=0.60	DEBIAS=0.75	scorer=pimc	N=1200	metric=+2.887	nonfloor=+7.604	n_nonfloor=707	pass=0.397	P0=-0.263	wall=388s
+
+[2/9] FLOOR=0.60 DEBIAS=0.80  (elapsed 6m)
+FLOOR=0.60	DEBIAS=0.80	DURIMULT=1.0	scorer=pimc	N=1200	metric=+3.112	nonfloor=+7.611	n_nonfloor=725	pass=0.378	P0=-0.236	wall=397s
+
+[3/9] FLOOR=0.60 DEBIAS=0.85  (elapsed 13m)
+FLOOR=0.60	DEBIAS=0.85	DURIMULT=1.0	scorer=pimc	N=1200	metric=+3.077	nonfloor=+7.340	n_nonfloor=739	pass=0.366	P0=-0.336	wall=405s
+
+[4/9] FLOOR=0.70 DEBIAS=0.75  (elapsed 20m)
+FLOOR=0.70	DEBIAS=0.75	DURIMULT=1.0	scorer=pimc	N=1200	metric=+2.405	nonfloor=+7.897	n_nonfloor=641	pass=0.452	P0=-0.117	wall=370s
+
+[5/9] FLOOR=0.70 DEBIAS=0.80  (elapsed 26m)
+FLOOR=0.70	DEBIAS=0.80	DURIMULT=1.0	scorer=pimc	N=1200	metric=+2.635	nonfloor=+7.906	n_nonfloor=659	pass=0.433	P0=+0.007	wall=387s
+
+[6/9] FLOOR=0.70 DEBIAS=0.85  (elapsed 32m)
+FLOOR=0.70	DEBIAS=0.85	DURIMULT=1.0	scorer=pimc	N=1200	metric=+2.800	nonfloor=+7.958	n_nonfloor=673	pass=0.421	P0=+0.035	wall=406s
+
+[7/9] FLOOR=0.80 DEBIAS=0.75  (elapsed 39m)
+FLOOR=0.80	DEBIAS=0.75	DURIMULT=1.0	scorer=pimc	N=1200	metric=+2.995	nonfloor=+10.330	n_nonfloor=581	pass=0.502	P0=+0.378	wall=369s
+
+[8/9] FLOOR=0.80 DEBIAS=0.80  (elapsed 45m)
+FLOOR=0.80	DEBIAS=0.80	DURIMULT=1.0	scorer=pimc	N=1200	metric=+3.262	nonfloor=+10.317	n_nonfloor=600	pass=0.482	P0=+0.447	wall=391s
+
+[9/9] FLOOR=0.80 DEBIAS=0.85  (elapsed 52m)
+FLOOR=0.80	DEBIAS=0.85	DURIMULT=1.0	scorer=pimc	N=1200	metric=+3.478	nonfloor=+10.301	n_nonfloor=618	pass=0.464	P0=+0.553	wall=415s
+
+===== RANKED (pimc, by metric) =====
+  FLOOR=0.80 DEBIAS=0.85  metric=+3.478  nonfloor=+10.301 (n=618)  pass=0.464  P0=+0.553
+  FLOOR=0.80 DEBIAS=0.80  metric=+3.262  nonfloor=+10.317 (n=600)  pass=0.482  P0=+0.447
+  FLOOR=0.60 DEBIAS=0.80  metric=+3.112  nonfloor=+7.611 (n=725)  pass=0.378  P0=-0.236
+  FLOOR=0.60 DEBIAS=0.85  metric=+3.077  nonfloor=+7.340 (n=739)  pass=0.366  P0=-0.336
+  FLOOR=0.80 DEBIAS=0.75  metric=+2.995  nonfloor=+10.330 (n=581)  pass=0.502  P0=+0.378
+  FLOOR=0.60 DEBIAS=0.75  metric=+2.887  nonfloor=+7.604 (n=707)  pass=0.397  P0=-0.263
+  FLOOR=0.70 DEBIAS=0.85  metric=+2.800  nonfloor=+7.958 (n=673)  pass=0.421  P0=+0.035
+  FLOOR=0.70 DEBIAS=0.80  metric=+2.635  nonfloor=+7.906 (n=659)  pass=0.433  P0=+0.007
+  FLOOR=0.70 DEBIAS=0.75  metric=+2.405  nonfloor=+7.897 (n=641)  pass=0.452  P0=-0.117

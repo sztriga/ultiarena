@@ -1,0 +1,11 @@
+===== exp40 TOURNAMENT START 2026-07-26 00:31:59  PIMC_N=16 =====
+[2026-07-26 00:31:59] >>> h2h:RECAL:FRONTIER  N=4000
+    done
+[2026-07-26 02:20:34] <<< h2h:RECAL:FRONTIER done
+[2026-07-26 02:20:34] >>> self:RECAL  N=5000
+    done
+[2026-07-26 03:06:17] <<< self:RECAL done
+[2026-07-26 03:06:17] >>> self:FRONTIER  N=5000
+    done
+[2026-07-26 03:06:17] <<< self:FRONTIER done
+===== exp40 TOURNAMENT DONE 2026-07-26 03:06:17 — see TOURNAMENT.md =====

@@ -1,0 +1,21 @@
+[v2] 22:36:21 MAIN tournament (DEF=pimc)…
+[v2] 22:55:16 --- MAIN (pimc) v2 ---
+- **mean diff = +0.1638 GP/seat-deal   (t=+2.6, n=4500)**  → the GP gained by adopting betli_real vs the deployed baseline
+- auction diverged (R bid a betli C wouldn't, or plain-vs-terített) on 197/4500 seat-deals (4.4%)
+- GP actually changed on 186 seat-deals; mean diff there = +3.962
+
+## The newly-unlocked betlis (R bid plain betli, C didn't): n=107
+- realised make-rate 72% (77/107 made)
+- mean diff on those = +3.654 GP/seat-deal
+- what C bid instead: ulti=49  pass=18  piros ulti=17  piros parti=7  20-100=3  piros 40-100=2
+[v2] 22:55:16 ROBUSTNESS tournament (DEF=god)…
+[v2] 23:10:43 --- ROBUSTNESS (god) v2 ---
+- **mean diff = -0.1580 GP/seat-deal   (t=-2.4, n=4500)**  → the GP gained by adopting betli_real vs the deployed baseline
+- auction diverged (R bid a betli C wouldn't, or plain-vs-terített) on 197/4500 seat-deals (4.4%)
+- GP actually changed on 191 seat-deals; mean diff there = -3.723
+
+## The newly-unlocked betlis (R bid plain betli, C didn't): n=107
+- realised make-rate 21% (22/107 made)
+- mean diff on those = -6.430 GP/seat-deal
+- what C bid instead: ulti=49  pass=18  piros ulti=17  piros parti=7  20-100=3  piros 40-100=2
+[v2] 23:10:43 V2 DONE.

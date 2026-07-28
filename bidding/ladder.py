@@ -32,8 +32,6 @@ from dataclasses import dataclass
 from typing import List, Optional, Tuple
 
 _REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-if _REPO not in sys.path:
-    pass
 
 from scoring.oracle import BidSet, GPTable  # noqa: E402
 

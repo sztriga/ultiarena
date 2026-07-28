@@ -1,0 +1,17 @@
+[def-duri] CAND=1500  god-parti sol vs god defenders (duri off/on)
+  200/1500 | A-sweeps 48 | B-breaks-it 23 | 2s
+  400/1500 | A-sweeps 90 | B-breaks-it 45 | 5s
+  600/1500 | A-sweeps 141 | B-breaks-it 68 | 7s
+  800/1500 | A-sweeps 186 | B-breaks-it 93 | 8s
+  1000/1500 | A-sweeps 225 | B-breaks-it 116 | 10s
+  1200/1500 | A-sweeps 272 | B-breaks-it 138 | 12s
+  1400/1500 | A-sweeps 312 | B-breaks-it 158 | 15s
+
+N=1500 durchmars-colored deals  wall=16s
+  sweeps with A (parti defenders, let-slide):   339 (22.6%)
+  sweeps with B (duri-aware defenders):          169 (11.3%)
+  forced sweeps (happen under BOTH):             169
+  *** A let it slide but B BROKE the sweep:      170 ***
+  sol GP/def:  A +2.743  vs  B +2.337   (B−A -0.407, t=-13.24; negative = defenders gained)
+  example seeds where B actively stopped the duri: [320000004, 320000008, 320000010, 320000030, 320000045, 320000050, 320000076, 320000081, 320000038, 320000073, 320000110, 320000126]
+  → at least one game found: silent-duri defenders break a sweep that parti-only defenders allow.

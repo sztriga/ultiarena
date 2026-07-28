@@ -1,0 +1,41 @@
+[bleed] 22:48:15 waiting for v2 tournament (pid 35450)…
+[bleed] 23:11:16 v2 done. --- v2 tournament tail ---
+- realised make-rate 72% (77/107 made)
+- mean diff on those = +3.654 GP/seat-deal
+- what C bid instead: ulti=49  pass=18  piros ulti=17  piros parti=7  20-100=3  piros 40-100=2
+[v2] 22:55:16 ROBUSTNESS tournament (DEF=god)…
+[v2] 23:10:43 --- ROBUSTNESS (god) v2 ---
+- **mean diff = -0.1580 GP/seat-deal   (t=-2.4, n=4500)**  → the GP gained by adopting betli_real vs the deployed baseline
+- auction diverged (R bid a betli C wouldn't, or plain-vs-terített) on 197/4500 seat-deals (4.4%)
+- GP actually changed on 191 seat-deals; mean diff there = -3.723
+
+## The newly-unlocked betlis (R bid plain betli, C didn't): n=107
+- realised make-rate 21% (22/107 made)
+- mean diff on those = -6.430 GP/seat-deal
+- what C bid instead: ulti=49  pass=18  piros ulti=17  piros parti=7  20-100=3  piros 40-100=2
+[v2] 23:10:43 V2 DONE.
+[bleed] 23:11:16 PART A: head calibration vs god (N=25000)…
+[bleed] 23:11:39 PART B: faithful self-play bleed (N=25000)…
+[bleed] 23:26:28 analyzing…
+[bleed] 23:26:29 --- BLEED REPORT ---
+# exp37 — why the higher betli rungs bleed
+
+## PART A — head calibration vs god  (n=25000 uniform deals, argmax-discard)
+- overall: net_p(argmax) mean 0.028 · pctl_p(0.85) mean 0.004 · true god-make 0.013
+- **argmax inflation** net_p−god = +0.015 ; DEBIAS'd pctl_p−god = -0.010
+
+### calibration curve (net_p bin → actual god-make rate):
+| net_p bin | n | mean net_p | god-make | gap | terit EV/bid = 40·(god−net_p) |
+|---|---|---|---|---|---|
+| [0.00,0.30) | 24498 | 0.019 | 0.007 | +0.012 | -0.5 |
+| [0.30,0.50) | 293 | 0.396 | 0.208 | +0.188 | -7.5 |
+| [0.50,0.70) | 177 | 0.607 | 0.429 | +0.178 | -7.1 |
+| [0.70,0.85) | 32 | 0.809 | 0.781 | +0.027 | -1.1 |
+- where DEBIAS decision pctl_p≥0.5 (terített-bid region): n=4 (0.0%), true god-make 1.000 → terített EV/bid ≈ +15.4, plain-betli EV ≈ +3.9
+
+## PART B — realised bleed in faithful self-play  (n=25000 deals, 456 betli-family bids)
+| rung | n | net_p | god-make | realised GP/bid |
+|---|---|---|---|---|
+| teritett betli | 456 | 0.833 | 0.706 | **+29.65** |
+- ALL betli-family bids: mean realised GP/bid **+29.65** (net_p 0.833 vs god-make 0.706)
+[bleed] 23:26:29 OVERNIGHT DONE.

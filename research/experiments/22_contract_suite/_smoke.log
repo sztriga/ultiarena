@@ -1,0 +1,11 @@
+[smoke silent-ulti] dealer=ulti filt=marriage CAND=1500 configs=['A parti', 'B +ulti']
+  scanned 500/1500 kept 223 37s
+  scanned 1000/1500 kept 437 61s
+  scanned 1500/1500 kept 663 75s
+
+kept 663/1500  wall=75s
+  A parti                | gp +1.110 | silent_ulti 0.036 | parti_won 0.652
+  B +ulti                | gp +2.373 | silent_ulti 0.585 | parti_won 0.652
+
+  deltas vs 'A parti':
+  B +ulti                − A parti        | gp +1.262 (t=+20.6) | silent_ulti +0.549 | parti_won +0.000

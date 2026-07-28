@@ -1,0 +1,18 @@
+[2026-07-27 19:51:33] >>> batch colorless_duri  N=40000  PIMC_N=32
+      saved 40000 records (0 skipped, 0 errored)  wall=3674s
+      realistic make-rate=0.2056  dd-lost=0.8203  dd-lost&made=0.0259  (= the realistic headroom the god head is blind to)
+      REALISTIC head  best ep27  val_auc=0.9296  val_brier=0.1026  ECE_raw=0.0986  ECE_cal=0.0310
+      GOD head 'colorless_duri' (vs realistic outcome)  val_auc=0.8193  val_brier=0.1596  mean_pred=0.0671 vs actual make-rate 0.2050  → UNDER-predicts by 0.138
+[2026-07-27 20:52:51] <<< batch colorless_duri DONE (PIMC_N=32)
+[2026-07-27 21:08:43] >>> batch ulti  N=20000  PIMC_N=32
+      saved 20000 records (0 skipped, 0 errored)  wall=16462s
+      realistic make-rate=0.5147  dd-lost=0.5525  dd-lost&made=0.0925  (= the realistic headroom the god head is blind to)
+      REALISTIC head  best ep17  val_auc=0.9337  val_brier=0.1013  ECE_raw=0.0113  ECE_cal=0.0295
+      GOD head 'ulti' (vs realistic outcome)  val_auc=0.9417  val_brier=0.1232  mean_pred=0.3953 vs actual make-rate 0.5030  → UNDER-predicts by 0.108
+[2026-07-28 01:43:17] <<< batch ulti DONE (PIMC_N=32)
+[2026-07-28 01:43:17] >>> batch duri_colored  N=10000  PIMC_N=32
+      saved 10000 records (0 skipped, 0 errored)  wall=36221s
+      realistic make-rate=0.1333  dd-lost=0.9314  dd-lost&made=0.0649  (= the realistic headroom the god head is blind to)
+      REALISTIC head  best ep38  val_auc=0.9301  val_brier=0.0881  ECE_raw=0.0849  ECE_cal=0.0727
+      GOD head 'duri_colored' (vs realistic outcome)  val_auc=0.9266  val_brier=0.0887  mean_pred=0.0507 vs actual make-rate 0.1370  → UNDER-predicts by 0.086
+[2026-07-28 11:47:01] <<< batch duri_colored DONE (PIMC_N=32)

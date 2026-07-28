@@ -1,0 +1,10 @@
+=== exp40 realistic datagen: HEAD=reach100_20 ===
+  N=15000 ALPHA_MAX=1.0 PIMC_N=8 workers=8 colored=True out=reach100_20_real.npz
+  1000 kept (1635 skip, 0 err)  wall=114s eta=1407s  real-made=0.102  dd-lost=0.912  dd-lost&made=0.023
+  2000 kept (3236 skip, 0 err)  wall=225s eta=1099s  real-made=0.096  dd-lost=0.913  dd-lost&made=0.021
+  3000 kept (4809 skip, 0 err)  wall=334s eta=800s  real-made=0.090  dd-lost=0.916  dd-lost&made=0.020
+  4000 kept (6354 skip, 0 err)  wall=437s eta=508s  real-made=0.094  dd-lost=0.911  dd-lost&made=0.018
+  5000 kept (7889 skip, 0 err)  wall=548s eta=231s  real-made=0.090  dd-lost=0.914  dd-lost&made=0.018
+
+  saved 5804 records (9196 skipped, 0 errored)  wall=631s
+  realistic make-rate=0.0910  dd-lost=0.9135  dd-lost&made=0.0171  (= the realistic headroom the god head is blind to)

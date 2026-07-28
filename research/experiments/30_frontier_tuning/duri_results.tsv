@@ -1,0 +1,6 @@
+FLOOR=0.80	DEBIAS=0.85	DURIMULT=1.0	scorer=pimc	N=1500	metric=+3.165	nonfloor=+9.751	n_nonfloor=770	pass=0.467	P0=+0.119	wall=521s
+FLOOR=0.80	DEBIAS=0.85	DURIMULT=0.7	scorer=pimc	N=1500	metric=+3.229	nonfloor=+9.875	n_nonfloor=770	pass=0.467	P0=+0.115	wall=520s
+FLOOR=0.80	DEBIAS=0.85	DURIMULT=0.5	scorer=pimc	N=1500	metric=+3.251	nonfloor=+9.917	n_nonfloor=770	pass=0.467	P0=+0.201	wall=521s
+FLOOR=0.80	DEBIAS=0.85	DURIMULT=0.3	scorer=pimc	N=1500	metric=+3.389	nonfloor=+10.187	n_nonfloor=770	pass=0.467	P0=+0.111	wall=524s
+FLOOR=0.80	DEBIAS=0.85	DURIMULT=0.15	scorer=pimc	N=1500	metric=+3.397	nonfloor=+10.203	n_nonfloor=770	pass=0.467	P0=+0.099	wall=530s
+FLOOR=0.80	DEBIAS=0.85	DURIMULT=0.0	scorer=pimc	N=1500	metric=+3.429	nonfloor=+10.265	n_nonfloor=770	pass=0.467	P0=+0.055	wall=531s

@@ -1,0 +1,46 @@
+  scanned 20/500  kept 3  wall=3s
+  scanned 40/500  kept 8  wall=10s
+  scanned 60/500  kept 17  wall=15s
+  scanned 80/500  kept 25  wall=23s
+  scanned 100/500  kept 34  wall=32s
+  scanned 120/500  kept 46  wall=42s
+  scanned 140/500  kept 55  wall=47s
+  scanned 160/500  kept 65  wall=55s
+  scanned 180/500  kept 79  wall=64s
+  scanned 200/500  kept 88  wall=70s
+  scanned 220/500  kept 98  wall=80s
+  scanned 240/500  kept 104  wall=87s
+  scanned 260/500  kept 117  wall=96s
+  scanned 280/500  kept 128  wall=108s
+  scanned 300/500  kept 136  wall=116s
+  scanned 320/500  kept 145  wall=129s
+  scanned 340/500  kept 152  wall=132s
+  scanned 360/500  kept 160  wall=137s
+  scanned 380/500  kept 168  wall=143s
+  scanned 400/500  kept 178  wall=152s
+  scanned 420/500  kept 189  wall=175s
+  scanned 440/500  kept 198  wall=189s
+  scanned 460/500  kept 204  wall=200s
+  scanned 480/500  kept 213  wall=209s
+  scanned 500/500  kept 226  wall=260s
+
+kept 226/500 marriage deals (40:72, 20:169)  wall=260s  pimc_n=32
+
+=== A0 parti (dedicated) ===
+  parti WR 0.580 | pts 70.8 | reached100 0.208 | 40-100 0.115 | 20-100 0.075 | GP/def +0.912 ± 2.236
+
+=== A1 multi[parti] ===
+  parti WR 0.571 | pts 71.2 | reached100 0.226 | 40-100 0.111 | 20-100 0.093 | GP/def +0.987 ± 2.338
+
+=== B multi+ulti ===
+  parti WR 0.571 | pts 75.0 | reached100 0.283 | 40-100 0.168 | 20-100 0.111 | GP/def +2.137 ± 3.069
+
+=== C multi+ulti+100 ===
+  parti WR 0.562 | pts 76.8 | reached100 0.350 | 40-100 0.186 | 20-100 0.137 | GP/def +2.235 ± 3.105
+
+=== INVARIANT: A1 multi[parti] vs A0 dedicated parti ===
+  per-deal GP diff: mean +0.0752  deals differing: 23/226   ⚠ DIVERGES
+
+=== effects (corrected oracle) ===
+  C − B (silent-100):  +0.097  t=+1.25
+  B − A1 (silent-ulti): +1.150  t=+9.33

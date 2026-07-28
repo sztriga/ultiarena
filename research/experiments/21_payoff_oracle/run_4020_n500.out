@@ -1,0 +1,81 @@
+  scanned 10/500  kept 0  wall=0s
+  scanned 20/500  kept 3  wall=3s
+  scanned 30/500  kept 5  wall=4s
+  scanned 40/500  kept 8  wall=9s
+  scanned 50/500  kept 12  wall=11s
+  scanned 60/500  kept 17  wall=14s
+  scanned 70/500  kept 23  wall=19s
+  scanned 80/500  kept 25  wall=21s
+  scanned 90/500  kept 31  wall=26s
+  scanned 100/500  kept 34  wall=30s
+  scanned 110/500  kept 41  wall=36s
+  scanned 120/500  kept 46  wall=38s
+  scanned 130/500  kept 49  wall=41s
+  scanned 140/500  kept 55  wall=43s
+  scanned 150/500  kept 58  wall=46s
+  scanned 160/500  kept 65  wall=50s
+  scanned 170/500  kept 71  wall=54s
+  scanned 180/500  kept 79  wall=59s
+  scanned 190/500  kept 83  wall=62s
+  scanned 200/500  kept 88  wall=65s
+  scanned 210/500  kept 93  wall=69s
+  scanned 220/500  kept 98  wall=73s
+  scanned 230/500  kept 101  wall=75s
+  scanned 240/500  kept 104  wall=80s
+  scanned 250/500  kept 108  wall=81s
+  scanned 260/500  kept 117  wall=86s
+  scanned 270/500  kept 123  wall=94s
+  scanned 280/500  kept 128  wall=98s
+  scanned 290/500  kept 133  wall=102s
+  scanned 300/500  kept 136  wall=106s
+  scanned 310/500  kept 139  wall=109s
+  scanned 320/500  kept 145  wall=116s
+  scanned 330/500  kept 150  wall=119s
+  scanned 340/500  kept 152  wall=119s
+  scanned 350/500  kept 155  wall=121s
+  scanned 360/500  kept 160  wall=125s
+  scanned 370/500  kept 166  wall=129s
+  scanned 380/500  kept 168  wall=130s
+  scanned 390/500  kept 173  wall=133s
+  scanned 400/500  kept 178  wall=138s
+  scanned 410/500  kept 183  wall=143s
+  scanned 420/500  kept 189  wall=158s
+  scanned 430/500  kept 194  wall=168s
+  scanned 440/500  kept 198  wall=174s
+  scanned 450/500  kept 200  wall=177s
+  scanned 460/500  kept 204  wall=182s
+  scanned 470/500  kept 209  wall=188s
+  scanned 480/500  kept 213  wall=191s
+  scanned 490/500  kept 217  wall=196s
+  scanned 500/500  kept 226  wall=240s
+
+kept 226/500 marriage deals (40: 72, 20: 169)  wall=240s  workers=8  pimc_n=32
+
+=== A vanilla parti ===
+  parti win rate:        0.580
+  sol pts:               70.84 ± 26.23
+  reached 100:           0.208
+  silent 40-100 hit:     0.146
+  silent 20-100 hit:     0.102
+  total GP / def:        +2.159 ± 2.279  (×2 sol = +4.319)
+
+=== B multi+ulti ===
+  parti win rate:        0.571
+  sol pts:               74.96 ± 28.34
+  reached 100:           0.283
+  silent 40-100 hit:     0.190
+  silent 20-100 hit:     0.137
+  total GP / def:        +3.261 ± 3.022  (×2 sol = +6.522)
+
+=== C multi+40/20 ===
+  parti win rate:        0.566
+  sol pts:               76.59 ± 29.51
+  reached 100:           0.341
+  silent 40-100 hit:     0.221
+  silent 20-100 hit:     0.177
+  total GP / def:        +3.367 ± 3.082  (×2 sol = +6.735)
+
+=== paired GP/def deltas (sol perspective) ===
+  C - B (40/20 effect):  +0.106  t=+1.79
+  B - A (silent-ulti):   +1.102  t=+11.17
+  C - A (total):         +1.208  t=+11.89

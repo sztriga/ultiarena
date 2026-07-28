@@ -1,0 +1,22 @@
+=== PIMC_N play probe (FLOOR=0.7, N=150) START 2026 júl.  5 V 21:53:59 CEST ===
+>>> PIMC_N=4
+METRIC mean soloist GP/game +0.747   (floor-dominated; vs god defenders)
+NON-FLOOR GP/game +8.786  (n=56) — escalations above piros parti; the discriminating signal
+GP/seat  P0 -1.213  P1 -0.173  P2 +1.387  | pass 0.000  avg bids 1.21
+
+>>> PIMC_N=8
+METRIC mean soloist GP/game +1.920   (floor-dominated; vs god defenders)
+NON-FLOOR GP/game +11.214  (n=56) — escalations above piros parti; the discriminating signal
+GP/seat  P0 -1.640  P1 +0.360  P2 +1.280  | pass 0.000  avg bids 1.21
+
+>>> PIMC_N=16
+METRIC mean soloist GP/game +3.227   (floor-dominated; vs god defenders)
+NON-FLOOR GP/game +13.429  (n=56) — escalations above piros parti; the discriminating signal
+GP/seat  P0 -1.613  P1 +0.827  P2 +0.787  | pass 0.000  avg bids 1.21
+
+>>> PIMC_N=32
+METRIC mean soloist GP/game +2.800   (floor-dominated; vs god defenders)
+NON-FLOOR GP/game +12.214  (n=56) — escalations above piros parti; the discriminating signal
+GP/seat  P0 -1.080  P1 +0.640  P2 +0.440  | pass 0.000  avg bids 1.21
+
+=== done 2026 júl.  5 V 21:57:33 CEST ===

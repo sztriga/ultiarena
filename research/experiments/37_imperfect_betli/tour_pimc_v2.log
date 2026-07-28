@@ -1,0 +1,76 @@
+exp37 betli-bidding tournament: 1500 deals × 3 seats  (DEF=pimc, R=betli_real ON vs C=baseline)
+[tour] 25/1500 22s eta 22m divergences 3
+[tour] 50/1500 43s eta 21m divergences 7
+[tour] 75/1500 64s eta 20m divergences 9
+[tour] 100/1500 88s eta 21m divergences 12
+[tour] 125/1500 111s eta 20m divergences 13
+[tour] 150/1500 126s eta 19m divergences 15
+[tour] 175/1500 146s eta 18m divergences 15
+[tour] 200/1500 162s eta 18m divergences 19
+[tour] 225/1500 181s eta 17m divergences 24
+[tour] 250/1500 196s eta 16m divergences 28
+[tour] 275/1500 211s eta 16m divergences 36
+[tour] 300/1500 230s eta 15m divergences 38
+[tour] 325/1500 250s eta 15m divergences 42
+[tour] 350/1500 269s eta 15m divergences 43
+[tour] 375/1500 285s eta 14m divergences 44
+[tour] 400/1500 301s eta 14m divergences 50
+[tour] 425/1500 319s eta 13m divergences 53
+[tour] 450/1500 335s eta 13m divergences 58
+[tour] 475/1500 355s eta 13m divergences 63
+[tour] 500/1500 370s eta 12m divergences 65
+[tour] 525/1500 385s eta 12m divergences 69
+[tour] 550/1500 404s eta 12m divergences 72
+[tour] 575/1500 423s eta 11m divergences 75
+[tour] 600/1500 442s eta 11m divergences 79
+[tour] 625/1500 463s eta 11m divergences 84
+[tour] 650/1500 482s eta 11m divergences 90
+[tour] 675/1500 497s eta 10m divergences 92
+[tour] 700/1500 513s eta 10m divergences 95
+[tour] 725/1500 527s eta 9m divergences 95
+[tour] 750/1500 547s eta 9m divergences 97
+[tour] 775/1500 567s eta 9m divergences 101
+[tour] 800/1500 587s eta 9m divergences 104
+[tour] 825/1500 601s eta 8m divergences 108
+[tour] 850/1500 622s eta 8m divergences 110
+[tour] 875/1500 649s eta 8m divergences 115
+[tour] 900/1500 677s eta 8m divergences 118
+[tour] 925/1500 693s eta 7m divergences 122
+[tour] 950/1500 711s eta 7m divergences 123
+[tour] 975/1500 734s eta 7m divergences 126
+[tour] 1000/1500 755s eta 6m divergences 130
+[tour] 1025/1500 778s eta 6m divergences 132
+[tour] 1050/1500 798s eta 6m divergences 139
+[tour] 1075/1500 815s eta 5m divergences 143
+[tour] 1100/1500 836s eta 5m divergences 145
+[tour] 1125/1500 854s eta 5m divergences 147
+[tour] 1150/1500 866s eta 4m divergences 150
+[tour] 1175/1500 882s eta 4m divergences 153
+[tour] 1200/1500 896s eta 4m divergences 154
+[tour] 1225/1500 916s eta 3m divergences 156
+[tour] 1250/1500 941s eta 3m divergences 160
+[tour] 1275/1500 967s eta 3m divergences 160
+[tour] 1300/1500 987s eta 3m divergences 165
+[tour] 1325/1500 1004s eta 2m divergences 172
+[tour] 1350/1500 1022s eta 2m divergences 178
+[tour] 1375/1500 1044s eta 2m divergences 182
+[tour] 1400/1500 1059s eta 1m divergences 185
+[tour] 1425/1500 1079s eta 1m divergences 187
+[tour] 1450/1500 1088s eta 1m divergences 191
+[tour] 1475/1500 1110s eta 0m divergences 192
+[tour] 1500/1500 1135s eta 0m divergences 197
+done
+# exp37 — imperfect/bluff betli bidding tournament  (DEF=pimc)
+
+1500 deals × 3 seats = 4500 seat-games. R = betli_real ON, C = deployed baseline (same frontier config otherwise). diff = GP(seat=R, opp=C) − GP(seat=C, all-C table).
+
+## Headline
+- **mean diff = +0.1638 GP/seat-deal   (t=+2.6, n=4500)**  → the GP gained by adopting betli_real vs the deployed baseline
+- auction diverged (R bid a betli C wouldn't, or plain-vs-terített) on 197/4500 seat-deals (4.4%)
+- GP actually changed on 186 seat-deals; mean diff there = +3.962
+
+## The newly-unlocked betlis (R bid plain betli, C didn't): n=107
+- realised make-rate 72% (77/107 made)
+- mean diff on those = +3.654 GP/seat-deal
+- what C bid instead: ulti=49  pass=18  piros ulti=17  piros parti=7  20-100=3  piros 40-100=2
+

@@ -1,0 +1,43 @@
+=== all-rules god (FLOOR=0.7 KONTRA=1 SCORER=kontra N=5000) START 2026 júl.  5 V 21:58:42 CEST ===
+
+=== net+composer | scorer=kontra | N=5000 wall=23s ===
+METRIC mean soloist GP/game -1.812   (floor-dominated; vs god defenders)
+NON-FLOOR GP/game +6.982  (n=766) — escalations above piros parti; the discriminating signal
+GP/seat  P0 -1.936  P1 +1.010  P2 +0.925  | pass 0.684  avg bids 1.06
+
+  # contract                              bids   freq    wr  GP/game
+  - PASS                                  3420 68.4%     —    -4.00
+  0 piros parti                            814 16.3%  0.59    -0.89
+  1 40-100                                   0   0.0%     —        —
+  2 ulti                                     0   0.0%     —        —
+  3 betli                                    0   0.0%     —        —
+  4 colorless duri                           0   0.0%     —        —
+  5 ulti-40-100                              0   0.0%     —        —
+  6 piros 40-100                            73  1.5%  0.88   +12.05
+  7 20-100                                   0   0.0%     —        —
+  8 40-100-duri ≡ ulti-duri                  0   0.0%     —        —
+  9 piros ulti                             545 10.9%  0.82    +4.06
+ 10 rebetli                                  0   0.0%     —        —
+ 11 ulti-20-100                              0   0.0%     —        —
+ 12 ulti-40-100-duri                         0   0.0%     —        —
+ 13 20-100-duri                              0   0.0%     —        —
+ 14 piros ulti-40-100                       49  1.0%  0.86   +26.12
+ 15 teritett 40-100-duri ≡ teritett ulti-duri     0   0.0%     —        —
+ 16 piros 20-100                            10  0.2%  0.50    +0.00
+ 17 ulti-20-100-duri                         0   0.0%     —        —
+ 18 teritett ulti-40-100-duri                0   0.0%     —        —
+ 19 piros 40-100-duri ≡ piros ulti-duri      0   0.0%     —        —
+ 20 teritett 20-100-duri                     0   0.0%     —        —
+ 21 teritett betli                           0   0.0%     —        —
+ 22 teritett ulti-20-100-duri                0   0.0%     —        —
+ 23 piros ulti-20-100                        4  0.1%  0.50    +4.00
+ 24 teritett colorless duri                 25  0.5%  0.40    -9.60
+ 25 piros ulti-40-100-duri                   0   0.0%     —        —
+ 26 piros 20-100-duri                        0   0.0%     —        —
+ 27 piros teritett 40-100-duri ≡ piros teritett ulti-duri     8  0.2%  0.00   -32.00
+ 28 piros ulti-20-100-duri                   0   0.0%     —        —
+ 29 piros teritett ulti-40-100-duri          1  0.0%  0.00   -64.00
+ 30 piros teritett 20-100-duri               4  0.1%  0.25    +8.00
+ 31 teritett rebetli                        43  0.9%  0.70   +31.63
+ 32 piros teritett ulti-20-100-duri          4  0.1%  0.50   +32.00
+=== done 2026 júl.  5 V 21:59:04 CEST ===

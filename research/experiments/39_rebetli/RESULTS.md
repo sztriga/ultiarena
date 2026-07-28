@@ -1,0 +1,31 @@
+# exp39 — rebetli extension: does escalating to rebetli help?
+
+FRONTIER (deployed: betli_real ON, rebetli OFF) vs REBETLI (+ rebetli_real, floor 0.90). Corrected engine (terített reveal + exp36 net defense); soloist PIMC.
+
+## (1) Contract mix — FRONTIER vs REBETLI self-play (does rebetli appear? eat what?)
+| contract | FRONTIER %·GP | REBETLI %·GP |
+|---|---|---|
+| betli | 6.5% · +2.82 | 3.0% · +1.30 |
+| rebetli | — | 8.5% · +8.14 |
+| teritett betli | 3.0% · +22.11 | 2.6% · +21.01 |
+| piros ulti | 38.6% · +10.39 | 35.6% · +10.11 |
+| ulti | 27.6% · +6.39 | 27.6% · +6.39 |
+| piros parti | 4.9% · +1.39 | 4.9% · +1.39 |
+
+- **rebetli appears in REBETLI: 452 bids (8.48% of games), GP/bid +8.14 ± 1.69**
+- plain-betli share FRONTIER 6.53% → REBETLI 3.02%  (did rebetli eat plain betli?)
+- ulti share FRONTIER 27.60% → REBETLI 27.58%  (did it eat ulti? — the v1 failure mode)
+
+## (2) GAME-POINTS IMPACT — REBETLI vs FRONTIER head-to-head
+- **REBETLI (lone) vs 2×FRONTIER: +0.1649 GP/game (±0.334, n=8037; 963 redealt)** — 0 = tie, + = rebetli helps.
+
+## (3) The NEGATIVE contracts — real leak or low-count noise? (FRONTIER self-play)
+| contract | n | GP/bid | 95% CI | |mean|/SE | verdict |
+|---|---|---|---|---|---|
+| piros teritett 40-100-duri | 5 | -36.80 | ±13.7 | 5.3 | **real −EV** |
+| teritett 40-100-duri | 17 | -16.94 | ±7.0 | 4.7 | **real −EV** |
+| teritett 20-100-duri | 11 | -12.36 | ±21.2 | 1.1 | leaning − |
+| 40-100-duri | 8 | -6.00 | ±3.9 | 3.0 | **real −EV** |
+| teritett ulti-duri | 27 | -1.78 | ±8.7 | 0.4 | noise (CI spans 0) |
+
+- **3 contract(s) are significantly −EV (|mean|/SE ≥ 2): piros teritett 40-100-duri, teritett 40-100-duri, 40-100-duri** — the rest are consistent with noise at this N.

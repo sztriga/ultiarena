@@ -5,20 +5,18 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "trickster"
 version = "0.3.0"
-description = "Ulti AI (base-event bidder + web app) with an isolated Snapszer engine."
+description = "Ulti AI — base-event bidder + web app. Snapszer engine lives isolated under snapszer/ (run standalone)."
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = ["fastapi", "uvicorn", "numpy", "torch"]
 
 [project.optional-dependencies]
 dev = ["pytest"]
-fast = ["cython"]
+fast = ["cython"]   # build the extensions: python setup_cython.py build_ext --inplace
 
-# NOTE: multi-root layout finalized in Stage 6 (adds ulti/, ultisolver/, apps/).
-# For now only the isolated snapszer `trickster` package is installable.
-[tool.setuptools]
-package-dir = {"" = "snapszer"}
-
+# The Ulti product = the root packages below. The Cython extension ultisolver._solver_core
+# and the snapszer _fast_minimax are built by setup_cython.py (in-place). Snapszer is isolated
+# under snapszer/ and run standalone (PYTHONPATH=snapszer), so it's excluded from this install.
 [tool.setuptools.packages.find]
-where = ["snapszer"]
-
+where = ["."]
+exclude = ["research*", "tests*", "snapszer*", "build*", "assets*", "models*", "apps.web*"]

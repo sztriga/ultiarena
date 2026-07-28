@@ -1,0 +1,15 @@
+=== perception ceiling START 2026 júl.  5 V 20:40:02 CEST ===
+
+=== PERCEPTION CEILING | god-agent vs net-agent | scorer=god N=150 wall=54s ===
+god-agent GP/deal +5.684   net-agent GP/deal -2.842
+PERCEPTION HEADROOM (god edge) +8.527 GP/deal
+
+god-agent wins on contracts the net-agent doesn't reach:
+     22  piros parti
+     19  piros ulti
+     18  teritett rebetli
+      3  teritett colorless duri
+      2  piros ulti-20-100
+      1  piros teritett 40-100-duri ≡ piros teritett ulti-duri
+      1  piros ulti-40-100
+=== done 2026 júl.  5 V 20:40:56 CEST ===

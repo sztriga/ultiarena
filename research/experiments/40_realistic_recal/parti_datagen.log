@@ -1,0 +1,20 @@
+=== exp40 realistic datagen: HEAD=parti ===
+  N=15000 ALPHA_MAX=1.0 PIMC_N=8 workers=8 colored=True out=parti_real.npz
+  1000 kept (0 skip, 0 err)  wall=157s eta=2201s  real-made=0.654  dd-lost=0.303  dd-lost&made=0.047
+  2000 kept (0 skip, 0 err)  wall=288s eta=1873s  real-made=0.653  dd-lost=0.307  dd-lost&made=0.048
+  3000 kept (0 skip, 0 err)  wall=423s eta=1690s  real-made=0.652  dd-lost=0.310  dd-lost&made=0.050
+  4000 kept (0 skip, 0 err)  wall=551s eta=1515s  real-made=0.646  dd-lost=0.316  dd-lost&made=0.049
+  5000 kept (0 skip, 0 err)  wall=696s eta=1391s  real-made=0.645  dd-lost=0.319  dd-lost&made=0.049
+  6000 kept (0 skip, 0 err)  wall=832s eta=1248s  real-made=0.648  dd-lost=0.316  dd-lost&made=0.048
+  7000 kept (0 skip, 0 err)  wall=961s eta=1098s  real-made=0.647  dd-lost=0.315  dd-lost&made=0.048
+  8000 kept (0 skip, 0 err)  wall=1100s eta=962s  real-made=0.645  dd-lost=0.314  dd-lost&made=0.046
+  9000 kept (0 skip, 0 err)  wall=1241s eta=827s  real-made=0.648  dd-lost=0.312  dd-lost&made=0.046
+  10000 kept (0 skip, 0 err)  wall=1372s eta=686s  real-made=0.646  dd-lost=0.314  dd-lost&made=0.046
+  11000 kept (0 skip, 0 err)  wall=1517s eta=551s  real-made=0.647  dd-lost=0.313  dd-lost&made=0.047
+  12000 kept (0 skip, 0 err)  wall=1647s eta=412s  real-made=0.647  dd-lost=0.312  dd-lost&made=0.046
+  13000 kept (0 skip, 0 err)  wall=1783s eta=274s  real-made=0.646  dd-lost=0.312  dd-lost&made=0.046
+  14000 kept (0 skip, 0 err)  wall=1927s eta=138s  real-made=0.645  dd-lost=0.313  dd-lost&made=0.047
+  15000 kept (0 skip, 0 err)  wall=2045s eta=0s  real-made=0.645  dd-lost=0.313  dd-lost&made=0.046
+
+  saved 15000 records (0 skipped, 0 errored)  wall=2045s
+  realistic make-rate=0.6448  dd-lost=0.3128  dd-lost&made=0.0462  (= the realistic headroom the god head is blind to)

@@ -21,10 +21,6 @@ import os
 import sys
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
-for p in (_HERE, "/Users/milansimity/Cuccok/kodok/oldtawer",
-          "/Users/milansimity/Cuccok/kodok/oldtawer/experiments/14_minigame_bid_eval"):
-    if p not in sys.path:
-        pass
 
 import numpy as np  # noqa: E402
 

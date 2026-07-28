@@ -41,3 +41,6 @@ tsconfig.tsbuildinfo
 # Misc
 .pytest_cache/
 *.prof
+*.npy
+*.npz
+*.jsonl

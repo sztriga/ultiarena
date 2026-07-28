@@ -1,0 +1,22 @@
+exp35 BWD tournament: 400 deals (BELIEF_EPS=0.15, WINDOW=6, NW=12) — uniform-def vs BWD-def vs a strong PIMC soloist
+[bwd] 20/400 144s eta 45.6m passz 0%
+[bwd] 40/400 351s eta 52.7m passz 5%
+[bwd] 60/400 493s eta 46.6m passz 7%
+[bwd] 80/400 580s eta 38.7m passz 9%
+[bwd] 100/400 687s eta 34.3m passz 11%
+[bwd] 120/400 783s eta 30.4m passz 12%
+[bwd] 140/400 897s eta 27.8m passz 14%
+[bwd] 160/400 1007s eta 25.2m passz 15%
+[bwd] 180/400 1168s eta 23.8m passz 16%
+[bwd] 200/400 1273s eta 21.2m passz 16%
+[bwd] 220/400 1415s eta 19.3m passz 15%
+[bwd] 240/400 1595s eta 17.7m passz 15%
+[bwd] 260/400 1735s eta 15.6m passz 15%
+[bwd] 280/400 1818s eta 13.0m passz 16%
+[bwd] 300/400 1882s eta 10.5m passz 16%
+[bwd] 320/400 1938s eta 8.1m passz 16%
+[bwd] 340/400 1992s eta 5.9m passz 16%
+[bwd] 360/400 2079s eta 3.8m passz 16%
+[bwd] 380/400 2117s eta 1.9m passz 16%
+[bwd] 400/400 2189s eta 0.0m passz 16%
+done

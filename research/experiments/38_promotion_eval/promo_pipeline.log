@@ -1,0 +1,88 @@
+[promo] 08:23:49 h2h:exp37:FRONTIER (N=2000 × 3 seatings)…
+[promo] 09:20:06 h2h:exp36:FRONTIER (N=2000 × 3 seatings)…
+[promo] 10:17:14 h2h:exp37:exp36 (N=2000 × 3 seatings)…
+[promo] 11:13:19 self:FRONTIER (N=3000)…
+[promo] 11:42:29 self:exp37 (N=3000)…
+[promo] 12:10:04 building report…
+[promo] 12:10:04 --- RESULTS ---
+# exp38 — promotion eval: FRONTIER vs exp36 vs exp37
+
+Pairwise head-to-head (X alone vs 2×Y) + full-ladder self-play. Corrected engine (terített reveal ON); soloist play = PIMC (config-independent).
+
+## (1) HEAD-TO-HEAD — X's mean GP/game as the lone X vs 2×Y  (0 = tie, + = X wins)
+- **exp37 vs 2×FRONTIER:  +0.1704 GP/game**  (t=+0.8, n=5288; 712 redealt)
+- **exp36 vs 2×FRONTIER:  -0.0076 GP/game**  (t=-0.0, n=5244; 756 redealt)
+- **exp37 vs 2×exp36:  +0.1363 GP/game**  (t=+0.6, n=5288; 712 redealt)
+
+- **exp36's defensive value** = (exp37 gain vs PIMC) − (exp37 gain vs net) = +0.0340 GP/game — how much exp36's net defense claws back from exp37's betlis.
+- **exp36's standalone value** (vs FRONTIER, no plain-betli bidder present) = -0.0076 — expected ≈0.
+
+## (2) FULL-LADDER TABLE — contract mix + soloist GP/bid, per config
+
+### FRONTIER  (self-play, 2620 contracts played, 380 all-pass/redealt)
+| contract | count | % | soloist GP/bid |
+|---|---|---|---|
+| piros ulti | 1030 | 39.3% | +9.70 |
+| ulti | 918 | 35.0% | +6.30 |
+| piros parti | 157 | 6.0% | +3.36 |
+| piros 40-100 | 105 | 4.0% | +12.08 |
+| teritett betli | 69 | 2.6% | +11.01 |
+| ulti-40-100 | 58 | 2.2% | +14.41 |
+| piros ulti-40-100 | 50 | 1.9% | +28.96 |
+| piros 20-100 | 32 | 1.2% | +14.12 |
+| ulti-40-100-duri | 30 | 1.1% | +9.07 |
+| teritett colorless duri | 25 | 1.0% | +17.28 |
+| 40-100 | 21 | 0.8% | +6.00 |
+| 20-100-duri | 18 | 0.7% | +5.78 |
+| teritett 40-100-duri ≡ teritett ulti-duri | 17 | 0.6% | -6.59 |
+| 40-100-duri ≡ ulti-duri | 17 | 0.6% | +2.59 |
+| 20-100 | 14 | 0.5% | +7.00 |
+| piros 20-100-duri | 10 | 0.4% | -1.60 |
+| ulti-20-100-duri | 8 | 0.3% | +30.00 |
+| teritett 20-100-duri | 7 | 0.3% | -3.43 |
+| piros 40-100-duri ≡ piros ulti-duri | 5 | 0.2% | -11.20 |
+| piros ulti-20-100 | 5 | 0.2% | +30.40 |
+| ulti-20-100 | 5 | 0.2% | +21.20 |
+| piros ulti-40-100-duri | 5 | 0.2% | +20.80 |
+| colorless duri | 4 | 0.2% | +6.00 |
+| teritett ulti-40-100-duri | 4 | 0.2% | -12.00 |
+| piros teritett 40-100-duri ≡ piros teritett ulti-duri | 3 | 0.1% | -10.67 |
+| piros ulti-20-100-duri | 2 | 0.1% | +48.00 |
+| teritett ulti-20-100-duri | 1 | 0.0% | +48.00 |
+| **ALL** | 2620 | 100% | **+8.63** |
+
+### exp37  (self-play, 2684 contracts played, 316 all-pass/redealt)
+| contract | count | % | soloist GP/bid |
+|---|---|---|---|
+| piros ulti | 1006 | 37.5% | +9.89 |
+| ulti | 811 | 30.2% | +6.35 |
+| betli | 159 | 5.9% | +4.84 |
+| piros parti | 132 | 4.9% | +3.03 |
+| piros 40-100 | 118 | 4.4% | +12.14 |
+| teritett betli | 93 | 3.5% | +11.61 |
+| ulti-40-100 | 64 | 2.4% | +14.88 |
+| piros ulti-40-100 | 53 | 2.0% | +29.13 |
+| ulti-40-100-duri | 31 | 1.2% | +10.45 |
+| piros 20-100 | 30 | 1.1% | +12.93 |
+| teritett colorless duri | 25 | 0.9% | +17.28 |
+| 40-100-duri ≡ ulti-duri | 21 | 0.8% | +2.48 |
+| 20-100-duri | 20 | 0.7% | +5.20 |
+| 20-100 | 17 | 0.6% | +7.41 |
+| teritett 40-100-duri ≡ teritett ulti-duri | 16 | 0.6% | -3.00 |
+| piros 20-100-duri | 16 | 0.6% | +4.00 |
+| 40-100 | 14 | 0.5% | +6.14 |
+| teritett 20-100-duri | 8 | 0.3% | -4.00 |
+| colorless duri | 7 | 0.3% | -1.71 |
+| piros ulti-40-100-duri | 7 | 0.3% | +24.00 |
+| ulti-20-100-duri | 7 | 0.3% | +36.00 |
+| piros 40-100-duri ≡ piros ulti-duri | 6 | 0.2% | -5.33 |
+| ulti-20-100 | 5 | 0.2% | +28.80 |
+| piros ulti-20-100 | 5 | 0.2% | +30.40 |
+| piros teritett 40-100-duri ≡ piros teritett ulti-duri | 5 | 0.2% | +19.20 |
+| teritett ulti-40-100-duri | 4 | 0.1% | +0.00 |
+| piros ulti-20-100-duri | 3 | 0.1% | +72.00 |
+| teritett ulti-20-100-duri | 1 | 0.0% | +48.00 |
+| **ALL** | 2684 | 100% | **+8.87** |
+
+_(exp36's ladder ≡ FRONTIER's — identical bidder; exp36 differs only on defense.)_
+[promo] 12:10:04 PROMOTION EVAL DONE.

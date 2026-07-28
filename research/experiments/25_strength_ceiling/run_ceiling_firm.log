@@ -1,0 +1,10 @@
+=== perception-split CONFIRM (N=600, N_DET=8) START 2026 júl.  6 H 04:52:43 CEST ===
+[ceiling-split] N=600 N_DET=8 — running god h2h...
+  god edge +7.270  (205s). running pimc h2h...
+  pimc edge +1.278  (1156s)
+
+=== PERCEPTION HEADROOM SPLIT | N=600 ===
+  total (net → god, perfect info)     +7.270 GP/deal
+  TRAINABLE (net → PIMC marginal)     +1.278 GP/deal  (18% of total)
+  irreducible (PIMC → god, info gap)  +5.992 GP/deal  (82% of total)
+=== done 2026 júl.  6 H 05:15:24 CEST ===

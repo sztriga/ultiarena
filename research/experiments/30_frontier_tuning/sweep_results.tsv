@@ -1,0 +1,17 @@
+FLOOR=0.60	DEBIAS=0.75	scorer=pimc	N=1200	metric=+2.887	nonfloor=+7.604	n_nonfloor=707	pass=0.397	P0=-0.263	wall=388s
+FLOOR=0.60	DEBIAS=0.80	DURIMULT=1.0	scorer=pimc	N=1200	metric=+3.112	nonfloor=+7.611	n_nonfloor=725	pass=0.378	P0=-0.236	wall=397s
+FLOOR=0.60	DEBIAS=0.85	DURIMULT=1.0	scorer=pimc	N=1200	metric=+3.077	nonfloor=+7.340	n_nonfloor=739	pass=0.366	P0=-0.336	wall=405s
+FLOOR=0.70	DEBIAS=0.75	DURIMULT=1.0	scorer=pimc	N=1200	metric=+2.405	nonfloor=+7.897	n_nonfloor=641	pass=0.452	P0=-0.117	wall=370s
+FLOOR=0.70	DEBIAS=0.80	DURIMULT=1.0	scorer=pimc	N=1200	metric=+2.635	nonfloor=+7.906	n_nonfloor=659	pass=0.433	P0=+0.007	wall=387s
+FLOOR=0.70	DEBIAS=0.85	DURIMULT=1.0	scorer=pimc	N=1200	metric=+2.800	nonfloor=+7.958	n_nonfloor=673	pass=0.421	P0=+0.035	wall=406s
+FLOOR=0.80	DEBIAS=0.75	DURIMULT=1.0	scorer=pimc	N=1200	metric=+2.995	nonfloor=+10.330	n_nonfloor=581	pass=0.502	P0=+0.378	wall=369s
+FLOOR=0.80	DEBIAS=0.80	DURIMULT=1.0	scorer=pimc	N=1200	metric=+3.262	nonfloor=+10.317	n_nonfloor=600	pass=0.482	P0=+0.447	wall=391s
+FLOOR=0.80	DEBIAS=0.85	DURIMULT=1.0	scorer=pimc	N=1200	metric=+3.478	nonfloor=+10.301	n_nonfloor=618	pass=0.464	P0=+0.553	wall=415s
+FLOOR=0.80	DEBIAS=0.85	DURIMULT=1.0	scorer=pimc	N=1500	metric=+3.165	nonfloor=+9.751	n_nonfloor=770	pass=0.467	P0=+0.119	wall=521s
+FLOOR=0.80	DEBIAS=0.85	DURIMULT=0.7	scorer=pimc	N=1500	metric=+3.229	nonfloor=+9.875	n_nonfloor=770	pass=0.467	P0=+0.115	wall=520s
+FLOOR=0.80	DEBIAS=0.85	DURIMULT=0.5	scorer=pimc	N=1500	metric=+3.251	nonfloor=+9.917	n_nonfloor=770	pass=0.467	P0=+0.201	wall=521s
+FLOOR=0.80	DEBIAS=0.85	DURIMULT=0.3	scorer=pimc	N=1500	metric=+3.389	nonfloor=+10.187	n_nonfloor=770	pass=0.467	P0=+0.111	wall=524s
+FLOOR=0.80	DEBIAS=0.85	DURIMULT=0.15	scorer=pimc	N=1500	metric=+3.397	nonfloor=+10.203	n_nonfloor=770	pass=0.467	P0=+0.099	wall=530s
+FLOOR=0.80	DEBIAS=0.85	DURIMULT=0.0	scorer=pimc	N=1500	metric=+3.429	nonfloor=+10.265	n_nonfloor=770	pass=0.467	P0=+0.055	wall=531s
+FLOOR=0.70	DEBIAS=0.80	DURIMULT=1.0	scorer=pimc	N=2500	metric=+2.954	nonfloor=+8.475	n_nonfloor=1372	pass=0.434	P0=-0.129	wall=830s
+FLOOR=0.80	DEBIAS=0.85	DURIMULT=0.3	scorer=pimc	N=2500	metric=+3.643	nonfloor=+10.693	n_nonfloor=1273	pass=0.464	P0=+0.332	wall=882s

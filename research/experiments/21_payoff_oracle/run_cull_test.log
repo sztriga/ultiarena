@@ -1,0 +1,37 @@
+[cull test] N_EACH=150  MAX_CARDS=6  (value-equiv cull-on vs cull-off, silent_ulti active)
+  ulti 10/150 | plies 16 (sol 16) | mism 0 | maxd 0.0e+00 | 0s
+  ulti 20/150 | plies 41 (sol 41) | mism 0 | maxd 0.0e+00 | 0s
+  ulti 30/150 | plies 66 (sol 66) | mism 0 | maxd 0.0e+00 | 0s
+  ulti 40/150 | plies 78 (sol 78) | mism 0 | maxd 0.0e+00 | 0s
+  ulti 50/150 | plies 88 (sol 88) | mism 0 | maxd 0.0e+00 | 0s
+  ulti 60/150 | plies 102 (sol 102) | mism 0 | maxd 0.0e+00 | 0s
+  ulti 70/150 | plies 117 (sol 117) | mism 0 | maxd 0.0e+00 | 0s
+  ulti 80/150 | plies 129 (sol 129) | mism 0 | maxd 0.0e+00 | 0s
+  ulti 90/150 | plies 139 (sol 139) | mism 0 | maxd 0.0e+00 | 0s
+  ulti 100/150 | plies 156 (sol 156) | mism 0 | maxd 0.0e+00 | 0s
+  ulti 110/150 | plies 181 (sol 181) | mism 0 | maxd 0.0e+00 | 0s
+  ulti 120/150 | plies 207 (sol 207) | mism 0 | maxd 0.0e+00 | 0s
+  ulti 130/150 | plies 227 (sol 227) | mism 0 | maxd 0.0e+00 | 0s
+  ulti 140/150 | plies 250 (sol 250) | mism 0 | maxd 0.0e+00 | 0s
+  ulti 150/150 | plies 266 (sol 266) | mism 0 | maxd 0.0e+00 | 0s
+  parti 10/150 | def-plies 12 | mism 0 | maxd 0.0e+00 | 0s
+  parti 20/150 | def-plies 23 | mism 0 | maxd 0.0e+00 | 0s
+  parti 30/150 | def-plies 38 | mism 0 | maxd 0.0e+00 | 0s
+  parti 40/150 | def-plies 54 | mism 0 | maxd 0.0e+00 | 0s
+  parti 50/150 | def-plies 60 | mism 0 | maxd 0.0e+00 | 0s
+  parti 60/150 | def-plies 78 | mism 0 | maxd 0.0e+00 | 0s
+  parti 70/150 | def-plies 89 | mism 0 | maxd 0.0e+00 | 0s
+  parti 80/150 | def-plies 92 | mism 0 | maxd 0.0e+00 | 0s
+  parti 90/150 | def-plies 100 | mism 0 | maxd 0.0e+00 | 0s
+  parti 100/150 | def-plies 114 | mism 0 | maxd 0.0e+00 | 0s
+  parti 110/150 | def-plies 131 | mism 0 | maxd 0.0e+00 | 0s
+  parti 120/150 | def-plies 142 | mism 0 | maxd 0.0e+00 | 0s
+  parti 130/150 | def-plies 157 | mism 0 | maxd 0.0e+00 | 0s
+  parti 140/150 | def-plies 169 | mism 0 | maxd 0.0e+00 | 0s
+  parti 150/150 | def-plies 197 | mism 0 | maxd 0.0e+00 | 0s
+
+positions tested (mover holds trump-7, <= 6 cards): 463  (sol-mover 266, def-mover 197)
+  move-value mismatches cull-on vs cull-off: 0
+  max |value diff|: 0.00e+00   wall=0s
+
+AIRTIGHT: the cull never changes a multi value while silent_ulti is active — soloist AND defender 7-lines are fully preserved.

@@ -1,0 +1,55 @@
+=== exp37 realistic-betli datagen ===
+  N=150000  ALPHA_MAX=1.5  PIMC_N=16  workers=8  out=betli_real.npz
+  3000/150000  wall=141s eta=6885s  real-made=0.429  dd-lost=0.748  dd-lost&made=0.183
+  6000/150000  wall=274s eta=6586s  real-made=0.424  dd-lost=0.751  dd-lost&made=0.180
+  9000/150000  wall=405s eta=6344s  real-made=0.424  dd-lost=0.749  dd-lost&made=0.178
+  12000/150000  wall=533s eta=6129s  real-made=0.426  dd-lost=0.746  dd-lost&made=0.176
+  15000/150000  wall=670s eta=6029s  real-made=0.424  dd-lost=0.748  dd-lost&made=0.176
+  18000/150000  wall=809s eta=5931s  real-made=0.424  dd-lost=0.748  dd-lost&made=0.177
+  21000/150000  wall=948s eta=5820s  real-made=0.425  dd-lost=0.748  dd-lost&made=0.176
+  24000/150000  wall=1081s eta=5678s  real-made=0.422  dd-lost=0.749  dd-lost&made=0.175
+  27000/150000  wall=1214s eta=5528s  real-made=0.422  dd-lost=0.750  dd-lost&made=0.176
+  30000/150000  wall=1335s eta=5341s  real-made=0.423  dd-lost=0.750  dd-lost&made=0.177
+  33000/150000  wall=1463s eta=5187s  real-made=0.422  dd-lost=0.751  dd-lost&made=0.177
+  36000/150000  wall=1592s eta=5040s  real-made=0.423  dd-lost=0.750  dd-lost&made=0.177
+  39000/150000  wall=1717s eta=4886s  real-made=0.422  dd-lost=0.752  dd-lost&made=0.178
+  42000/150000  wall=1843s eta=4738s  real-made=0.422  dd-lost=0.751  dd-lost&made=0.177
+  45000/150000  wall=1968s eta=4593s  real-made=0.421  dd-lost=0.751  dd-lost&made=0.177
+  48000/150000  wall=2097s eta=4457s  real-made=0.422  dd-lost=0.750  dd-lost&made=0.176
+  51000/150000  wall=2236s eta=4340s  real-made=0.421  dd-lost=0.750  dd-lost&made=0.176
+  54000/150000  wall=2378s eta=4227s  real-made=0.421  dd-lost=0.751  dd-lost&made=0.176
+  57000/150000  wall=2515s eta=4103s  real-made=0.421  dd-lost=0.750  dd-lost&made=0.176
+  60000/150000  wall=2651s eta=3977s  real-made=0.422  dd-lost=0.751  dd-lost&made=0.176
+  63000/150000  wall=2790s eta=3853s  real-made=0.421  dd-lost=0.751  dd-lost&made=0.176
+  66000/150000  wall=2925s eta=3723s  real-made=0.420  dd-lost=0.752  dd-lost&made=0.176
+  69000/150000  wall=3061s eta=3594s  real-made=0.421  dd-lost=0.751  dd-lost&made=0.176
+  72000/150000  wall=3194s eta=3460s  real-made=0.420  dd-lost=0.751  dd-lost&made=0.176
+  75000/150000  wall=3336s eta=3336s  real-made=0.421  dd-lost=0.751  dd-lost&made=0.176
+  78000/150000  wall=3473s eta=3206s  real-made=0.421  dd-lost=0.750  dd-lost&made=0.176
+  81000/150000  wall=3614s eta=3079s  real-made=0.421  dd-lost=0.750  dd-lost&made=0.175
+  84000/150000  wall=3744s eta=2942s  real-made=0.421  dd-lost=0.750  dd-lost&made=0.175
+  87000/150000  wall=3872s eta=2804s  real-made=0.421  dd-lost=0.751  dd-lost&made=0.175
+  90000/150000  wall=4005s eta=2670s  real-made=0.421  dd-lost=0.751  dd-lost&made=0.175
+  93000/150000  wall=4133s eta=2533s  real-made=0.421  dd-lost=0.751  dd-lost&made=0.176
+  96000/150000  wall=4264s eta=2399s  real-made=0.421  dd-lost=0.751  dd-lost&made=0.176
+  99000/150000  wall=4395s eta=2264s  real-made=0.421  dd-lost=0.751  dd-lost&made=0.176
+  102000/150000  wall=4528s eta=2131s  real-made=0.421  dd-lost=0.751  dd-lost&made=0.176
+  105000/150000  wall=4654s eta=1995s  real-made=0.420  dd-lost=0.751  dd-lost&made=0.175
+  108000/150000  wall=4784s eta=1860s  real-made=0.421  dd-lost=0.751  dd-lost&made=0.175
+  111000/150000  wall=4915s eta=1727s  real-made=0.421  dd-lost=0.751  dd-lost&made=0.176
+  114000/150000  wall=5053s eta=1596s  real-made=0.420  dd-lost=0.751  dd-lost&made=0.176
+  117000/150000  wall=5191s eta=1464s  real-made=0.420  dd-lost=0.751  dd-lost&made=0.175
+  120000/150000  wall=5326s eta=1331s  real-made=0.420  dd-lost=0.751  dd-lost&made=0.175
+  123000/150000  wall=5454s eta=1197s  real-made=0.420  dd-lost=0.751  dd-lost&made=0.175
+  126000/150000  wall=5584s eta=1064s  real-made=0.420  dd-lost=0.751  dd-lost&made=0.175
+  129000/150000  wall=5709s eta=929s  real-made=0.420  dd-lost=0.751  dd-lost&made=0.175
+  132000/150000  wall=5833s eta=795s  real-made=0.420  dd-lost=0.751  dd-lost&made=0.175
+  135000/150000  wall=5967s eta=663s  real-made=0.420  dd-lost=0.751  dd-lost&made=0.175
+  138000/150000  wall=6098s eta=530s  real-made=0.420  dd-lost=0.751  dd-lost&made=0.175
+  141000/150000  wall=6229s eta=398s  real-made=0.420  dd-lost=0.751  dd-lost&made=0.175
+  144000/150000  wall=6357s eta=265s  real-made=0.420  dd-lost=0.751  dd-lost&made=0.175
+  147000/150000  wall=6490s eta=132s  real-made=0.420  dd-lost=0.751  dd-lost&made=0.175
+  150000/150000  wall=6610s eta=0s  real-made=0.420  dd-lost=0.751  dd-lost&made=0.175
+
+  saved 150000 records  wall=6610s
+  realistic make-rate 0.4199   dd-lost 0.7513   dd-lost & realistically-made 0.1752  (= the imperfect-betli headroom)

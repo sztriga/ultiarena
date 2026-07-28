@@ -17,10 +17,6 @@ from __future__ import annotations
 import os
 import sys
 
-_E23 = "/Users/milansimity/Cuccok/kodok/oldtawer/experiments/23_bidding_integration"
-for p in (_E23, "/Users/milansimity/Cuccok/kodok/oldtawer"):
-    if p not in sys.path:
-        pass
 
 from bidding.ladder import GPTable                                   # noqa: E402
 from bidding.recipe import sol_marriages                       # noqa: E402
@@ -299,7 +295,7 @@ def kontra_pimc_outcome(rung, trump, sol, d1, d2, talon, seed=0):
     we play once and apply the level at scoring. betli/duri/combos → pimc_outcome."""
     import os as _os
     from dataclasses import replace
-    from bidding.kontra import kontra_level_for            # exp23 (on sys.path)
+    from bidding.kontra import kontra_level_for
     from scoring.oracle import score as score_oracle
 
     bid = resolve_bidset(rung, sol, trump)

@@ -1,0 +1,24 @@
+=== PIMC floor confirm START 2026 júl.  5 V 21:44:29 CEST ===
+>>> FLOOR=0 SCORER=pimc
+METRIC mean soloist GP/game +0.613   (floor-dominated; vs god defenders)
+NON-FLOOR GP/game +12.714  (n=28) — escalations above piros parti; the discriminating signal
+GP/seat  P0 -1.027  P1 +0.133  P2 +0.893  | pass 0.000  avg bids 1.15
+  3 betli                                    0   0.0%     —        —
+  7 20-100                                   1  0.7%  0.00   -16.00
+ 10 rebetli                                  2  1.3%  1.00   +20.00
+ 16 piros 20-100                             0   0.0%     —        —
+ 21 teritett betli                           0   0.0%     —        —
+ 31 teritett rebetli                         0   0.0%     —        —
+
+>>> FLOOR=0.7 SCORER=pimc
+METRIC mean soloist GP/game +3.227   (floor-dominated; vs god defenders)
+NON-FLOOR GP/game +13.429  (n=56) — escalations above piros parti; the discriminating signal
+GP/seat  P0 -1.613  P1 +0.827  P2 +0.787  | pass 0.000  avg bids 1.21
+  3 betli                                    0   0.0%     —        —
+  7 20-100                                   0   0.0%     —        —
+ 10 rebetli                                  0   0.0%     —        —
+ 16 piros 20-100                             0   0.0%     —        —
+ 21 teritett betli                           0   0.0%     —        —
+ 31 teritett rebetli                         5  3.3%  1.00   +80.00
+
+=== done 2026 júl.  5 V 21:46:28 CEST ===

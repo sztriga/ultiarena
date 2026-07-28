@@ -1,0 +1,12 @@
+===== PIMC-32 full recal START 2026-07-27 21:08:43 =====
+[2026-07-27 21:08:43] batch 2/3: ulti
+[2026-07-28 01:43:17] batch 3/3: duri_colored (~10h)
+[2026-07-28 11:47:01] retrained heads on disk:
+-rw-r--r--  1 milansimity  staff  62323 júl.   27 20:52 experiments/40_realistic_recal/colorless_duri_real_baseline.pt
+  colorless_duri OK
+-rw-r--r--  1 milansimity  staff  64103 júl.   28 01:43 experiments/40_realistic_recal/ulti_real_baseline.pt
+  ulti OK
+-rw-r--r--  1 milansimity  staff  64279 júl.   28 11:47 experiments/40_realistic_recal/duri_colored_real_baseline.pt
+  duri_colored OK
+[2026-07-28 11:47:01] clearing stale PIMC-16 eval data + launching PIMC-32 gate
+===== PIMC-32 full recal DONE 2026-07-28 17:29:15 — see TOURNAMENT.md =====

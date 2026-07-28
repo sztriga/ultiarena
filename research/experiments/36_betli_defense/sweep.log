@@ -1,0 +1,82 @@
+=== BETLI POLICY SWEEP 2026 júl. 23 Cs 08:43:37 CEST ===
+[08:43:37] TRAIN mlp256 (arch=mlp h=256 wd=1e-4 drop=0.2)
+train: 39101 pos, arch=mlp hidden=256 ep=60 lr=0.001 wd=0.0001 drop=0.2
+  ep15: val top1-safe 0.928 (best 0.928)
+  ep30: val top1-safe 0.930 (best 0.932)
+  ep45: val top1-safe 0.931 (best 0.933)
+  ep60: val top1-safe 0.933 (best 0.934)
+saved models/mlp256.pt. best val top1-safe 0.934 (random-legal safe 0.828)
+eval: net-defense vs pimc-defense on 3500 deals' dd-lost betlis (pimc soloist)
+# exp36 — betli-defense EVAL (net vs PIMC), 728 held-out dd-lost betlis
+
+Soloist STEAL rate (made a defender-holdable betli), LOWER = better defense:
+- PIMC defense:   **62.2%**
+- NET  defense:   **51.9%**
+- Δ = -10.3pp  (NET BETTER); god defense = 0%.
+
+  >>> RESULT mlp256: - PIMC defense:   **62.2%** - NET  defense:   **51.9%** - Δ = -10.3pp  (NET BETTER); god defense = 0%. 
+[08:44:41] TRAIN mlp512 (arch=mlp h=512 wd=2e-4 drop=0.3)
+train: 39101 pos, arch=mlp hidden=512 ep=60 lr=0.001 wd=0.0002 drop=0.3
+  ep15: val top1-safe 0.933 (best 0.933)
+  ep30: val top1-safe 0.932 (best 0.935)
+  ep45: val top1-safe 0.937 (best 0.938)
+  ep60: val top1-safe 0.936 (best 0.938)
+saved models/mlp512.pt. best val top1-safe 0.938 (random-legal safe 0.828)
+eval: net-defense vs pimc-defense on 3500 deals' dd-lost betlis (pimc soloist)
+# exp36 — betli-defense EVAL (net vs PIMC), 728 held-out dd-lost betlis
+
+Soloist STEAL rate (made a defender-holdable betli), LOWER = better defense:
+- PIMC defense:   **62.2%**
+- NET  defense:   **54.3%**
+- Δ = -8.0pp  (NET BETTER); god defense = 0%.
+
+  >>> RESULT mlp512: - PIMC defense:   **62.2%** - NET  defense:   **54.3%** - Δ = -8.0pp  (NET BETTER); god defense = 0%. 
+[08:45:48] TRAIN mlp384 (arch=mlp h=384 wd=3e-4 drop=0.3)
+train: 39101 pos, arch=mlp hidden=384 ep=60 lr=0.001 wd=0.0003 drop=0.3
+  ep15: val top1-safe 0.924 (best 0.924)
+  ep30: val top1-safe 0.926 (best 0.933)
+  ep45: val top1-safe 0.934 (best 0.936)
+  ep60: val top1-safe 0.933 (best 0.936)
+saved models/mlp384.pt. best val top1-safe 0.936 (random-legal safe 0.828)
+eval: net-defense vs pimc-defense on 3500 deals' dd-lost betlis (pimc soloist)
+# exp36 — betli-defense EVAL (net vs PIMC), 728 held-out dd-lost betlis
+
+Soloist STEAL rate (made a defender-holdable betli), LOWER = better defense:
+- PIMC defense:   **62.2%**
+- NET  defense:   **53.2%**
+- Δ = -9.1pp  (NET BETTER); god defense = 0%.
+
+  >>> RESULT mlp384: - PIMC defense:   **62.2%** - NET  defense:   **53.2%** - Δ = -9.1pp  (NET BETTER); god defense = 0%. 
+[08:46:52] TRAIN wide256 (arch=wide h=256 wd=1e-4 drop=0.25)
+train: 39101 pos, arch=wide hidden=256 ep=60 lr=0.001 wd=0.0001 drop=0.25
+  ep15: val top1-safe 0.923 (best 0.923)
+  ep30: val top1-safe 0.927 (best 0.929)
+  ep45: val top1-safe 0.928 (best 0.932)
+  ep60: val top1-safe 0.930 (best 0.934)
+saved models/wide256.pt. best val top1-safe 0.934 (random-legal safe 0.828)
+eval: net-defense vs pimc-defense on 3500 deals' dd-lost betlis (pimc soloist)
+# exp36 — betli-defense EVAL (net vs PIMC), 728 held-out dd-lost betlis
+
+Soloist STEAL rate (made a defender-holdable betli), LOWER = better defense:
+- PIMC defense:   **62.2%**
+- NET  defense:   **54.7%**
+- Δ = -7.6pp  (NET BETTER); god defense = 0%.
+
+  >>> RESULT wide256: - PIMC defense:   **62.2%** - NET  defense:   **54.7%** - Δ = -7.6pp  (NET BETTER); god defense = 0%. 
+[08:47:56] TRAIN deep256 (arch=deep h=256 wd=1e-4 drop=0.25)
+train: 39101 pos, arch=deep hidden=256 ep=60 lr=0.001 wd=0.0001 drop=0.25
+  ep15: val top1-safe 0.908 (best 0.908)
+  ep30: val top1-safe 0.912 (best 0.913)
+  ep45: val top1-safe 0.914 (best 0.916)
+  ep60: val top1-safe 0.912 (best 0.916)
+saved models/deep256.pt. best val top1-safe 0.916 (random-legal safe 0.828)
+eval: net-defense vs pimc-defense on 3500 deals' dd-lost betlis (pimc soloist)
+# exp36 — betli-defense EVAL (net vs PIMC), 728 held-out dd-lost betlis
+
+Soloist STEAL rate (made a defender-holdable betli), LOWER = better defense:
+- PIMC defense:   **62.2%**
+- NET  defense:   **70.1%**
+- Δ = +7.8pp  (net worse); god defense = 0%.
+
+  >>> RESULT deep256: - PIMC defense:   **62.2%** - NET  defense:   **70.1%** - Δ = +7.8pp  (net worse); god defense = 0%. 
+=== SWEEP DONE 2026 júl. 23 Cs 08:49:04 CEST ===

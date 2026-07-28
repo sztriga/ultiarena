@@ -1,0 +1,27 @@
+duri-fix sweep: DURI_TERIT_MULT ∈ ['1.0', '0.7', '0.5', '0.3', '0.15', '0.0'] × N=1500 (pimc, FLOOR=0.7 DEBIAS=0.80)
+
+[1/6] DURI_TERIT_MULT=1.0  (elapsed 0m)
+  FLOOR=0.80	DEBIAS=0.85	DURIMULT=1.0	scorer=pimc	N=1500	metric=+3.165	nonfloor=+9.751	n_nonfloor=770	pass=0.467	P0=+0.119	wall=521s
+
+[2/6] DURI_TERIT_MULT=0.7  (elapsed 9m)
+  FLOOR=0.80	DEBIAS=0.85	DURIMULT=0.7	scorer=pimc	N=1500	metric=+3.229	nonfloor=+9.875	n_nonfloor=770	pass=0.467	P0=+0.115	wall=520s
+
+[3/6] DURI_TERIT_MULT=0.5  (elapsed 17m)
+  FLOOR=0.80	DEBIAS=0.85	DURIMULT=0.5	scorer=pimc	N=1500	metric=+3.251	nonfloor=+9.917	n_nonfloor=770	pass=0.467	P0=+0.201	wall=521s
+
+[4/6] DURI_TERIT_MULT=0.3  (elapsed 26m)
+  FLOOR=0.80	DEBIAS=0.85	DURIMULT=0.3	scorer=pimc	N=1500	metric=+3.389	nonfloor=+10.187	n_nonfloor=770	pass=0.467	P0=+0.111	wall=524s
+
+[5/6] DURI_TERIT_MULT=0.15  (elapsed 35m)
+  FLOOR=0.80	DEBIAS=0.85	DURIMULT=0.15	scorer=pimc	N=1500	metric=+3.397	nonfloor=+10.203	n_nonfloor=770	pass=0.467	P0=+0.099	wall=530s
+
+[6/6] DURI_TERIT_MULT=0.0  (elapsed 44m)
+  FLOOR=0.80	DEBIAS=0.85	DURIMULT=0.0	scorer=pimc	N=1500	metric=+3.429	nonfloor=+10.265	n_nonfloor=770	pass=0.467	P0=+0.055	wall=531s
+
+===== RANKED (by soloist GP vs PIMC) =====
+  DURIMULT=0.0  metric=+3.429  nonfloor=+10.265  pass=0.467
+  DURIMULT=0.15  metric=+3.397  nonfloor=+10.203  pass=0.467
+  DURIMULT=0.3  metric=+3.389  nonfloor=+10.187  pass=0.467
+  DURIMULT=0.5  metric=+3.251  nonfloor=+9.917  pass=0.467
+  DURIMULT=0.7  metric=+3.229  nonfloor=+9.875  pass=0.467
+  DURIMULT=1.0  metric=+3.165  nonfloor=+9.751  pass=0.467

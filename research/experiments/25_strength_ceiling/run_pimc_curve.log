@@ -1,0 +1,17 @@
+=== PIMC_N play-lever curve (SCORER=pimc, N=500, FLOOR=0.7) START 2026 júl.  5 V 22:30:27 CEST ===
+>>> PIMC_N=4
+METRIC mean soloist GP/game +0.712   (floor-dominated; vs god defenders)
+NON-FLOOR GP/game +10.379  (n=153) — escalations above piros parti; the discriminating signal
+GP/seat  P0 -2.540  P1 +0.328  P2 +2.212  | pass 0.000  avg bids 1.18
+
+>>> PIMC_N=8
+METRIC mean soloist GP/game +1.288   (floor-dominated; vs god defenders)
+NON-FLOOR GP/game +10.771  (n=153) — escalations above piros parti; the discriminating signal
+GP/seat  P0 -2.132  P1 +0.520  P2 +1.612  | pass 0.000  avg bids 1.18
+
+>>> PIMC_N=16
+METRIC mean soloist GP/game +1.144   (floor-dominated; vs god defenders)
+NON-FLOOR GP/game +10.379  (n=153) — escalations above piros parti; the discriminating signal
+GP/seat  P0 -1.580  P1 +0.772  P2 +0.808  | pass 0.000  avg bids 1.18
+
+=== done 2026 júl.  5 V 22:35:44 CEST ===

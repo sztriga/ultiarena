@@ -1,0 +1,21 @@
+[bid 40_100] CAND=4000  god-multi sol (A parti-only vs B bid) vs god-parti def
+  scanned 500/4000  kept 58  1s
+  scanned 1000/4000  kept 105  1s
+  scanned 1500/4000  kept 156  2s
+  scanned 2000/4000  kept 225  2s
+  scanned 2500/4000  kept 280  3s
+  scanned 3000/4000  kept 337  3s
+  scanned 3500/4000  kept 396  4s
+  scanned 4000/4000  kept 456  4s
+
+bid 40_100 | kept 456/4000 single-marriage deals  wall=4s
+
+=== A play parti-only ===
+  bid MADE 0.322 (bukott 0.678) | parti WR 0.862 | sol pts 87.4 | GP/def -0.314 ± 4.449
+
+=== B play the bid ===
+  bid MADE 0.651 (bukott 0.349) | parti WR 0.862 | sol pts 95.2 | GP/def +2.511 ± 4.633
+
+=== B − A (value of playing toward the 40_100 you bid) ===
+  made rate 0.322 → 0.651  (+0.329)
+  GP/def +2.825  t=+14.98

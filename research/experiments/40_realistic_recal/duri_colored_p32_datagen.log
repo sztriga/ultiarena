@@ -1,0 +1,15 @@
+=== exp40 realistic datagen: HEAD=duri_colored ===
+  N=10000 ALPHA_MAX=1.8 PIMC_N=32 workers=8 colored=True out=duri_colored_real_p32.npz
+  1000 kept (0 skip, 0 err)  wall=4197s eta=37773s  real-made=0.143  dd-lost=0.940  dd-lost&made=0.083
+  2000 kept (0 skip, 0 err)  wall=7354s eta=29415s  real-made=0.133  dd-lost=0.937  dd-lost&made=0.070
+  3000 kept (0 skip, 0 err)  wall=11419s eta=26644s  real-made=0.135  dd-lost=0.930  dd-lost&made=0.066
+  4000 kept (0 skip, 0 err)  wall=14521s eta=21782s  real-made=0.133  dd-lost=0.933  dd-lost&made=0.066
+  5000 kept (0 skip, 0 err)  wall=17847s eta=17847s  real-made=0.136  dd-lost=0.932  dd-lost&made=0.068
+  6000 kept (0 skip, 0 err)  wall=21961s eta=14641s  real-made=0.135  dd-lost=0.933  dd-lost&made=0.069
+  7000 kept (0 skip, 0 err)  wall=25975s eta=11132s  real-made=0.134  dd-lost=0.934  dd-lost&made=0.068
+  8000 kept (0 skip, 0 err)  wall=29149s eta=7287s  real-made=0.133  dd-lost=0.933  dd-lost&made=0.067
+  9000 kept (0 skip, 0 err)  wall=33239s eta=3693s  real-made=0.133  dd-lost=0.932  dd-lost&made=0.065
+  10000 kept (0 skip, 0 err)  wall=36221s eta=0s  real-made=0.133  dd-lost=0.931  dd-lost&made=0.065
+
+  saved 10000 records (0 skipped, 0 errored)  wall=36221s
+  realistic make-rate=0.1333  dd-lost=0.9314  dd-lost&made=0.0649  (= the realistic headroom the god head is blind to)

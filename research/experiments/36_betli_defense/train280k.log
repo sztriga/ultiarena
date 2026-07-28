@@ -1,0 +1,8 @@
+train: 273445 pos, arch=mlp hidden=256 ep=80 lr=0.001 wd=0.0001 drop=0.2
+  ep15: val top1-safe 0.949 (best 0.949)
+  ep30: val top1-safe 0.951 (best 0.951)
+  ep45: val top1-safe 0.952 (best 0.953)
+  ep60: val top1-safe 0.953 (best 0.953)
+  ep75: val top1-safe 0.951 (best 0.954)
+  ep80: val top1-safe 0.953 (best 0.954)
+saved models/mlp256_280k.pt. best val top1-safe 0.954 (random-legal safe 0.822)

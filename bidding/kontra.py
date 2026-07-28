@@ -21,9 +21,6 @@ import os
 import sys
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
-for p in (_HERE, "/Users/milansimity/Cuccok/kodok/oldtawer"):
-    if p not in sys.path:
-        pass
 
 from scoring.oracle import GPTable   # noqa: E402
 

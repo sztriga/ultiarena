@@ -1,0 +1,23 @@
+=== exp40 train realistic head: reach100_20 ===  data=reach100_20_real.npz  N=5804  dim=36
+  realistic make-rate=0.0910  dd-lost=0.9135  dd-lost&made=0.0171
+  pos_weight=10.14  train=5224  val=580
+  ep  1  loss=1.2610  val_brier=0.2544  val_auc=0.7118
+  ep  5  loss=1.1834  val_brier=0.2004  val_auc=0.7916
+  ep 10  loss=0.9285  val_brier=0.1845  val_auc=0.8152
+  ep 15  loss=0.8423  val_brier=0.1542  val_auc=0.8307
+  ep 20  loss=0.7922  val_brier=0.1448  val_auc=0.8464
+  ep 25  loss=0.7181  val_brier=0.1454  val_auc=0.8582
+  ep 30  loss=0.6253  val_brier=0.1234  val_auc=0.8752
+  ep 35  loss=0.5459  val_brier=0.0932  val_auc=0.8847
+  ep 40  loss=0.4847  val_brier=0.1105  val_auc=0.8888
+
+  REALISTIC head  best ep35  val_auc=0.8847  val_brier=0.0932  ECE_raw=0.1052  ECE_cal=0.0487
+  reliability (calibrated):  [lo,hi)  mean_pred  emp_rate   n
+    [0.0,0.1)   0.053     0.102     580
+
+  GOD head 'reach100_20' (vs realistic outcome)  val_auc=0.9450  val_brier=0.0458  mean_pred=0.1184 vs actual make-rate 0.1017  → over-predicts by 0.017
+  GAP hands (dd-lost but realistically MADE): n=10 in val
+    god head mean p      = 0.224
+    realistic head mean p= 0.086
+
+  saved reach100_20_real_baseline.pt + reach100_20_real_isotonic.npz

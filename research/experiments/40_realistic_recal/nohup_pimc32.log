@@ -1,0 +1,32 @@
+===== PIMC-32 full recal START 2026-07-27 21:08:43 =====
+[2026-07-27 21:08:43] batch 2/3: ulti
+[2026-07-27 21:08:43] >>> batch ulti  N=20000  PIMC_N=32
+      saved 20000 records (0 skipped, 0 errored)  wall=16462s
+      realistic make-rate=0.5147  dd-lost=0.5525  dd-lost&made=0.0925  (= the realistic headroom the god head is blind to)
+      REALISTIC head  best ep17  val_auc=0.9337  val_brier=0.1013  ECE_raw=0.0113  ECE_cal=0.0295
+      GOD head 'ulti' (vs realistic outcome)  val_auc=0.9417  val_brier=0.1232  mean_pred=0.3953 vs actual make-rate 0.5030  → UNDER-predicts by 0.108
+[2026-07-28 01:43:17] <<< batch ulti DONE (PIMC_N=32)
+[2026-07-28 01:43:17] batch 3/3: duri_colored (~10h)
+[2026-07-28 01:43:17] >>> batch duri_colored  N=10000  PIMC_N=32
+      saved 10000 records (0 skipped, 0 errored)  wall=36221s
+      realistic make-rate=0.1333  dd-lost=0.9314  dd-lost&made=0.0649  (= the realistic headroom the god head is blind to)
+      REALISTIC head  best ep38  val_auc=0.9301  val_brier=0.0881  ECE_raw=0.0849  ECE_cal=0.0727
+      GOD head 'duri_colored' (vs realistic outcome)  val_auc=0.9266  val_brier=0.0887  mean_pred=0.0507 vs actual make-rate 0.1370  → UNDER-predicts by 0.086
+[2026-07-28 11:47:01] <<< batch duri_colored DONE (PIMC_N=32)
+[2026-07-28 11:47:01] retrained heads on disk:
+  colorless_duri OK
+  ulti OK
+  duri_colored OK
+[2026-07-28 11:47:01] clearing stale PIMC-16 eval data + launching PIMC-32 gate
+===== exp40 TOURNAMENT START 2026-07-28 11:47:01  PIMC_N=32 =====
+[2026-07-28 11:47:01] >>> h2h:RECAL:FRONTIER  N=3000
+    done
+[2026-07-28 14:27:54] <<< h2h:RECAL:FRONTIER done
+[2026-07-28 14:27:54] >>> self:RECAL  N=5000
+    done
+[2026-07-28 16:03:56] <<< self:RECAL done
+[2026-07-28 16:03:56] >>> self:FRONTIER  N=5000
+    done
+[2026-07-28 17:29:14] <<< self:FRONTIER done
+===== exp40 TOURNAMENT DONE 2026-07-28 17:29:15 — see TOURNAMENT.md =====
+===== PIMC-32 full recal DONE 2026-07-28 17:29:15 — see TOURNAMENT.md =====

@@ -1,0 +1,87 @@
+=== god vs pimc START 2026 jún. 21 V 21:16:48 CEST ===
+>>> GOD  N=700
+
+=== net+composer | scorer=god | N=700 wall=8s ===
+METRIC mean soloist GP/game -2.511   (floor-dominated; vs god defenders)
+NON-FLOOR GP/game +9.071  (n=99) — escalations above piros parti; the discriminating signal
+GP/seat  P0 -3.176  P1 +1.920  P2 +1.256  | pass 0.000  avg bids 1.09
+
+  # contract                              bids   freq    wr  GP/game
+  - PASS                                     0   0.0%     —        —
+  0 piros parti                            601 85.9%  0.18    -4.42
+  1 40-100                                   0   0.0%     —        —
+  2 ulti                                     0   0.0%     —        —
+  3 betli                                    3  0.4%  0.33    -3.33
+  4 colorless duri                           0   0.0%     —        —
+  5 ulti-40-100                              0   0.0%     —        —
+  6 piros 40-100                             5  0.7%  0.60    +3.20
+  7 20-100                                   1  0.1%  0.00   -16.00
+  8 40-100-duri ≡ ulti-duri                  0   0.0%     —        —
+  9 piros ulti                              81 11.6%  0.85   +10.52
+ 10 rebetli                                  2  0.3%  0.00   -20.00
+ 11 ulti-20-100                              0   0.0%     —        —
+ 12 ulti-40-100-duri                         0   0.0%     —        —
+ 13 20-100-duri                              0   0.0%     —        —
+ 14 piros ulti-40-100                        5  0.7%  1.00   +32.00
+ 15 teritett 40-100-duri ≡ teritett ulti-duri     1  0.1%  0.00   -40.00
+ 16 piros 20-100                             0   0.0%     —        —
+ 17 ulti-20-100-duri                         0   0.0%     —        —
+ 18 teritett ulti-40-100-duri                0   0.0%     —        —
+ 19 piros 40-100-duri ≡ piros ulti-duri      0   0.0%     —        —
+ 20 teritett 20-100-duri                     0   0.0%     —        —
+ 21 teritett betli                           0   0.0%     —        —
+ 22 teritett ulti-20-100-duri                0   0.0%     —        —
+ 23 piros ulti-20-100                        0   0.0%     —        —
+ 24 teritett colorless duri                  0   0.0%     —        —
+ 25 piros ulti-40-100-duri                   1  0.1%  0.00   -24.00
+ 26 piros 20-100-duri                        0   0.0%     —        —
+ 27 piros teritett 40-100-duri ≡ piros teritett ulti-duri     0   0.0%     —        —
+ 28 piros ulti-20-100-duri                   0   0.0%     —        —
+ 29 piros teritett ulti-40-100-duri          0   0.0%     —        —
+ 30 piros teritett 20-100-duri               0   0.0%     —        —
+ 31 teritett rebetli                         0   0.0%     —        —
+ 32 piros teritett ulti-20-100-duri          0   0.0%     —        —
+
+>>> PIMC N=700 (pimc_n=16)
+
+=== net+composer | scorer=pimc | N=700 wall=237s ===
+METRIC mean soloist GP/game -0.443   (floor-dominated; vs god defenders)
+NON-FLOOR GP/game +13.838  (n=99) — escalations above piros parti; the discriminating signal
+GP/seat  P0 -1.904  P1 +1.186  P2 +0.719  | pass 0.000  avg bids 1.09
+
+  # contract                              bids   freq    wr  GP/game
+  - PASS                                     0   0.0%     —        —
+  0 piros parti                            601 85.9%  0.23    -2.80
+  1 40-100                                   0   0.0%     —        —
+  2 ulti                                     0   0.0%     —        —
+  3 betli                                    3  0.4%  1.00   +10.00
+  4 colorless duri                           0   0.0%     —        —
+  5 ulti-40-100                              0   0.0%     —        —
+  6 piros 40-100                             5  0.7%  1.00   +16.00
+  7 20-100                                   1  0.1%  0.00   -16.00
+  8 40-100-duri ≡ ulti-duri                  0   0.0%     —        —
+  9 piros ulti                              81 11.6%  0.89   +13.28
+ 10 rebetli                                  2  0.3%  1.00   +20.00
+ 11 ulti-20-100                              0   0.0%     —        —
+ 12 ulti-40-100-duri                         0   0.0%     —        —
+ 13 20-100-duri                              0   0.0%     —        —
+ 14 piros ulti-40-100                        5  0.7%  1.00   +39.20
+ 15 teritett 40-100-duri ≡ teritett ulti-duri     1  0.1%  0.00   -44.00
+ 16 piros 20-100                             0   0.0%     —        —
+ 17 ulti-20-100-duri                         0   0.0%     —        —
+ 18 teritett ulti-40-100-duri                0   0.0%     —        —
+ 19 piros 40-100-duri ≡ piros ulti-duri      0   0.0%     —        —
+ 20 teritett 20-100-duri                     0   0.0%     —        —
+ 21 teritett betli                           0   0.0%     —        —
+ 22 teritett ulti-20-100-duri                0   0.0%     —        —
+ 23 piros ulti-20-100                        0   0.0%     —        —
+ 24 teritett colorless duri                  0   0.0%     —        —
+ 25 piros ulti-40-100-duri                   1  0.1%  0.00    +8.00
+ 26 piros 20-100-duri                        0   0.0%     —        —
+ 27 piros teritett 40-100-duri ≡ piros teritett ulti-duri     0   0.0%     —        —
+ 28 piros ulti-20-100-duri                   0   0.0%     —        —
+ 29 piros teritett ulti-40-100-duri          0   0.0%     —        —
+ 30 piros teritett 20-100-duri               0   0.0%     —        —
+ 31 teritett rebetli                         0   0.0%     —        —
+ 32 piros teritett ulti-20-100-duri          0   0.0%     —        —
+=== done 2026 jún. 21 V 21:20:53 CEST ===

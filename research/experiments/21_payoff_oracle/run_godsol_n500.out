@@ -1,0 +1,40 @@
+  scanned 20/500  kept 3  wall=2s
+  scanned 40/500  kept 8  wall=3s
+  scanned 60/500  kept 17  wall=5s
+  scanned 80/500  kept 25  wall=7s
+  scanned 100/500  kept 34  wall=9s
+  scanned 120/500  kept 46  wall=12s
+  scanned 140/500  kept 55  wall=14s
+  scanned 160/500  kept 65  wall=16s
+  scanned 180/500  kept 79  wall=19s
+  scanned 200/500  kept 88  wall=21s
+  scanned 220/500  kept 98  wall=23s
+  scanned 240/500  kept 104  wall=25s
+  scanned 260/500  kept 117  wall=27s
+  scanned 280/500  kept 128  wall=30s
+  scanned 300/500  kept 136  wall=32s
+  scanned 320/500  kept 145  wall=33s
+  scanned 340/500  kept 152  wall=35s
+  scanned 360/500  kept 160  wall=36s
+  scanned 380/500  kept 168  wall=38s
+  scanned 400/500  kept 178  wall=41s
+  scanned 420/500  kept 189  wall=43s
+  scanned 440/500  kept 198  wall=45s
+  scanned 460/500  kept 204  wall=46s
+  scanned 480/500  kept 213  wall=49s
+  scanned 500/500  kept 226  wall=51s
+
+GOD soloist vs PIMC32 defenders | kept 226/500 marriage deals (40:72, 20:169)  wall=51s
+
+=== A god[parti] ===
+  parti WR 0.650 | silent-ulti 0.035 | reached100 0.195 | 40-100 0.084 | 20-100 0.093 | GP/def +1.066 ± 2.141
+
+=== B god+ulti ===
+  parti WR 0.668 | silent-ulti 0.500 | reached100 0.279 | 40-100 0.142 | 20-100 0.115 | GP/def +2.221 ± 2.903
+
+=== C god+ulti+100 ===
+  parti WR 0.668 | silent-ulti 0.504 | reached100 0.319 | 40-100 0.155 | 20-100 0.128 | GP/def +2.310 ± 2.944
+
+=== effects (god soloist, corrected oracle) ===
+  B − A (silent-ulti): +1.155  t=+11.41
+  C − B (silent-100):  +0.088  t=+2.26

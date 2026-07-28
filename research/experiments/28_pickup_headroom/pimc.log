@@ -1,0 +1,27 @@
+exp28 PIMC-discard (ulti/duri only, K=6): scanning 2594 seeds
+[pimc] scan 100/2594 71s  ulti/duri hands 6
+[pimc] scan 200/2594 130s  ulti/duri hands 15
+[pimc] scan 300/2594 200s  ulti/duri hands 25
+[pimc] scan 400/2594 354s  ulti/duri hands 37
+[pimc] scan 500/2594 613s  ulti/duri hands 55
+[pimc] scan 600/2594 703s  ulti/duri hands 65
+[pimc] scan 700/2594 790s  ulti/duri hands 74
+[pimc] scan 800/2594 826s  ulti/duri hands 81
+[pimc] scan 900/2594 914s  ulti/duri hands 93
+[pimc] scan 1000/2594 1046s  ulti/duri hands 107
+[pimc] scan 1100/2594 1198s  ulti/duri hands 122
+[pimc] scan 1200/2594 1345s  ulti/duri hands 133
+[pimc] scan 1300/2594 1500s  ulti/duri hands 147
+[pimc] scan 1400/2594 1607s  ulti/duri hands 164
+[pimc] scan 1500/2594 1682s  ulti/duri hands 177
+[pimc] scan 1600/2594 1854s  ulti/duri hands 187
+[pimc] scan 1700/2594 2090s  ulti/duri hands 203
+[pimc] scan 1800/2594 2289s  ulti/duri hands 222
+[pimc] scan 1900/2594 2364s  ulti/duri hands 234
+[pimc] scan 2000/2594 2492s  ulti/duri hands 247
+[pimc] scan 2100/2594 2638s  ulti/duri hands 261
+[pimc] scan 2200/2594 2780s  ulti/duri hands 276
+[pimc] scan 2300/2594 2895s  ulti/duri hands 291
+[pimc] scan 2400/2594 2931s  ulti/duri hands 298
+[pimc] scan 2500/2594 3088s  ulti/duri hands 312
+done: 329 ulti/duri hands

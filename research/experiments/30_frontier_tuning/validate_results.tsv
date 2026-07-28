@@ -1,0 +1,2 @@
+CURRENT (deployed)	FLOOR=0.70	DEBIAS=0.80	DURIMULT=1.0	scorer=pimc	N=2500	metric=+2.954	nonfloor=+8.475	n_nonfloor=1372	pass=0.434	P0=-0.129	wall=830s
+RECOMMENDED (retuned)	FLOOR=0.80	DEBIAS=0.85	DURIMULT=0.3	scorer=pimc	N=2500	metric=+3.643	nonfloor=+10.693	n_nonfloor=1273	pass=0.464	P0=+0.332	wall=882s

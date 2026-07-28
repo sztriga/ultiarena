@@ -1,0 +1,32 @@
+=== exp40 train realistic head: colorless_duri ===  data=colorless_duri_real_p32.npz  N=40000  dim=32
+  realistic make-rate=0.2056  dd-lost=0.8203  dd-lost&made=0.0259
+  pos_weight=3.86  train=36000  val=4000
+  ep  1  loss=1.0320  val_brier=0.1822  val_auc=0.8203
+  ep  5  loss=0.7160  val_brier=0.1539  val_auc=0.8710
+  ep 10  loss=0.5845  val_brier=0.1379  val_auc=0.9177
+  ep 15  loss=0.5428  val_brier=0.1100  val_auc=0.9259
+  ep 20  loss=0.5321  val_brier=0.1255  val_auc=0.9287
+  ep 25  loss=0.5090  val_brier=0.1044  val_auc=0.9283
+  ep 30  loss=0.4979  val_brier=0.1096  val_auc=0.9292
+  ep 35  loss=0.4864  val_brier=0.1143  val_auc=0.9318
+  ep 40  loss=0.4805  val_brier=0.1174  val_auc=0.9315
+
+  REALISTIC head  best ep27  val_auc=0.9296  val_brier=0.1026  ECE_raw=0.0986  ECE_cal=0.0310
+  reliability (calibrated):  [lo,hi)  mean_pred  emp_rate   n
+    [0.0,0.1)   0.013     0.012    2070
+    [0.1,0.2)   0.119     0.101     327
+    [0.2,0.3)   0.245     0.181     498  <-- off
+    [0.3,0.4)   0.333     0.278      18
+    [0.4,0.5)   0.431     0.319     216  <-- off
+    [0.5,0.6)   0.550     0.421     273  <-- off
+    [0.6,0.7)   0.686     0.652     112
+    [0.7,0.8)   0.761     0.678     180  <-- off
+    [0.8,0.9)   0.855     0.902      61
+    [0.9,1.0)   0.952     0.955     245
+
+  GOD head 'colorless_duri' (vs realistic outcome)  val_auc=0.8193  val_brier=0.1596  mean_pred=0.0671 vs actual make-rate 0.2050  → UNDER-predicts by 0.138
+  GAP hands (dd-lost but realistically MADE): n=102 in val
+    god head mean p      = 0.084
+    realistic head mean p= 0.370
+
+  saved colorless_duri_real_baseline.pt + colorless_duri_real_isotonic.npz

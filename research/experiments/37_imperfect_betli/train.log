@@ -1,0 +1,21 @@
+=== exp37 train realistic betli head ===  data=betli_real.npz  N=150000
+  realistic make-rate=0.4199  dd-lost=0.7513  dd-lost&made=0.1752
+  pos_weight=1.39  train=135000  val=15000
+  ep  1  loss=0.5473  val_brier=0.1140  val_auc=0.9186
+  ep  5  loss=0.4067  val_brier=0.1088  val_auc=0.9283
+  ep 10  loss=0.3948  val_brier=0.1050  val_auc=0.9309
+  ep 15  loss=0.3894  val_brier=0.1048  val_auc=0.9317
+  ep 20  loss=0.3853  val_brier=0.1048  val_auc=0.9321
+  ep 25  loss=0.3814  val_brier=0.1051  val_auc=0.9321
+  ep 30  loss=0.3788  val_brier=0.1034  val_auc=0.9322
+
+  REALISTIC head  best ep18  val_auc=0.9320  val_brier=0.1033  ECE_raw=0.0084  ECE_cal=0.0061
+  GOD head (vs realistic outcome)  val_auc=0.9150  val_brier=0.2368  mean_pred=0.1513 vs actual make-rate 0.4260  → UNDER-predicts by 0.275
+
+  IMPERFECT betli (dd-lost but realistically MADE): n=2700 in val
+    god head mean p      = 0.144  (→ never bids these)
+    realistic head mean p= 0.593  (→ can bid them)
+    p>0.3:  god 17.0%   realistic 84.9%
+    p>0.5:  god  7.2%   realistic 66.9%
+
+  saved betli_real_baseline.pt + betli_real_isotonic.npz

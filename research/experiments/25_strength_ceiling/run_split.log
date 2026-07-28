@@ -1,0 +1,10 @@
+=== ceiling split START 2026 júl.  5 V 20:55:33 CEST ===
+[ceiling-split] N=150 N_DET=8 — running god h2h...
+  god edge +8.527  (53s). running pimc h2h...
+  pimc edge +1.500  (293s)
+
+=== PERCEPTION HEADROOM SPLIT | N=150 ===
+  total (net → god, perfect info)     +8.527 GP/deal
+  TRAINABLE (net → PIMC marginal)     +1.500 GP/deal  (18% of total)
+  irreducible (PIMC → god, info gap)  +7.027 GP/deal  (82% of total)
+=== done 2026 júl.  5 V 21:01:19 CEST ===
