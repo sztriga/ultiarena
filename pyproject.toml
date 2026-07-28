@@ -4,24 +4,21 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "trickster"
-version = "0.2.0"
-description = "Hungarian card game framework with AlphaZero MCTS training and React UI."
+version = "0.3.0"
+description = "Ulti AI (base-event bidder + web app) with an isolated Snapszer engine."
 readme = "README.md"
 requires-python = ">=3.10"
-dependencies = ["fastapi", "uvicorn", "numpy"]
+dependencies = ["fastapi", "uvicorn", "numpy", "torch"]
 
 [project.optional-dependencies]
-dev = ["pytest==8.3.4"]
+dev = ["pytest"]
 fast = ["cython"]
-train = ["torch", "cython"]
 
-[project.scripts]
-trickster-gui = "trickster.gui:main"
-trickster-train = "trickster.cli:main"
-
+# NOTE: multi-root layout finalized in Stage 6 (adds ulti/, ultisolver/, apps/).
+# For now only the isolated snapszer `trickster` package is installable.
 [tool.setuptools]
-package-dir = {"" = "src"}
+package-dir = {"" = "snapszer"}
 
 [tool.setuptools.packages.find]
-where = ["src"]
+where = ["snapszer"]
 
