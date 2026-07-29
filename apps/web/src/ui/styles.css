@@ -672,11 +672,11 @@ html, body, #root {
   font-weight: 800;
   letter-spacing: -2px;
   margin: 8px 0 6px;
-  background: linear-gradient(135deg, #34d399 0%, #16a34a 50%, #047857 100%);
+  background: linear-gradient(135deg, #a9c2e2 0%, #6d8cb6 50%, #47618a 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
-  filter: drop-shadow(0 4px 16px rgba(22, 163, 74, 0.30));
+  filter: drop-shadow(0 4px 16px rgba(71, 97, 138, 0.30));
 }
 
 .betli-hu-tagline {
@@ -749,7 +749,7 @@ html, body, #root {
   font-weight: 700;
   letter-spacing: 0.3px;
   color: #fff;
-  background: #2f7d4f;            /* tasteful, consistent — no per-seat purple accent */
+  background: #3f5a7d;            /* tasteful slate-blue */
   border: none;
   border-radius: 10px;
   padding: 12px 24px;
@@ -758,17 +758,25 @@ html, body, #root {
 }
 /* Compact variant for the sidebar result box. */
 .betli-hu-deal-btn--sm { font-size: 13px; padding: 6px 14px; border-radius: 7px; }
-/* secondary (outline) — subordinate to the green primary, no loud fill */
+/* splash: two equal-size stacked buttons */
+.splash-actions {
+  display: flex; flex-direction: column; gap: 12px;
+  width: 220px; margin: 28px auto 0;
+}
+.splash-actions .betli-hu-deal-btn { width: 100%; }
+/* secondary (outline) — subordinate to the filled slate primary, no loud fill */
 .betli-hu-deal-btn--ghost {
   background: transparent;
-  color: var(--muted);
-  border: 1px solid var(--border);
+  color: #9fb3c8;
+  border: 1px solid #3f5a7d;
   font-weight: 600;
 }
 .betli-hu-deal-btn--ghost:hover:not(:disabled) {
+  transform: translateY(-2px);
   filter: none;
-  color: var(--text);
-  border-color: var(--accent);
+  color: #d3e0f0;
+  border-color: #5b7aa3;
+  background: rgba(63, 90, 125, 0.12);
 }
 
 /* Bare topbar (game views — no titles, just the buttons on the right). */

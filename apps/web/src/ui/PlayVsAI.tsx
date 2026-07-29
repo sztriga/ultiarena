@@ -155,7 +155,6 @@ function useUltiBubble(): { show: (t: string) => void; clear: () => void; node: 
 }
 
 export function PlayVsAI() {
-  const [seed, setSeed] = useState<string>("");
   const [showPuzzle, setShowPuzzle] = useState(false);   // Villámtalon mini-game overlay
 
   const [state,   setState]   = useState<PlayState | null>(null);
@@ -279,10 +278,10 @@ export function PlayVsAI() {
     setLoading(true); setError(null); setPending(null); resetBubbles();
     try {
       // You always open the first deal as the 12-card holder (seat 0).
-      setState(await api.playNew({ seat: 0, seed: seed === "" ? undefined : Number(seed) }));
+      setState(await api.playNew({ seat: 0, seed: undefined }));
     } catch (e) { setError(String(e)); setState(null); }
     finally { setLoading(false); }
-  }, [seed, resetBubbles]);
+  }, [resetBubbles]);
 
   // Next round rotates who holds the 12 (the opener). A dead deal (all passed)
   // is re-dealt by the same dealer, so pass rotate=false there.
@@ -550,21 +549,14 @@ export function PlayVsAI() {
         <main className="main betli-hu-splash-main">
           <section style={{ textAlign: "center" }}>
             <h1 className="betli-hu-title">Ulti</h1>
-            <div style={{ marginTop: 28 }}>
+            <div className="splash-actions">
               <button className="betli-hu-deal-btn" onClick={onNew} disabled={loading}>
                 {loading ? "…" : "Új játék"}
               </button>
-            </div>
-            <div style={{ marginTop: 12 }}>
-              <button className="betli-hu-deal-btn betli-hu-deal-btn--sm betli-hu-deal-btn--ghost"
+              <button className="betli-hu-deal-btn betli-hu-deal-btn--ghost"
                       onClick={() => setShowPuzzle(true)}>
                 Villámtalon
               </button>
-            </div>
-            <div className="field" style={{ display: "inline-flex", marginTop: 20, opacity: 0.5 }}>
-              <label>seed</label>
-              <input type="number" value={seed} placeholder="random"
-                     onChange={(e) => setSeed(e.target.value)} style={{ minWidth: 100 }} />
             </div>
             {error && <div className="error" style={{ marginTop: 14, maxWidth: 480, margin: "14px auto 0" }}>{error}</div>}
           </section>
