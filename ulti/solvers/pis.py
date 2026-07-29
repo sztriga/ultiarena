@@ -102,6 +102,7 @@ def build_position(
     talon:    Optional[List[_OCard]] = None,
     declare_marriages: bool = False,
     marriage_restrict: Optional[str] = None,
+    has_ulti: Optional[bool] = None,
 ) -> Any:
     """Build an opaque solver position from oldtawer-typed inputs.
 
@@ -125,7 +126,11 @@ def build_position(
 
     from ultisolver.games.ulti.game import GameState as _TGameState
 
-    has_ulti = (contract == 'ulti')
+    # 7esre tartás: the soloist must hold the trump 7 for the last trick whenever the
+    # game includes an ulti. Production PLAY builds an ulti as contract='parti' (the multi
+    # solver), so the caller must pass has_ulti explicitly; fall back to the contract name.
+    if has_ulti is None:
+        has_ulti = (contract == 'ulti')
     # Colorless contracts: betli is always trumpless; durchmars MAY be
     # played without trump (colorless duri uses the betli-style rank
     # ordering — 10 demoted under J — handled by setting betli=True).

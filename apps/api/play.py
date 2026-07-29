@@ -429,6 +429,7 @@ def _setup_play(sess: Session) -> None:
             hands=[list(sol), list(d1), list(d2)], soloist=0, leader=0,
             contract=build_c, trump=t, talon=list(talon),
             declare_marriages=(t is not None), marriage_restrict=restrict,
+            has_ulti=bool(bid.ulti),   # 7esre tartás: hold the trump 7 when the game has an ulti
         )
     sess.voids = _det.Voids()
     # Live kontra-able units: a simple game has one (its primary); a combined game
