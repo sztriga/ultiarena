@@ -913,6 +913,32 @@ def _finish(sess: Session) -> None:
         "silents": _silent_breakdown(pvec),
     }
 
+    # ── record the finished game for later AI analysis (best-effort; never breaks a game) ──
+    try:
+        from .recording import record_game
+        record_game({
+            "id": sess.id, "created_at": time.time(), "seed": sess.seed,
+            "contract": sess.bid_name, "trump": sess.trump,
+            "soloist_seat": w, "human_seat": sess.seat, "kontra_level": sess.k_level,
+            "winner": "soloist" if soloist_won else "defenders", "made": made,
+            "seat_gp": seat_gp,
+            "players": [                          # seat → identity (user-aware for later auth / human-vs-human)
+                {"seat": s, "kind": "human" if s == sess.seat else "ai",
+                 "user_id": None, "agent": None if s == sess.seat else "frontier"}
+                for s in range(3)
+            ],
+            "transcript": {                        # play-index space (0 = soloist); auction is real-seat
+                "deal": {"hands": [[c.id for c in h] for h in sess.play_hands0],
+                         "talon": [c.id for c in sess.play_talon]},
+                "auction": sess.a_history,
+                "plays": [[h["player_id"], h["card"]["id"], h["trick_index"]] for h in sess.p_history],
+                "kontra": _kontra_dict(sess),
+                "marriages": [[p, su, pts] for (p, su, pts) in getattr(sess.p_pos, "marriages", [])],
+            },
+        })
+    except Exception:
+        pass
+
 
 # ── Serialization ───────────────────────────────────────────────────────────────
 

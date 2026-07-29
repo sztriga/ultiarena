@@ -44,3 +44,4 @@ tsconfig.tsbuildinfo
 *.npy
 *.npz
 *.jsonl
+data/
