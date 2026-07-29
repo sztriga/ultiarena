@@ -795,8 +795,15 @@ def _terit_revealed(sess: Session) -> bool:
     marriage declarations and the whole kontra round, both interleaved with trick 1 —
     the soloist lays their hand FACE-UP and the defenders see it for the rest of the
     game. Covers terített betli, terített durchmars, AND terített combined games
-    (ulti / 40-100 / …), since `bid.teritett` is set on all of them (milan 2026-07-24)."""
-    return bool(getattr(sess.bid, "teritett", False)) and len(sess.p_history) >= 3
+    (ulti / 40-100 / …), since `bid.teritett` is set on all of them (milan 2026-07-24).
+
+    Reveal ONLY once the whole first round is settled — marriage declarations, trick 1,
+    AND the full kontra round (defender kontra + soloist rekontra). `k_rk_off` flips true
+    when the rekontra decision is made (or immediately if nothing was kontra'd); a game
+    with no kontra-able unit reveals as soon as trick 1 completes. (milan 2026-07-29)"""
+    if not bool(getattr(sess.bid, "teritett", False)) or len(sess.p_history) < 3:
+        return False
+    return sess.k_rk_off or not sess.k_units
 
 
 def _ai_play_pick(sess: Session, play_idx: int):
@@ -989,11 +996,23 @@ def _auction_snapshot(sess: Session) -> dict:
     }
 
 
+# Colorless games (betli / színtelen duri) rank the Ten LOW — it sits between the 9 and the
+# alsó (10-low), so the displayed hand must reorder accordingly. (milan 2026-07-29)
+_COLORLESS_RANK = {"7": 0, "8": 1, "9": 2, "10": 3, "lower": 4, "upper": 5, "king": 6, "ace": 7}
+
+
+def _hand_sort_key(c, colorless: bool):
+    if colorless:
+        return (c.suit_index, _COLORLESS_RANK.get(c.rank, c.rank_index))
+    return (c.suit_index, c.rank_index)
+
+
 def _play_hands_dict(sess: Session, reveal_all: bool, reveal_sol: bool = False) -> List[List[Optional[dict]]]:
     hands = pis_bridge.hands_by_player(sess.p_pos)
+    colorless = sess.trump is None                      # betli / színtelen duri
     out: List[List[Optional[dict]]] = []
     for pid in range(3):
-        h = sorted(hands[pid], key=lambda c: c.id)
+        h = sorted(hands[pid], key=lambda c: _hand_sort_key(c, colorless))
         # terített reveal: the soloist (play-index 0) is shown to everyone once open
         if reveal_all or pid == sess.human_play_index or (reveal_sol and pid == 0):
             out.append([card_to_dict(c) for c in h])

@@ -551,14 +551,13 @@ export function PlayVsAI() {
           <section style={{ textAlign: "center" }}>
             <h1 className="betli-hu-title">Ulti</h1>
             <div style={{ marginTop: 28 }}>
-              <button className="betli-hu-deal-btn" onClick={onNew} disabled={loading}
-                      style={{ background: "#2e7d32" }}>
+              <button className="betli-hu-deal-btn" onClick={onNew} disabled={loading}>
                 {loading ? "…" : "Új játék"}
               </button>
             </div>
-            <div style={{ marginTop: 14 }}>
-              <button className="betli-hu-deal-btn betli-hu-deal-btn--sm" onClick={() => setShowPuzzle(true)}
-                      style={{ background: "#7c3aed" }}>
+            <div style={{ marginTop: 12 }}>
+              <button className="betli-hu-deal-btn betli-hu-deal-btn--sm betli-hu-deal-btn--ghost"
+                      onClick={() => setShowPuzzle(true)}>
                 Villámtalon
               </button>
             </div>

@@ -758,6 +758,18 @@ html, body, #root {
 }
 /* Compact variant for the sidebar result box. */
 .betli-hu-deal-btn--sm { font-size: 13px; padding: 6px 14px; border-radius: 7px; }
+/* secondary (outline) — subordinate to the green primary, no loud fill */
+.betli-hu-deal-btn--ghost {
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  font-weight: 600;
+}
+.betli-hu-deal-btn--ghost:hover:not(:disabled) {
+  filter: none;
+  color: var(--text);
+  border-color: var(--accent);
+}
 
 /* Bare topbar (game views — no titles, just the buttons on the right). */
 .topbar-bare { justify-content: flex-end; }
