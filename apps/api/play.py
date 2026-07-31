@@ -59,6 +59,7 @@ from ulti.bidding.kontra import _sol_ev  # noqa: E402
 from ulti.bidding.deal import deal_12_10_10  # noqa: E402
 from ulti.solvers import pis as pis_bridge  # noqa: E402
 from ulti.solvers import determinize as _det  # noqa: E402
+from ulti.solvers.blocks import COLORLESS_RANK, equivalent_moves  # noqa: E402
 from ulti.eval.pimc_matchup import pimc_pick  # noqa: E402
 try:
     from ulti.betli import defense as _exp36  # noqa: E402  (exp36 betli-defense net; models/betli/betli_defense.pt)
@@ -109,6 +110,11 @@ _BETLI_DEF = os.environ.get("BETLI_DEF", "1") == "1"
 # +8.14 GP/bid, does NOT cannibalise ulti; head-to-head vs the rebetli-off frontier +0.16 GP/game (within
 # noise → ~neutral, mildly +). This is the human-like "bid betli, escalate to rebetli when confident" move.
 _REBETLI_REAL_BID = os.environ.get("REBETLI_REAL_BID", "1") == "1"
+# ── anti-tell: randomise inside an equivalence block (MIX_EQUIV=0 reverts). Whatever picks
+# the card — PIMC, the exp36 net, the exploit soloist — deterministically returns the same
+# member of a provably-equivalent run, which leaks "I hold nothing above this". Mixing is
+# free: block members lead to the same game (tests/ulti/test_block_equivalence.py).
+_MIX_EQUIV = os.environ.get("MIX_EQUIV", "1") == "1"
 
 
 def _bid_label(bid) -> str:
@@ -807,6 +813,38 @@ def _terit_revealed(sess: Session) -> bool:
     return sess.k_rk_off or not sess.k_units
 
 
+def _mix_equivalent(sess: Session, play_idx: int, card):
+    """Swap ``card`` for a random card that plays identically — an anti-tell.
+
+    Whatever chose the card (PIMC, the exp36 betli-defense net, the exploit soloist)
+    tends to return the SAME member of an equivalent run every time — normally the
+    highest. That is a tell: leading the top of a run says "I hold nothing above this".
+    A human picks arbitrarily inside a run, so the engine should too.
+
+    Only cards in one equivalence block are considered, so this is free by construction:
+    the block members lead to literally the same game (proved by
+    tests/ulti/test_block_equivalence.py). Blocks never span suits, so void inference is
+    unaffected too.
+
+    NOT applied to the betli-family soloist: there ``_legal`` has already applied a
+    DOMINANCE cull (highest card per suit), and the cards it dropped are worse, not
+    equal. Randomising over those would throw away real value.
+    """
+    if not _MIX_EQUIV or card is None:
+        return card
+    colorless = sess.trump is None
+    if colorless and play_idx == 0:
+        return card                       # betli / colorless duri soloist → dominance
+    try:
+        block = equivalent_moves(sess.p_pos, play_idx, card,
+                                 colorless=colorless, trump=sess.trump)
+    except Exception:                      # never let an anti-tell break a game
+        return card
+    if len(block) < 2:
+        return card
+    return random.Random(sess.p_seed_counter * 7919 + card.id).choice(block)
+
+
 def _ai_play_pick(sess: Session, play_idx: int):
     sess.p_seed_counter += 1
     is_terit = bool(getattr(sess.bid, "teritett", False))
@@ -833,7 +871,7 @@ def _ai_play_pick(sess: Session, play_idx: int):
                            seed=sess.p_seed_counter, voids_dict=sess.voids.as_dict())
     if ch is None:
         ch = random.Random(sess.p_seed_counter).choice(pis_bridge.legal_actions(sess.p_pos))
-    return ch
+    return _mix_equivalent(sess, play_idx, ch)
 
 
 def _advance_play(sess: Session) -> None:
@@ -1025,12 +1063,12 @@ def _auction_snapshot(sess: Session) -> dict:
 
 # Colorless games (betli / színtelen duri) rank the Ten LOW — it sits between the 9 and the
 # alsó (10-low), so the displayed hand must reorder accordingly. (milan 2026-07-29)
-_COLORLESS_RANK = {"7": 0, "8": 1, "9": 2, "10": 3, "lower": 4, "upper": 5, "king": 6, "ace": 7}
+# COLORLESS_RANK lives in ulti.solvers.blocks — one definition, shared with the block rule.
 
 
 def _hand_sort_key(c, colorless: bool):
     if colorless:
-        return (c.suit_index, _COLORLESS_RANK.get(c.rank, c.rank_index))
+        return (c.suit_index, COLORLESS_RANK.get(c.rank, c.rank_index))
     return (c.suit_index, c.rank_index)
 
 

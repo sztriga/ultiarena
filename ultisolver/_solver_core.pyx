@@ -775,6 +775,14 @@ cdef struct ContractEval:
 #  Default cull (no-op)
 # ---------------------------------------------------------------------------
 
+# Master switch for ALL move culls (diagnostic; production default 1).
+# 0 → every contract falls back to _cull_noop. A cull may only ever remove
+# moves that are provably equivalent-or-dominated, so flipping this must not
+# change any solved value — which is exactly what tests/test_cull_soundness.py
+# asserts. See set_cull_enabled().
+cdef int _g_cull_enabled = 1
+
+
 cdef void _cull_noop(Moves* m, CState* s, int maximising) noexcept nogil:
     pass
 
@@ -1670,6 +1678,22 @@ def get_multi_cull():
     return _g_multi_cull_enabled
 
 
+def set_cull_enabled(int enabled):
+    """Master switch for EVERY contract's move cull (diagnostic, not a tuning knob).
+
+    1 = production (betli soloist dominance, betli defender groups, parti blocks);
+    0 = _cull_noop everywhere. Every cull is supposed to drop only provably
+    equivalent-or-dominated moves, so ON and OFF must agree on every solved
+    value. tests/test_cull_soundness.py flips this to prove exactly that.
+    """
+    global _g_cull_enabled
+    _g_cull_enabled = 1 if enabled else 0
+
+
+def get_cull_enabled():
+    return _g_cull_enabled
+
+
 cdef inline float _multi_silent_ulti_signed(CState* s) noexcept nogil:
     """Asymmetric bukott rule: +1 sol won 7, -2 sol bukott, -1 def won 7,
     +2 def bukott (someone other than the def who played 7 took the trick),
@@ -1817,6 +1841,8 @@ cdef ContractEval _get_eval(int contract_id) noexcept nogil:
         else:
             ev.order  = _order_default
         ev.cull       = _cull_parti_blocks
+    if not _g_cull_enabled:
+        ev.cull = _cull_noop
     return ev
 
 # ===========================================================================
