@@ -36,7 +36,7 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Mapping, Optional, Tuple
 
 from ulti.agents import make_agent
-from ulti.card import Card, RANKS, SUITS, fresh_deck
+from ulti.card import COLORLESS_RANK, Card, RANKS, SUITS, fresh_deck
 from ulti.game import Phase, UltiGame
 
 
@@ -227,10 +227,7 @@ def deal_durchmars_colored(
 # Colorless-duri rank weighting: 7,8,9,10,J,Q,K,A in *colorless* order
 # (10 sits between 9 and J). We weight by ascending strength so the
 # soloist's hand clusters around the top.
-_DURI_COLORLESS_STRENGTH = {
-    '7': 0, '8': 1, '9': 2, '10': 3,
-    'lower': 4, 'upper': 5, 'king': 6, 'ace': 7,
-}
+_DURI_COLORLESS_STRENGTH = COLORLESS_RANK
 
 
 def deal_durchmars_colorless(
@@ -271,7 +268,7 @@ def deal_durchmars_colorless(
 # inverse betli-strength so the soloist gets a hand that's plausibly
 # winnable for the "take zero tricks" goal.
 
-_BETLI_STRENGTH = {'7': 0, '8': 1, '9': 2, '10': 3, 'lower': 4, 'upper': 5, 'king': 6, 'ace': 7}
+_BETLI_STRENGTH = COLORLESS_RANK
 
 
 def deal_betli(

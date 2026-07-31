@@ -41,11 +41,9 @@ from ulti.card import Card
 from . import pis as _pis
 
 
-# Rank-strength used by the betli dealer (eval.dojo._BETLI_STRENGTH). Mirrored
-# here so the determinizer's bid-conditional prior matches the dealer's
-# distribution without a runtime import from ulti.eval/.
-_BETLI_STRENGTH = {'7': 0, '8': 1, '9': 2, '10': 3,
-                   'lower': 4, 'upper': 5, 'king': 6, 'ace': 7}
+# Colourless rank-strength (10 demoted under the alsó) — the ONE definition, so the
+# determinizer's bid-conditional prior stays in step with the dealers and the solver.
+from ulti.card import COLORLESS_RANK as _BETLI_STRENGTH
 
 
 def _weighted_sample_no_replace(items, weights, k, rng):

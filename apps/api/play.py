@@ -66,6 +66,8 @@ try:
 except Exception:  # pragma: no cover
     _exp36 = None
 from ulti.scoring.oracle import score as score_oracle  # noqa: E402
+from ulti.scoring.units import UNITS_ORDER as _UNITS_ORDER, \
+    UNIT_OBJECTIVE as _UNIT_OBJ, kontra_units as _kontra_units  # noqa: E402
 from ultisolver._solver_core import set_multi_weights  # noqa: E402
 from ulti.card import card_from_id, sort_hand  # noqa: E402
 
@@ -472,49 +474,12 @@ def _setup_play(sess: Session) -> None:
 
 # ── Kontra (simple contracts only) ──────────────────────────────────────────────
 
-_UNITS_ORDER = ("parti", "ulti", "40_100", "20_100", "durchmars", "betli")
+# Unit vocabulary, the kontra-able units of a game and how to solve each one all live in
+# ulti.scoring.units — the same module the scoring oracle uses, so the kontra we OFFER and
+# the kontra we SCORE can never describe different games. Only the display labels are the
+# API layer's business.
 _UNIT_HU = {"parti": "parti", "ulti": "ulti", "40_100": "40-100", "20_100": "20-100",
             "durchmars": "durchmars", "betli": "betli"}
-# Per-unit god objective (mirrors exp23/exp27 _OBJ): (solver, multi-weights, marriage_restrict).
-# 100-games are solved on the "multi" objective with a score_geq_100 weight.
-_UNIT_OBJ = {
-    "parti":     ("parti", None, None),
-    "ulti":      ("ulti", None, None),
-    "betli":     ("betli", None, None),
-    "durchmars": ("durchmars", None, None),
-    "40_100":    ("multi", {"score_geq_100": 1.0}, "40"),
-    "20_100":    ("multi", {"score_geq_100": 1.0}, "20"),
-}
-
-
-def _kontra_units(bid) -> List[str]:
-    """Every kontra-able unit of this game, in UNITS order — each kontrázható separately.
-
-    A bid ulti also exposes the card-point párti as its own unit (milan: a piros ulti →
-    kontra ulti AND kontra párti). Two games have NO párti to kontra:
-      • durchmars — all-tricks, there is no card-point game at all;
-      • a bid 40-100 / 20-100 — the declared 100 REPLACES the párti (milan: "there is no
-        parti in a 40-100"), so offering "kontra párti" there was offering a kontra on a
-        component that is never scored.
-
-    This mirrors scoring/oracle.py, which gates the párti component on ``not bid_a_100``.
-    A bid 100 always holds its marriage — the AI bidder (bidder.py) and the human bid path
-    both reject the bid otherwise — so the replacement always applies.
-    """
-    if bid.betli:
-        return ["betli"]
-    units: List[str] = []
-    if bid.ulti:
-        units.append("ulti")
-    if bid.durchmars:
-        units.append("durchmars")
-    if bid.forty_hundred:
-        units.append("40_100")
-    if bid.twenty_hundred:
-        units.append("20_100")
-    if not bid.durchmars and not (bid.forty_hundred or bid.twenty_hundred):
-        units.append("parti")
-    return sorted(units, key=lambda u: _UNITS_ORDER.index(u))
 
 
 def _unit_makeability(sess: Session, viewer: int, unit: str, salt: int) -> float:

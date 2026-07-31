@@ -39,10 +39,7 @@ from ulti.card import Card, SUITS, RANKS  # noqa: F401  (SUITS used implicitly)
 # regular ulti. Using rank_index for "top in suit" summaries gives the
 # 10 a higher score than the K, which is wrong for betli.
 # Mirrors ultisolver._solver_core._str_b and eval.dojo._BETLI_STRENGTH.
-_BETLI_STRENGTH = {
-    "7": 0, "8": 1, "9": 2, "10": 3,
-    "lower": 4, "upper": 5, "king": 6, "ace": 7,
-}
+from ulti.card import COLORLESS_RANK as _BETLI_STRENGTH
 
 
 def _betli_strength(c: Card) -> int:

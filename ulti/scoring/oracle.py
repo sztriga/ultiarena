@@ -19,23 +19,11 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Dict, Optional, Tuple
 
-# ── kontra units ──────────────────────────────────────────────────────
-# Each scoring component rides a KONTRA UNIT. Silent substitutes (silent /
-# def_silent 100 & duri that replace the parti) ride the PARTI unit, so
-# "kontra parti" scales them too (milan 2026-07-05). Silent ulti rides no unit
-# (unbid → scored flat, no kontra). A component's unit is kontra'd independently.
-_PARTI_UNIT = {
-    "parti", "silent_40_100", "silent_20_100", "silent_durchmars",
-    "def_silent_40_100", "def_silent_20_100", "def_silent_durchmars",
-}
-
-
-def _unit_of(key: str) -> Optional[str]:
-    if key in _PARTI_UNIT:
-        return "parti"
-    if key in ("40_100", "20_100", "ulti", "betli", "durchmars"):
-        return key
-    return None                      # silent_ulti (unbid) → no kontra unit
+# Each scoring component rides a KONTRA UNIT, whose level scales it. The unit vocabulary
+# lives in ulti.scoring.units so the kontra-OFFER path (apps.api.play) and this scoring
+# path cannot disagree about which units a game has — they used to, and a bid 100 ended up
+# offering a "kontra párti" that scored nothing.
+from ulti.scoring.units import game_has_parti, unit_of as _unit_of  # noqa: E402
 
 from ultisolver.games.ulti.game import (
     GameState,
@@ -295,7 +283,9 @@ def score(
 
     if silent_pts:
         out.components.update(silent_pts)       # replaces parti, or rides a bid/combo
-    elif points_based and score_parti and not bid_a_100:
+    elif score_parti and game_has_parti(bid, hundred_stands=bid_a_100):
+        # Same condition as before (points_based and not bid_a_100) — now stated once,
+        # in ulti.scoring.units, shared with the kontra-offer path.
         out.components["parti"] = (
             +gp.parti if _parti_won(final_pos) else -gp.parti)
 

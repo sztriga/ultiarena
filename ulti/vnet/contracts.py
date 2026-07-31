@@ -25,10 +25,7 @@ from ulti.card import Card
 # Returning a 0..7 int so the feature normalisation (``/ 7.0``) is contract-
 # independent.
 
-_BETLI_STRENGTH = {
-    "7": 0, "8": 1, "9": 2, "10": 3,
-    "lower": 4, "upper": 5, "king": 6, "ace": 7,
-}
+from ulti.card import COLORLESS_RANK as _BETLI_STRENGTH
 
 
 def betli_strength(c: Card) -> int:
