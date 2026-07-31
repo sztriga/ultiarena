@@ -16,6 +16,7 @@ import { CardBack, CardView } from "./CardView";
 import { UltiTable, TalonStrip, type SeatChrome } from "./UltiTable";
 import { useStepScrubber } from "./useStepScrubber";
 import { PuzzleRush } from "./PuzzleRush";
+import { AnalysisBoard, AuctionPanel, KontraBox, ResultPanel, Splash } from "./playPanels";
 
 type Seat = 0 | 1 | 2;
 
@@ -23,6 +24,7 @@ import {
   SEAT_META, PLAYER_LABEL, TRUMP_LABEL, KONTRA_WORD, ROLE_LABEL, RANK_SHORT,
   ANIM_STEP_MS, ANIM_TRICK_PAUSE_MS, placeholderHand, CardChip,
   applyUserPlay, playBaseline, applyStepToVisible, useUltiBubble,
+  EffectivePly, type AnalysisView,
 } from "./playChrome";
 
 export function PlayVsAI() {
@@ -301,10 +303,7 @@ export function PlayVsAI() {
     setBranch(null); setScrubPly(Math.min(branch.forkPly, analysis.per_ply.length));
   }, [branch, analysis]);
 
-  type EffectivePly = {
-    ply_index: number; player_id: 0 | 1 | 2; chosen_card: Card; legal_card_ids: number[];
-    verdict: PlayAnalysis["per_ply"][number] | null; by_ai: boolean; is_branch: boolean;
-  };
+
   const effectivePlies = useMemo<EffectivePly[]>(() => {
     if (!analysis) return [];
     if (branch) return branch.plies;                    // the branch already IS the full line
@@ -382,36 +381,10 @@ export function PlayVsAI() {
   // Shared end-of-hand result — one simple line ("Nyertél 4 pontot") + contract + the
   // action buttons. Used identically by a played game AND the all-pass screen.
   const renderResult = (r: PlayResult, withAnalysis: boolean) => (
-    <div className={`play-side-inner play-side-result ${r.user_won ? "is-win" : "is-loss"}`}>
-      <div className="betli-hu-result-headline">
-        {r.user_won ? "Nyertél" : "Vesztettél"} {Math.abs(r.human_gp)} pontot
-      </div>
-      <div className="betli-hu-result-sub">
-        {r.contract}{r.kontra_level > 0 ? ` · ${KONTRA_WORD[r.kontra_level]}` : ""}
-      </div>
-      {(r.silents?.length ?? 0) > 0 && (
-        <div className="play-silents" style={{ marginTop: 8 }}>
-          <span className="play-silents-label">csendes játékok:</span>
-          {r.silents!.map((s, i) => (
-            <span key={i} className="play-silent-item">{s.label} {s.gp >= 0 ? "+" : ""}{s.gp}</span>
-          ))}
-        </div>
-      )}
-      <div className="play-side-actions">
-        <button className="betli-hu-deal-btn betli-hu-deal-btn--sm" onClick={() => onPlayAgain(true)} disabled={loading}>
-          {loading ? "Osztás…" : "Következő"}
-        </button>
-        {withAnalysis && (
-          <button className="btn" onClick={onOpenAnalysis} disabled={analysisLoading}>
-            {analysisLoading ? "Elemzés…" : "Elemzés"}
-          </button>
-        )}
-        {rounds.length > 0 && (
-          <button className="btn" onClick={() => setShowCard(true)} disabled={loading}>Pontszámok</button>
-        )}
-        <button className="btn" onClick={onAbandon} disabled={loading}>Új játszma</button>
-      </div>
-    </div>
+    <ResultPanel r={r} withAnalysis={withAnalysis} loading={loading}
+                 analysisLoading={analysisLoading} hasRounds={rounds.length > 0}
+                 onPlayAgain={onPlayAgain} onOpenAnalysis={onOpenAnalysis}
+                 onShowCard={() => setShowCard(true)} onAbandon={onAbandon} />
   );
 
   // ── Setup ────────────────────────────────────────────────────────────────
@@ -420,160 +393,22 @@ export function PlayVsAI() {
   }
 
   if (!state) {
-    return (
-      <div className="app betli-hu-splash">
-        <main className="main betli-hu-splash-main">
-          <section style={{ textAlign: "center" }}>
-            <h1 className="betli-hu-title">Ulti</h1>
-            <div className="splash-actions">
-              <button className="betli-hu-deal-btn" onClick={onNew} disabled={loading}>
-                {loading ? "…" : "Új játék"}
-              </button>
-              <button className="betli-hu-deal-btn betli-hu-deal-btn--ghost"
-                      onClick={() => setShowPuzzle(true)}>
-                Villámtalon
-              </button>
-            </div>
-            {error && <div className="error" style={{ marginTop: 14, maxWidth: 480, margin: "14px auto 0" }}>{error}</div>}
-          </section>
-        </main>
-      </div>
-    );
+    return <Splash loading={loading} error={error}
+                   onNew={onNew} onPuzzle={() => setShowPuzzle(true)} />;
   }
 
   // ── Post-game analysis overlay (god solver + branch exploration) ────────────
   if (analysisOpen && analysis && analysisView) {
-    const a = analysisView;
-    const v = a.thisPly;
-    const maxPly = effectivePlies.length;
-    const anaHpi = (analysis.human_play_index ?? 0) as Seat;
-    const anaSeat = (pid: Seat): SeatChrome => ({   // same chrome as the game phase (roleTag)
-      label: (
-        <>
-          <span className={`ulti-role-tag ${pid === 0 ? "ulti-role-soloist" : "ulti-role-defender"}`}>
-            {pid === 0 ? "Játékos" : "Védő"}
-          </span>
-          {pid === anaHpi && <span className="ulti-role-tag" style={{ background: "#3a6", color: "#fff" }}>te</span>}
-        </>
-      ),
-    });
-    const anaSeats = { 0: anaSeat(0), 1: anaSeat(1), 2: anaSeat(2) };
-    const fmt = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(1));
     return (
-      <div className="app betli-hu-game play-vs-ai">
-        <header className="topbar">
-          <div className="brand">
-            <div className="title">
-              Elemzés — {analysis.contract}
-              {analysis.trump && <span className="muted"> · {TRUMP_LABEL(analysis.trump)}</span>}
-              {branch && <span className="ulti-role-tag" style={{ background: "#a23ed1", color: "#fff", marginLeft: 8 }}>alt ág</span>}
-            </div>
-            <div className="subtitle">
-              {a.currentPly}. / {maxPly}. lépés · <span className="kbd">←</span> <span className="kbd">→</span> a léptetéshez · kattints egy lapra egy ág kipróbálásához
-              {v?.verdict?.is_blunder && <> · <b style={{ color: "#ff8a8a" }}>HIBA</b></>}
-              {branching && <> · <i>számolás…</i></>}
-            </div>
-          </div>
-          <div className="controls">
-            <button className="btn" onClick={() => setScrubPly((p) => Math.max(0, p - 1))} disabled={a.currentPly === 0}>←</button>
-            <button className="btn" onClick={() => setScrubPly((p) => Math.min(maxPly, p + 1))} disabled={a.currentPly >= maxPly}>→</button>
-            {branch && <button className="btn" onClick={onClearBranch}>Ág törlése</button>}
-            <button className="btn btn-primary" onClick={onCloseAnalysis}>Vissza</button>
-          </div>
-        </header>
-        <main className="main">
-          <section>
-            {error && <div className="error">{error}</div>}
-            <UltiTable
-              hands={[a.hands[0], a.hands[1], a.hands[2]]}
-              seats={anaSeats}
-              currentTrick={a.currentTrick}
-              activePlayer={a.activePlayer}
-              legalIds={a.legalIds}
-              onCardClick={branching ? undefined : onAnalysisCardClick}
-              seatNames={{ 0: "Játékos", 1: "Védő", 2: "Védő" }}
-              bottomSeat={anaHpi}
-              aboveDefenders={
-                <>
-                  {analysis.trump && (
-                    <div className="row" style={{ justifyContent: "center", marginBottom: 4 }}>
-                      <span className={`play-badge ${analysis.trump === "hearts" ? "is-piros" : ""}`}>
-                        Adu: {TRUMP_LABEL(analysis.trump)}
-                      </span>
-                    </div>
-                  )}
-                  <TalonStrip talon={analysis.talon} />
-                </>
-              }
-            />
-            {(v?.verdict || branch) && (
-              <div className="panel" style={{ marginTop: 10 }}>
-                {v?.verdict ? (
-                  <>
-                    <div className="panel-title">Isteni ítélet — {v.ply_index + 1}. lépés</div>
-                    <div className="row" style={{ gap: 16, flexWrap: "wrap", fontSize: 13 }}>
-                      <div>
-                        <div className="muted" style={{ fontSize: 11 }}>{v.verdict.player_id === 0 ? "Játékos" : "Védő"} lépett</div>
-                        <div><CardChip card={v.verdict.chosen_card} /> · érték {fmt(v.verdict.god_chosen_value)}</div>
-                      </div>
-                      <div>
-                        <div className="muted" style={{ fontSize: 11 }}>Isteni választás</div>
-                        <div><CardChip card={v.verdict.god_best_card} /> · érték {fmt(v.verdict.god_best_value)}</div>
-                      </div>
-                      <div>
-                        <div className="muted" style={{ fontSize: 11 }}>Ítélet</div>
-                        <div style={{ color: v.verdict.is_blunder ? "#ff8a8a" : "#9fe3a5", fontWeight: 600 }}>
-                          {v.verdict.is_blunder ? "Hiba" : "OK"}
-                        </div>
-                      </div>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div className="panel-title">Alternatív ág · isteni folytatás</div>
-                    <div className="muted" style={{ fontSize: 12 }}>
-                      Elágazás a(z) {(branch?.forkPly ?? 0) + 1}. lépésnél — innentől minden lépés isteni-optimális. Ág végérték: {fmt(branch?.value ?? 0)}.
-                    </div>
-                  </>
-                )}
-              </div>
-            )}
-          </section>
-          <section>
-            <div className="panel betli-hu-log-panel">
-              <div className="panel-title">Lépések · isteni ítélet</div>
-              <div className="betli-hu-log-scroll">
-                <table className="play-sc-table" style={{ fontSize: 12, width: "100%" }}>
-                  <thead>
-                    <tr><th>#</th><th>P</th><th>Lépett</th><th>Isteni</th><th>Ítélet</th></tr>
-                  </thead>
-                  <tbody>
-                    {effectivePlies.map((p) => {
-                      const selected = scrubPly - 1 === p.ply_index;
-                      const blunder = p.verdict?.is_blunder ?? false;
-                      return (
-                        <tr key={`${p.ply_index}-${p.is_branch ? "b" : "o"}`}
-                            onClick={() => setScrubPly(p.ply_index + 1)}
-                            style={{ cursor: "pointer",
-                              background: selected ? "rgba(99,200,255,0.16)" : p.is_branch ? "rgba(162,62,209,0.10)" : undefined,
-                              color: blunder ? "#ff8a8a" : undefined, fontWeight: blunder ? 600 : undefined }}>
-                          <td className="muted">{p.ply_index + 1}</td>
-                          <td>{p.player_id === 0 ? "J" : `V${p.player_id}`}{p.by_ai ? "·AI" : ""}{p.is_branch ? "·alt" : ""}</td>
-                          <td><CardChip card={p.chosen_card} /></td>
-                          <td>{p.verdict ? <CardChip card={p.verdict.god_best_card} /> : "—"}</td>
-                          <td>{p.verdict ? (blunder ? "hiba" : "ok") : "(ág)"}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </section>
-        </main>
-      </div>
+      <AnalysisBoard analysis={analysis} analysisView={analysisView}
+                     effectivePlies={effectivePlies} branch={branch}
+                     branching={branching} error={error}
+                     scrubPly={scrubPly} setScrubPly={setScrubPly}
+                     onAnalysisCardClick={branching ? undefined : onAnalysisCardClick}
+                     onClearBranch={onClearBranch} onCloseAnalysis={onCloseAnalysis} />
     );
   }
+
 
   // ── All-passed — SAME shell + result box as a played game (just no table/play). ──
   if (state.phase === "passed") {
@@ -713,85 +548,10 @@ export function PlayVsAI() {
     const bidSeats = { 0: bidChrome(0), 1: bidChrome(1), 2: bidChrome(2) };
 
     const auctionPanel = (
-      <div className="ulti-auction-overlay">
-        <div className="ulti-auction-title">Licitálás</div>
-        {auction.current && (
-          <div className="ulti-auction-current">
-            <span className="ulti-auction-label">Aktuális licit:</span>{" "}
-            <span className="ulti-auction-bid-text">{auction.current.contract}</span>
-            {/* Adu color is hidden during the auction — announced only when play begins. */}
-            <span className="ulti-auction-holder"> — {PLAYER_LABEL[auction.current.pid]}{auction.current.pid === state.seat ? " (te)" : ""}</span>
-          </div>
-        )}
-
-        {hist.length > 0 && (
-          <div className="ulti-auction-history">
-            {hist.map((h, i) => (
-              <div key={i} className="ulti-auction-history-entry">
-                <span className="ulti-auction-player">{PLAYER_LABEL[h.pid]}{h.pid === state.seat ? " (te)" : ""}</span>
-                {h.kind === "pass"
-                  ? <span className="ulti-auction-action pass">passz</span>
-                  : <span className="ulti-auction-action bid">{h.contract}{h.trump ? ` · ${TRUMP_LABEL(h.trump)}` : ""}</span>}
-              </div>
-            ))}
-          </div>
-        )}
-
-        {awaitingBid ? (
-          /* BID STEP — you hold 12: pick from the ladder + discard 2 */
-          <>
-            <div className="ulti-bid-phase-info">
-              {kind === "pass"
-                ? <>Dobj el két lapot a talonba. <b>{discards.size}/2</b></>
-                : <>Válassz, és dobj el két lapot. <b>{discards.size}/2</b></>}
-            </div>
-            <div className="ulti-bid-select-row">
-              <select className="ulti-bid-select" value={selPos ?? ""}
-                      onChange={(e) => {
-                        const pos = Number(e.target.value); setSelPos(pos);
-                        const b = auction.legal_bids?.[pos];
-                        setSelTrump(b && b.trump_options.length ? b.trump_options[0] : null);
-                      }}>
-                {(auction.legal_bids ?? []).map((b, i) => (
-                  <option key={`${b.kind}:${b.rung_index}:${b.bid_index}`} value={i}>
-                    {b.label}{b.kind === "bid" ? ` — ${b.value}p` : ""}
-                  </option>
-                ))}
-              </select>
-              {/* No trump buttons here — the color is declared AFTER the auction
-                  (Ulti keeps it hidden during bidding). Piros = hearts, colorless = none. */}
-              {selBid && kind === "bid" && selBid.trump_options.length === 1 && (
-                <span className="ulti-badge is-piros">adu: {TRUMP_LABEL(selBid.trump_options[0])}</span>
-              )}
-              {selBid && kind === "bid" && selBid.colorless && <span className="ulti-badge">színtelen</span>}
-              <button className="ulti-bid-confirm" onClick={onConfirm} disabled={loading || !canConfirm}>
-                {loading ? "…" : confirmLabel}
-              </button>
-            </div>
-          </>
-        ) : (
-          /* AUCTION STEP — you hold 10: pick the talon up to bid, or decline */
-          <>
-            <div className="ulti-bid-phase-info">
-              {reclaim
-                ? "Vedd fel a talont és játssz, vagy passzolj."
-                : isHolder
-                ? "Kezdheted a játékot, vagy emelj."
-                : canPickup
-                ? "Vedd fel a talont, vagy passzolj."
-                : "Passzolsz?"}
-            </div>
-            <div className="ulti-bid-bottom-row">
-              <button className="ulti-bid-accept" onClick={onAuctionPass} disabled={loading}>
-                {isHolder ? "Elfogadom" : "Passz"}
-              </button>
-              {canPickup && (
-                <button className="ulti-bid-felvesz" onClick={onPickup} disabled={loading}>Felveszem</button>
-              )}
-            </div>
-          </>
-        )}
-      </div>
+      <AuctionPanel auction={auction} seat={state.seat} selPos={selPos}
+                    setSelPos={setSelPos} setSelTrump={setSelTrump} selBid={selBid}
+                    discards={discards} canConfirm={canConfirm} loading={loading}
+                    onConfirm={onConfirm} onAuctionPass={onAuctionPass} onPickup={onPickup} />
     );
 
     return (
@@ -878,52 +638,9 @@ export function PlayVsAI() {
   const sideBox = (
     <div className="play-side-box">
       {inKontra && kontra?.pending ? (
-        <div className="play-side-inner">
-          <div className="play-side-title">{kontra.role === "sol" ? "Rekontra döntés" : "Kontra döntés"}</div>
-          {(kontra.units?.length ?? 0) <= 1 ? (
-            /* Simple game — one unit: direct kontra / pass (as before). */
-            <>
-              <div className="play-kontra-text">
-                {kontra.role === "sol"
-                  ? <>Kontráztak: <b>{kontra.units?.[0]?.label ?? kontra.primary}</b> ({state.contract}) — rekontrázol?</>
-                  : <>Kontrázod: <b>{kontra.units?.[0]?.label ?? kontra.primary}</b> ({state.contract}{state.trump ? `, ${TRUMP_LABEL(state.trump)}` : ""})?</>}
-              </div>
-              <div className="row" style={{ gap: 8, marginTop: 10 }}>
-                <button className="btn btn-primary" onClick={() => onKontra((kontra.units ?? []).map((u) => u.key))}
-                        disabled={loading} style={{ background: "#d23552", borderColor: "#d23552" }}>
-                  {kontra.role === "sol" ? "Rekontra" : "Kontra"}
-                </button>
-                <button className="btn" onClick={() => onKontra([])} disabled={loading}>Tovább</button>
-              </div>
-            </>
-          ) : (
-            /* Combined game — pick which units to (re)kontra separately. */
-            <>
-              <div className="play-kontra-text">
-                {kontra.role === "sol"
-                  ? <>Melyik egységet rekontrázod? ({state.contract})</>
-                  : <>Mit kontrázol? — több is választható ({state.contract}{state.trump ? `, ${TRUMP_LABEL(state.trump)}` : ""})</>}
-              </div>
-              <div className="play-kontra-units">
-                {(kontra.units ?? []).map((u) => (
-                  <button key={u.key} type="button" disabled={loading}
-                          className={`play-kontra-unit ${kontraSel.has(u.key) ? "is-sel" : ""}`}
-                          onClick={() => toggleKontraUnit(u.key)}>
-                    {u.label}
-                  </button>
-                ))}
-              </div>
-              <div className="row" style={{ gap: 8, marginTop: 10 }}>
-                <button className="btn btn-primary" onClick={() => onKontra([...kontraSel])}
-                        disabled={loading || kontraSel.size === 0}
-                        style={{ background: "#d23552", borderColor: "#d23552" }}>
-                  {kontra.role === "sol" ? "Rekontra" : "Kontra"}{kontraSel.size > 0 ? ` (${kontraSel.size})` : ""}
-                </button>
-                <button className="btn" onClick={() => onKontra([])} disabled={loading}>Tovább</button>
-              </div>
-            </>
-          )}
-        </div>
+        <KontraBox kontra={kontra} contract={state.contract} trump={state.trump}
+                   loading={loading} kontraSel={kontraSel}
+                   onKontra={onKontra} toggleKontraUnit={toggleKontraUnit} />
       ) : terminal && result ? (
         renderResult(result, true)
       ) : (

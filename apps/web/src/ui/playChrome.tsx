@@ -3,7 +3,7 @@
 // STATE-FREE (or self-contained) — PlayVsAI.tsx keeps the game-flow state.
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 
-import type { PlayState } from "./api";
+import type { PlayAnalysis, PlayState } from "./api";
 import type { Card, Suit, Rank } from "./cards";
 import { SUIT_HUN, SUIT_SYMBOL } from "./cards";
 
@@ -138,3 +138,18 @@ export function useUltiBubble(): { show: (t: string) => void; clear: () => void;
   return { show, clear, node };
 }
 
+
+// One step of the analysis line (recorded play or explored branch).
+export type EffectivePly = {
+  ply_index: number; player_id: 0 | 1 | 2; chosen_card: Card; legal_card_ids: number[];
+  verdict: PlayAnalysis["per_ply"][number] | null; by_ai: boolean; is_branch: boolean;
+};
+export interface AnalysisView {
+  hands: Card[][];
+  currentTrick: { player_id: 0 | 1 | 2; card: Card }[];
+  activePlayer: 0 | 1 | 2 | null;
+  legalIds: Set<number> | null;
+  branchAtPly: number | null;
+  currentPly: number;
+  thisPly: EffectivePly | null;
+}
