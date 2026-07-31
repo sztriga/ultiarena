@@ -1,7 +1,6 @@
-"""Multi-contract defender / soloist value-net pipeline.
+"""Value-net pipeline (training + deployed inference helpers).
 
-One shared package, one `ContractConfig` per contract. Each contract plugs
-in its dealer, god-solver name, strength order, feature-tail bits and
-label semantics. Adding a new contract = registering a config entry in
-``vnet.contracts``.
+``pickup``  — the deployed bidding featurizer + calibration (36-dim hand+trump)
+``betli``   — betli value-net training stack (features, net, datagen)
+``net``/``net_nnue``/``augment`` — shared model + augmentation building blocks
 """
