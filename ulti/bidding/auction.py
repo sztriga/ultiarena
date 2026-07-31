@@ -17,6 +17,7 @@ this treats the announced contract as revealing its EV). Greedy, no bluffing.
 from __future__ import annotations
 
 import itertools
+from ulti.config import env_float
 import os
 import sys
 
@@ -33,7 +34,7 @@ PASS_PENALTY = 2.0   # opener forfeits −2/def by passing
 # exp-20 canon: the DECISION value for a contract is a percentile (not the max)
 # over the 66 discards — debiases the argmax-over-discards winner's-curse inflation
 # (DEBIAS_BID). The discard actually PLAYED is still the argmax.
-DEBIAS_PCTL = float(os.environ.get("DEBIAS_PCTL", "0.80"))
+DEBIAS_PCTL = env_float("DEBIAS_PCTL", 0.80)
 
 
 def _search(cards, probs_fn, current, gp, discards, pctl=DEBIAS_PCTL, allowed=None,

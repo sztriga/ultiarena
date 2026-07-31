@@ -9,6 +9,7 @@ holding the marriage. Optional per-head isotonic calibration (load if present).
 from __future__ import annotations
 
 import os
+from ulti.config import env_str
 import sys
 
 import numpy as np
@@ -57,7 +58,7 @@ class NetProvider:
         # exp37: optional REALISTIC-defense betli head (drop-in, 32-dim colorless). When loaded,
         # `p_betli_real` is populated and the bidder (BETLI_REAL / betli_real=True) scores PLAIN
         # betli by it. Default (betli_real_dir=None) → not loaded → deployed behaviour unchanged.
-        betli_real_dir = betli_real_dir or os.environ.get("BETLI_REAL_DIR")
+        betli_real_dir = betli_real_dir or env_str("BETLI_REAL_DIR")
         if betli_real_dir:
             rp = os.path.join(betli_real_dir, "betli_real_baseline.pt")
             if os.path.exists(rp):

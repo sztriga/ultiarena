@@ -17,7 +17,6 @@ loads a second copy.
 from __future__ import annotations
 
 import itertools
-import os
 import random
 import sys
 import time
@@ -34,6 +33,7 @@ from pydantic import BaseModel, Field
 # then reuse its net singleton + Hungarian suit map.
 from .play import _provider, _SUIT_HU  # noqa: E402
 from ulti.card import sort_hand         # noqa: E402
+from ulti.config import env_int         # noqa: E402
 from .serialize import card_to_dict     # noqa: E402
 
 from ulti.vnet.pickup import featurize        # noqa: E402
@@ -44,8 +44,8 @@ from ulti.eval.dojo import (                  # noqa: E402
 
 router = APIRouter()
 
-DURATION = int(os.environ.get("PUZZLE_SECONDS", "180"))     # 3-minute rush
-QUEUE_TARGET = int(os.environ.get("PUZZLE_QUEUE", "5"))     # puzzles kept ready ahead
+DURATION = env_int("PUZZLE_SECONDS", 180)       # 3-minute rush
+QUEUE_TARGET = env_int("PUZZLE_QUEUE", 5)       # puzzles kept ready ahead
 _MAX_GEN_TRIES = 40                                          # deals to try before relaxing the gate
 
 def _deal_parti_piros(*, seed, alpha=0.5, suit_sigma=1.0):

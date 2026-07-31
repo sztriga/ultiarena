@@ -44,10 +44,10 @@ _REPO = Path(__file__).resolve().parents[2]
 # The frontier bidder reads these at import time — the champion config.
 # Re-tuned 2026-07-22 on the FIXED bidder (post the auction.py generator bug fix that unlocked
 # non-piros contracts); true head-to-head +0.40 GP/game vs the old 0.70/0.80/1.0 (exp30/exp32).
-os.environ.setdefault("FLOOR", "0.80")            # was 0.7 — suppresses overconfident escalations
-os.environ.setdefault("DEBIAS_PCTL", "0.85")      # was 0.80
-os.environ.setdefault("DURI_TERIT_MULT", "0.3")   # fixes the terített-duri over-bid leak (exp29/30)
-os.environ.setdefault("KONTRA", "1")   # kontra-aware bidder (passes weak hands)
+# Deployment profile (FLOOR/DEBIAS_PCTL/DURI_TERIT_MULT/KONTRA) — one table in
+# ulti.config, applied BEFORE the bidding imports below so the library reads the
+from ulti.config import apply_deploy_defaults, env_bool, env_float, env_int  # noqa: E402
+apply_deploy_defaults()  # deployed defaults; explicit env still wins
 
 from ulti.bidding.ladder import GPTable, overcalls, contract_name  # noqa: E402
 from ulti.bidding.recipe import sol_marriages  # noqa: E402
@@ -75,8 +75,8 @@ from .serialize import card_to_dict
 
 router = APIRouter()
 
-_PIMC_N = int(os.environ.get("PLAY_PIMC_N", "16"))
-_KONTRA_NDET = int(os.environ.get("PLAY_KONTRA_NDET", "6"))
+_PIMC_N = env_int("PLAY_PIMC_N", 16)
+_KONTRA_NDET = env_int("PLAY_KONTRA_NDET", 6)
 _GP = GPTable()
 
 # ── Exploitative soloist play (exp31 — the champion's biggest play-side lever) ──
@@ -87,36 +87,36 @@ _GP = GPTable()
 # from its OWN info set only). Validated exp31 (full-game GP, terített-gated): +0.6..+0.75
 # GP/deal vs a fallible defender, 0 regression vs a perfect one, ~1.3-1.6 s/move. Gated OFF
 # on terített (open hand → no hidden info to exploit + amplified stakes). EXPLOIT=0 disables.
-_EXPLOIT      = os.environ.get("EXPLOIT", "1") == "1"          # deployed ON = the frontier
+_EXPLOIT      = env_bool("EXPLOIT", True)          # deployed ON = the frontier
 # Modeled human mistake rate. Retuned 0.30 → 0.15 (overnight exp33 robustness matrix, 2026-07-23):
 # a LOW modeled ε dominates — pooled strength gain +0.75 vs +0.34 GP/deal (t+3.3), AND it's the only
 # value that stays safe against a near-perfect defender (over-modeling — assuming the opponent is
 # sloppier than they are — set aggressive traps that BACKFIRE vs strong defense). Conservative
 # modeling captures the easy traps without gambling on unlikely mistakes.
-_EXPLOIT_EPS  = float(os.environ.get("EXPLOIT_EPS", "0.15"))
-_EXPLOIT_NW   = int(os.environ.get("EXPLOIT_NW", "16"))        # sampled worlds per decision
-_EXPLOIT_FRAC = float(os.environ.get("EXPLOIT_FRAC", "0.10"))  # safe-set slack (rel. to value spread)
+_EXPLOIT_EPS  = env_float("EXPLOIT_EPS", 0.15)
+_EXPLOIT_NW   = env_int("EXPLOIT_NW", 16)        # sampled worlds per decision
+_EXPLOIT_FRAC = env_float("EXPLOIT_FRAC", 0.10)  # safe-set slack (rel. to value spread)
 
 # ── exp37: imperfect/bluff PLAIN betli bidding — PROMOTED 2026-07-24 (BETLI_REAL_BID=0 reverts).
 # The bidder scores PLAIN betli by a REALISTIC-defense make-prob (not the god double-dummy), so it
 # bids the cheap 5p betli on hands that make vs imperfect defenders (exp38 ladder: 5.9% of bids,
 # +4.84 GP/bid; ~+0.16 GP/game). rebetli/terített keep the god prob (they're voluntary doublings).
-_BETLI_REAL_BID = os.environ.get("BETLI_REAL_BID", "1") == "1"
+_BETLI_REAL_BID = env_bool("BETLI_REAL_BID", True)
 # ── exp36: learned betli-DEFENSE net for a PLAIN (hidden-info) betli — PROMOTED 2026-07-24 (BETLI_DEF=0
 # reverts to PIMC). −21pp soloist steal vs PIMC (benchmark). Scoped to PLAIN betli — terített betli is
 # already defended near-god by the reveal (must_hold). Falls back to PIMC if the net is unavailable.
-_BETLI_DEF = os.environ.get("BETLI_DEF", "1") == "1"
+_BETLI_DEF = env_bool("BETLI_DEF", True)
 # ── exp39: extend the realistic-defense prob to REBETLI (the HIDDEN 10p doubling) — PROMOTED 2026-07-25
 # (REBETLI_REAL_BID=0 reverts). Lets the AI escalate betli→rebetli when its realistic make is near-certain
 # (gated behind REBETLI_FLOOR=0.90, higher than plain betli's 0.80). exp39 self-play: rebetli 8.5% of bids,
 # +8.14 GP/bid, does NOT cannibalise ulti; head-to-head vs the rebetli-off frontier +0.16 GP/game (within
 # noise → ~neutral, mildly +). This is the human-like "bid betli, escalate to rebetli when confident" move.
-_REBETLI_REAL_BID = os.environ.get("REBETLI_REAL_BID", "1") == "1"
+_REBETLI_REAL_BID = env_bool("REBETLI_REAL_BID", True)
 # ── anti-tell: randomise inside an equivalence block (MIX_EQUIV=0 reverts). Whatever picks
 # the card — PIMC, the exp36 net, the exploit soloist — deterministically returns the same
 # member of a provably-equivalent run, which leaks "I hold nothing above this". Mixing is
 # free: block members lead to the same game (tests/ulti/test_block_equivalence.py).
-_MIX_EQUIV = os.environ.get("MIX_EQUIV", "1") == "1"
+_MIX_EQUIV = env_bool("MIX_EQUIV", True)
 
 
 def _bid_label(bid) -> str:

@@ -17,12 +17,13 @@ Env GAMES_DB overrides the path (default: <repo>/data/games.db).
 from __future__ import annotations
 
 import json
-import os
 import sqlite3
 from pathlib import Path
 from threading import RLock
 
-_DB_PATH = os.environ.get("GAMES_DB") or str(Path(__file__).resolve().parents[2] / "data" / "games.db")
+from ulti.config import env_str
+
+_DB_PATH = env_str("GAMES_DB") or str(Path(__file__).resolve().parents[2] / "data" / "games.db")
 _lock = RLock()
 _conn: sqlite3.Connection | None = None
 

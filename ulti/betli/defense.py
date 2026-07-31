@@ -10,6 +10,7 @@ Torch-lazy: nothing is imported until the first call, so importing this module i
 from __future__ import annotations
 
 import os
+from ulti.config import env_str
 
 import numpy as np
 
@@ -25,7 +26,7 @@ def _repo_root(start):
 
 
 _ROOT = _repo_root(os.path.dirname(os.path.abspath(__file__)))
-_MODEL_PATH = os.environ.get("BETLI_DEF_MODEL",
+_MODEL_PATH = env_str("BETLI_DEF_MODEL") or (
                              os.path.join(_ROOT, "models/ulti/betli/betli_defense.pt"))
 FEAT_DIM = 139
 _NET = None

@@ -58,32 +58,32 @@ class BaseProbs:
                                     # are trump-suit-specific; piros is NOT a free 2×)
 
 
-import os as _os
-KONTRA = _os.environ.get("KONTRA", "0").lower() in ("1", "true", "yes")
+from ulti.config import env_bool, env_float
+KONTRA = env_bool("KONTRA", False)
 # FLOOR: don't DECLARE a contract if any of its bid components has make-prob below
 # this bar — kills the rare-head over-firing (20-100 / terített combos) that bleeds.
 # 0 = off. Applies only to escalations (piros parti has no components → never gated).
-_FLOOR = float(_os.environ.get("FLOOR", "0"))
+_FLOOR = env_float("FLOOR", 0.0)
 # DURI_TERIT_MULT (default 1.0 = OFF, deployed behaviour unchanged): terített (open-hand)
 # durchmars is far harder than closed-hand — defenders see the soloist's cards and block a
 # trick — but the composer scores it with the CLOSED-hand p_duri and then AMPLIFIES the value
 # ×2/×4. With the duri heads being the worst-calibrated (overconfident), that over-values
 # terített-duri massively (exp29: made only 13–26%, −0.7 GP/deal, the frontier's #1 leak).
 # This multiplies the terített-duri make-prob down before the EV. Being tuned (exp30).
-_DURI_TERIT_MULT = float(_os.environ.get("DURI_TERIT_MULT", "1.0"))
+_DURI_TERIT_MULT = env_float("DURI_TERIT_MULT", 1.0)
 # BETLI_REAL (default OFF, deployed behaviour unchanged): score PLAIN betli by the REALISTIC-defense
 # make-prob (`p_betli_real`, exp37) instead of the double-dummy `p_betli`. This lets the bidder bid
 # imperfect / bluff betli (dd-lost but ~60% made vs real defenders) and stops terített betli from
 # always dominating plain (terított keeps the god p_betli — open hand ≈ perfect-info defense).
-_BETLI_REAL = _os.environ.get("BETLI_REAL", "0").lower() in ("1", "true", "yes")
+_BETLI_REAL = env_bool("BETLI_REAL", False)
 # REBETLI_REAL (default OFF): extend the realistic-defense prob to REBETLI too — the HIDDEN 10p doubling
 # (defenders are still blind, so the realistic prob is the right make estimate, NOT the god prob). rebetli
 # then out-bids plain betli on a strong betli (2× stake, same prob), so it's gated behind a HIGHER floor
 # (_REBETLI_FLOOR) than plain betli: only escalate to the doubled hidden betli when the realistic make is
 # near-certain (milan: "go betli first, escalate to rebetli when confident"). terített keeps the god prob
 # (open hand ≈ perfect-info defense). REBETLI_FLOOR default 0.90.
-_REBETLI_REAL = _os.environ.get("REBETLI_REAL", "0").lower() in ("1", "true", "yes")
-_REBETLI_FLOOR = float(_os.environ.get("REBETLI_FLOOR", "0.90"))
+_REBETLI_REAL = env_bool("REBETLI_REAL", False)
+_REBETLI_FLOOR = env_float("REBETLI_FLOOR", 0.90)
 
 
 def _betli_prob(bid, probs, use_real, rebetli_real=False) -> float:

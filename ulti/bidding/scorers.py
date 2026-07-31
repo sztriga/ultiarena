@@ -14,7 +14,7 @@ pimc_outcome — placeholder for the periodic realistic (closed-play) check.
 """
 from __future__ import annotations
 
-import os
+from ulti.config import env_int
 import sys
 
 
@@ -230,7 +230,7 @@ def pimc_outcome(rung, trump, sol, d1, d2, talon, seed=0, pimc_n=None):
     from trickster._solver_core import set_multi_weights
 
     if pimc_n is None:
-        pimc_n = int(os.environ.get("PIMC_N", "16"))
+        pimc_n = env_int("PIMC_N", 16)
     bid = resolve_bidset(rung, sol, trump)
     n_trick = int(bid.ulti) + int(bid.durchmars) + int(bid.betli)
 
@@ -293,7 +293,6 @@ def kontra_pimc_outcome(rung, trump, sol, d1, d2, talon, seed=0):
     P(soloist makes) from its OWN hand — cheat-proof) and applied to the whole
     contract; scored with kontra. Kontra is a payoff multiplier (play unchanged), so
     we play once and apply the level at scoring. betli/duri/combos → pimc_outcome."""
-    import os as _os
     from dataclasses import replace
     from ulti.bidding.kontra import kontra_level_for
     from ulti.scoring.oracle import score as score_oracle
@@ -305,7 +304,7 @@ def kontra_pimc_outcome(rung, trump, sol, d1, d2, talon, seed=0):
         return pimc_outcome(rung, trump, sol, d1, d2, talon, seed=seed)
 
     primary = "ulti" if bid.ulti else "parti"
-    n_dec = int(_os.environ.get("KONTRA_NDET", "6"))
+    n_dec = env_int("KONTRA_NDET", 6)
     p_def = _hand_makeability(sol, d1, d2, trump, talon, primary, 1, n_dec, seed + 11)
     p_sol = _hand_makeability(sol, d1, d2, trump, talon, primary, 0, n_dec, seed + 23)
     level = kontra_level_for(p_def, bid, p_sol=p_sol)
@@ -317,7 +316,7 @@ def kontra_pimc_outcome(rung, trump, sol, d1, d2, talon, seed=0):
     from ulti.solvers import pis, determinize as _det
     from ulti.eval.pimc_matchup import pimc_pick
     from trickster._solver_core import set_multi_weights
-    pimc_n = int(_os.environ.get("PIMC_N", "16"))
+    pimc_n = env_int("PIMC_N", 16)
     set_multi_weights(**_play_weights(bid, sol, trump))
     bkw = dict(hands=[list(sol), list(d1), list(d2)], soloist=0, leader=0,
                contract="parti", trump=trump, talon=list(talon),
