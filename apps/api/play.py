@@ -51,7 +51,7 @@ os.environ.setdefault("KONTRA", "1")   # kontra-aware bidder (passes weak hands)
 
 from ulti.bidding.ladder import GPTable, overcalls, contract_name  # noqa: E402
 from ulti.bidding.recipe import sol_marriages  # noqa: E402
-from ulti.bidding.bidder import rung_ev, _is_simple  # noqa: E402
+from ulti.bidding.bidder import rung_ev  # noqa: E402
 from ulti.bidding.auction import net_bid_fn, PASS_PENALTY  # noqa: E402
 from ulti.bidding.provider import NetProvider  # noqa: E402
 from ulti.bidding.scorers import resolve_bidset, _play_weights, _primary_made, _hand_makeability  # noqa: E402
@@ -487,23 +487,20 @@ _UNIT_OBJ = {
 }
 
 
-def _kontra_primary(bid) -> Optional[str]:
-    if not _is_simple(bid):
-        return None
-    if bid.betli:
-        return "betli"
-    if bid.ulti:
-        return "ulti"
-    if bid.durchmars:
-        return "durchmars"
-    return "parti"
-
-
 def _kontra_units(bid) -> List[str]:
     """Every kontra-able unit of this game, in UNITS order — each kontrázható separately.
-    An ulti / 100 / plain game ALSO exposes the card-point párti as its own unit (milan:
-    a piros ulti → kontra ulti AND kontra párti). betli and the all-tricks durchmars have
-    no separate párti."""
+
+    A bid ulti also exposes the card-point párti as its own unit (milan: a piros ulti →
+    kontra ulti AND kontra párti). Two games have NO párti to kontra:
+      • durchmars — all-tricks, there is no card-point game at all;
+      • a bid 40-100 / 20-100 — the declared 100 REPLACES the párti (milan: "there is no
+        parti in a 40-100"), so offering "kontra párti" there was offering a kontra on a
+        component that is never scored.
+
+    This mirrors scoring/oracle.py, which gates the párti component on ``not bid_a_100``.
+    A bid 100 always holds its marriage — the AI bidder (bidder.py) and the human bid path
+    both reject the bid otherwise — so the replacement always applies.
+    """
     if bid.betli:
         return ["betli"]
     units: List[str] = []
@@ -515,7 +512,7 @@ def _kontra_units(bid) -> List[str]:
         units.append("40_100")
     if bid.twenty_hundred:
         units.append("20_100")
-    if not bid.durchmars:              # card-point párti exists unless the game is all-tricks (duri)
+    if not bid.durchmars and not (bid.forty_hundred or bid.twenty_hundred):
         units.append("parti")
     return sorted(units, key=lambda u: _UNITS_ORDER.index(u))
 
