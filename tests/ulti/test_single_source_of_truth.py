@@ -104,3 +104,33 @@ def test_oracle_and_kontra_offer_share_the_parti_rule():
     guard = "\n".join(src.splitlines()[max(0, idx - 5):idx])
     assert "game_has_parti" in guard, (
         f"the párti component is not gated by the shared predicate:\n{guard}")
+
+
+def test_the_two_card_models_agree_on_everything():
+    """``ulti.card`` and ``ultisolver.games.ulti.cards`` are two independent card models,
+    bridged by ulti.solvers.pis. The split is deliberate (the solver package stands alone),
+    so the models cannot be merged — but every rule they BOTH encode must match, or the
+    app and the solver would disagree about the same card.
+
+    Checks all 32 cards: the translation round-trips, and points / natural strength /
+    colourless strength are identical on both sides.
+    """
+    from ulti.card import DECK, RANK_POINTS
+    from ulti.solvers.pis import _to_o, _to_t
+
+    for card in DECK:
+        t = _to_t(card)
+        assert _to_o(t).id == card.id, f"{card} does not survive the round trip"
+        assert t.points() == RANK_POINTS[card.rank], f"{card}: points disagree"
+        assert t.strength() == card.rank_index, f"{card}: natural strength disagrees"
+        assert t.strength(betli=True) == COLORLESS_RANK[card.rank], (
+            f"{card}: colourless strength disagrees")
+
+
+def test_translation_covers_the_whole_deck():
+    """Both decks are 32 distinct cards and map onto each other exactly."""
+    from ulti.card import DECK
+    from ulti.solvers.pis import _to_t
+
+    assert len({c.id for c in DECK}) == 32
+    assert len({(_to_t(c).suit, _to_t(c).rank) for c in DECK}) == 32
