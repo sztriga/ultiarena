@@ -161,6 +161,7 @@ class Session:
 
     def __init__(self, *, seat: int, seed: int) -> None:
         self.id = uuid.uuid4().hex[:12]
+        self.last_touch = time.time()   # idle-expiry clock (see _reap)
         self.seat = seat            # the user's real auction seat (0/1/2)
         self.seed = seed
         self.redeals = 0            # dead-deal (all-pass) re-deals in this session
@@ -227,6 +228,17 @@ class Session:
 
 _sessions: Dict[str, Session] = {}
 _sessions_lock = RLock()
+# Idle sessions are reaped so an abandoned tab can't grow the process forever (the
+# puzzle sessions already expire; play sessions used to live until process death).
+# 6h idle default — no live game with a human at the table idles that long.
+_SESSION_TTL = env_int("PLAY_SESSION_TTL", 21600)
+
+
+def _reap_idle_sessions() -> None:
+    """Drop sessions idle past the TTL. Called under _sessions_lock."""
+    cutoff = time.time() - _SESSION_TTL
+    for gid in [g for g, s in _sessions.items() if s.last_touch < cutoff]:
+        _sessions.pop(gid, None)
 
 
 # ── Auction (any seat may open) ─────────────────────────────────────────────────
@@ -1140,6 +1152,7 @@ def _get(game_id: str) -> Session:
         sess = _sessions.get(game_id)
     if sess is None:
         raise HTTPException(status_code=404, detail=f"unknown game_id {game_id}")
+    sess.last_touch = time.time()
     return sess
 
 
@@ -1157,6 +1170,7 @@ def play_new(req: NewRequest) -> dict:
     seed = req.seed if req.seed is not None else rng.randint(1, 2**31 - 1)
     sess = Session(seat=req.seat, seed=seed)
     with _sessions_lock:
+        _reap_idle_sessions()           # cheap O(n) sweep on the rare new-game call
         _sessions[sess.id] = sess
     _advance_auction(sess)
     snap = _snapshot(sess)
