@@ -37,11 +37,9 @@ from ulti.config import apply_deploy_defaults, env_bool, env_float, env_int
 from ulti.bidding.ladder import GPTable, overcalls, contract_name
 from ulti.bidding.recipe import sol_marriages
 from ulti.bidding.auction import net_bid_fn, PASS_PENALTY
-from ulti.bidding.scorers import resolve_bidset, _play_weights, _primary_made, _hand_makeability
 from ulti.solvers import pis as pis_bridge
 from ulti.scoring.units import UNITS_ORDER as _UNITS_ORDER, \
     UNIT_OBJECTIVE as _UNIT_OBJ, kontra_units as _kontra_units
-from ultisolver._solver_core import set_multi_weights
 from ulti.card import card_from_id, sort_hand
 from fastapi import HTTPException
 
@@ -50,8 +48,8 @@ from fastapi import APIRouter
 from pydantic import BaseModel, Field
 
 from .engine import (  # noqa: E402,F401  (re-exports: puzzle uses _provider/_SUIT_HU)
-    _GP, _REPO, _SESSION_TTL, _SUIT_HU, _bid_fn, _bid_label, _get, _play_lock,
-    _provider, _reap_idle_sessions, _sessions, _sessions_lock, Session,
+    _GP, _REPO, _SESSION_TTL, _SUIT_HU, _bid_fn, _bid_label, _get,
+    _provider, _reap_idle_sessions, _recipe, _sessions, _sessions_lock, Session,
 )
 from .auction_flow import (  # noqa: E402
     _advance_auction, _apply_bid, _human_bundle, _legal_bids, _redeal,
@@ -65,6 +63,7 @@ from .ai_play import (  # noqa: E402,F401
     _advance_play, _ai_play_pick, _finish, _mix_equivalent, _record_play,
     _terit_revealed,
 )
+from . import ai_pool  # noqa: E402
 from .snapshots import (  # noqa: E402
     _auction_snapshot, _play_hands_dict, _play_snapshot, _snapshot, _trump_snapshot,
 )
@@ -349,46 +348,22 @@ def play_analysis(req: AnalysisRequest) -> dict:
     sol, d1, d2 = sess.play_hands0
     solve_c, build_c, weights, trump = (sess.p_solve_contract, sess.p_build_contract,
                                         sess.p_weights, sess.trump)
+    # The whole god-solve loop runs in a WORKER (ids in, ids out); here we only
+    # decorate the result with card dicts + the by_ai flags from the history.
+    raw = ai_pool.run("analysis", _recipe(sess))
     per_ply: List[dict] = []
-    with _play_lock:
-        if weights is not None:
-            set_multi_weights(**weights)
-        pos = pis_bridge.build_position(
-            hands=[list(sol), list(d1), list(d2)], soloist=0, leader=0, contract=build_c,
-            trump=trump, talon=list(sess.play_talon),
-            declare_marriages=(trump is not None), marriage_restrict=sess.p_restrict)
-        for i, step in enumerate(sess.p_history):
-            chosen = card_from_id(step["card"]["id"])
-            legal_now = pis_bridge.legal_actions(pos)
-            if pis_bridge.is_terminal(pos) or chosen not in legal_now:
-                break
-            pid = pis_bridge.current_player(pos)
-            is_solo = (pid == 0)
-            if weights is not None:
-                set_multi_weights(**weights)
-            vals = pis_bridge.solve_all(pos, contract=solve_c)
-            vmax, vmin = max(vals.values()), min(vals.values())
-            if is_solo:
-                best_val = vmax
-                best_card = next(c for c, v in vals.items() if v >= best_val - 1e-6)
-            else:                                 # defender minimises the soloist value
-                best_val = vmin
-                best_card = next(c for c, v in vals.items() if v <= best_val + 1e-6)
-            chosen_val = float(vals.get(chosen, 0.0))
-            loss = (best_val - chosen_val) if is_solo else (chosen_val - best_val)
-            # Blunder = gave up at least half the swing available at this decision.
-            is_blunder = loss > 1e-6 and loss >= 0.5 * max(1e-9, vmax - vmin)
-            per_ply.append({
-                "ply_index": i, "player_id": pid,
-                "chosen_card": card_to_dict(chosen),
-                "god_best_card": card_to_dict(best_card),
-                "god_best_value": float(best_val),
-                "god_chosen_value": chosen_val,
-                "is_blunder": bool(is_blunder),
-                "legal_card_ids": [c.id for c in legal_now],
-                "by_ai": bool(step.get("by_ai", False)),
-            })
-            pis_bridge.apply_move(pos, chosen)
+    for row in raw:
+        step = sess.p_history[row["ply_index"]]
+        per_ply.append({
+            "ply_index": row["ply_index"], "player_id": row["player_id"],
+            "chosen_card": card_to_dict(card_from_id(row["chosen_card_id"])),
+            "god_best_card": card_to_dict(card_from_id(row["god_best_card_id"])),
+            "god_best_value": row["god_best_value"],
+            "god_chosen_value": row["god_chosen_value"],
+            "is_blunder": row["is_blunder"],
+            "legal_card_ids": row["legal_card_ids"],
+            "by_ai": bool(step.get("by_ai", False)),
+        })
     return {
         "game_id": sess.id,
         "contract": sess.bid_name,

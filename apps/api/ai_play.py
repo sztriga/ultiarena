@@ -1,5 +1,4 @@
 """AI card play: exploit soloist (exp31), betli-defense net (exp36), PIMC, the anti-tell mixer, scoring."""
-from __future__ import annotations
 
 
 import os
@@ -7,24 +6,19 @@ import random
 import sys
 import time
 import uuid
-from typing import Dict, List, Optional
+from typing import List
 
-from ulti.config import apply_deploy_defaults, env_bool, env_float, env_int
-from ulti.bidding.ladder import GPTable, overcalls, contract_name
-from ulti.bidding.auction import net_bid_fn, PASS_PENALTY
-from ulti.bidding.scorers import resolve_bidset, _play_weights, _primary_made, _hand_makeability
+from ulti.bidding.scorers import _primary_made
 from ulti.solvers import pis as pis_bridge
-from ulti.solvers import determinize as _det
 from ulti.solvers.blocks import equivalent_moves
-from ulti.eval.pimc_matchup import pimc_pick
 from ulti.scoring.oracle import score as score_oracle
 from ulti.scoring.units import UNITS_ORDER as _UNITS_ORDER, \
     UNIT_OBJECTIVE as _UNIT_OBJ, kontra_units as _kontra_units
-from ultisolver._solver_core import set_multi_weights
-from ulti.card import card_from_id, sort_hand
+from ulti.card import card_from_id
 
 from .serialize import card_to_dict
-from .engine import Session, _BETLI_DEF, _EXPLOIT, _EXPLOIT_EPS, _EXPLOIT_FRAC, _EXPLOIT_NW, _MIX_EQUIV, _PIMC_N, _exp36, _play_lock  # noqa: E402
+from .engine import Session, _BETLI_DEF, _EXPLOIT, _MIX_EQUIV, _exp36, _recipe  # noqa: E402
+from . import ai_pool  # noqa: E402
 from .kontra_flow import _apply_kontra_ai, _kontra_dict, _next_kontra_offer  # noqa: E402
 
 
@@ -39,71 +33,6 @@ def _record_play(sess: Session, play_idx: int, card, by_ai: bool) -> None:
         "trick_position": plies % 3,
         "by_ai": by_ai,
     })
-
-
-def _god_move(pos, solve_c):
-    mv, _ = pis_bridge.solve_best(pos, contract=solve_c)
-    return mv
-
-
-def _make_eps_god(solve_c: str, eps: float):
-    """The AI's model of a fallible defender: god-argmin except an ε fraction of slips."""
-    def _pick(pos, rng):
-        if eps > 0 and rng.random() < eps:
-            return rng.choice(pis_bridge.legal_actions(pos))
-        mv = _god_move(pos, solve_c)
-        return mv if mv is not None else rng.choice(pis_bridge.legal_actions(pos))
-    return _pick
-
-
-def _exploit_rollout_gp(pos, soloist, def_model, solve_c, bid, rng) -> float:
-    """Play `pos` to terminal (soloist god-best, defenders play the model); soloist GP."""
-    while not pis_bridge.is_terminal(pos):
-        p = pis_bridge.current_player(pos)
-        mv = _god_move(pos, solve_c) if p == soloist else def_model(pos, rng)
-        if mv is None:
-            mv = rng.choice(pis_bridge.legal_actions(pos))
-        pis_bridge.apply_move(pos, mv)
-    return float(score_oracle(final_pos=pos, bid=bid).total_sol)
-
-
-def _safe_exploit_pick(sess: Session, seed: int):
-    """SAFE exploitation for the AI soloist (soloist = play-index 0). Among moves within
-    EXPLOIT_FRAC·(value-spread) of the PIMC-optimal averaged-god value, pick the best
-    EXPECTED GP vs the modeled defender. Unique optimum → return it (= PIMC cost, no
-    rollout). Cheat-clean: samples worlds from the soloist's OWN info set (+ observed voids)."""
-    solve_c = sess.p_solve_contract
-    rng = random.Random(seed)
-    true_pos = sess.p_pos
-    iset = _det.build_info_set(true_pos, 0, solve_c, voids=sess.voids.as_dict())
-    worlds, god_sum, cnt = [], {}, {}
-    for _ in range(_EXPLOIT_NW):
-        try:
-            hands, talon = _det.sample_world(iset, rng)
-        except Exception:
-            continue
-        world = (pis_bridge.clone_with_hands_and_talon(true_pos, hands, talon)
-                 if iset.talon_known is None else pis_bridge.clone_with_hands(true_pos, hands))
-        worlds.append(world)
-        gvals = pis_bridge.solve_all(world, contract=solve_c)
-        for a in pis_bridge.legal_actions(world):
-            god_sum[a] = god_sum.get(a, 0.0) + float(gvals.get(a, 0.0))
-            cnt[a] = cnt.get(a, 0) + 1
-    if not cnt:
-        return None
-    god_avg = {a: god_sum[a] / cnt[a] for a in cnt}
-    gmax, gmin = max(god_avg.values()), min(god_avg.values())
-    tol = _EXPLOIT_FRAC * max(gmax - gmin, 1e-9)
-    safe = [a for a in god_avg if god_avg[a] >= gmax - tol]
-    if len(safe) == 1:                          # unique worst-case-optimal → = PIMC, no rollout
-        return safe[0]
-    model = _make_eps_god(solve_c, _EXPLOIT_EPS)
-    exp_sum = {a: 0.0 for a in safe}
-    for world in worlds:
-        for a in safe:
-            child = world.clone(); pis_bridge.apply_move(child, a)
-            exp_sum[a] += _exploit_rollout_gp(child, 0, model, solve_c, sess.bid, rng)
-    return max(safe, key=lambda a: exp_sum[a])
 
 
 def _terit_revealed(sess: Session) -> bool:
@@ -155,29 +84,28 @@ def _mix_equivalent(sess: Session, play_idx: int, card):
 
 
 def _ai_play_pick(sess: Session, play_idx: int):
+    """One AI card. The exp36 betli-defense NET runs here (main process, torch);
+    every SOLVER decision (exploit soloist / PIMC) ships to the worker pool."""
     sess.p_seed_counter += 1
     is_terit = bool(getattr(sess.bid, "teritett", False))
-    with _play_lock:
-        if sess.p_weights is not None:
-            set_multi_weights(**sess.p_weights)
-        ch = None
-        # AI SOLOIST → safe exploitation (unless terített = open hand, or EXPLOIT=0 → PIMC below).
+    ch = None
+    # exp36: DEFENDER of a PLAIN (hidden-info) betli → the learned defense net (beats PIMC).
+    if (_BETLI_DEF and play_idx != 0 and sess.p_solve_contract == "betli" and not is_terit
+            and _exp36 is not None and _exp36.available()):
+        ch = _exp36.betli_defense_pick(sess.p_pos, play_idx)
+    if ch is None:
+        # AI SOLOIST → safe exploitation (exp31) unless terített (open hand) or EXPLOIT=0.
         if _EXPLOIT and play_idx == 0 and not is_terit:
-            ch = _safe_exploit_pick(sess, sess.p_seed_counter)
-        # DEFENDER of a terített game → the soloist's hand is revealed → PIN it (must_hold) so the
-        # PIMC samples only the PARTNER's hand, not the (now known) soloist's (near-god defense).
+            mode = "exploit"
+        # DEFENDER of a terített game → soloist hand revealed → PIN it in the PIMC.
         elif play_idx != 0 and _terit_revealed(sess):
-            ch = pimc_pick(pos=sess.p_pos, contract=sess.p_solve_contract, n_samples=_PIMC_N,
-                           seed=sess.p_seed_counter, voids_dict=sess.voids.as_dict(),
-                           must_hold={0: list(pis_bridge.hands_by_player(sess.p_pos)[0])})
-        # exp36: DEFENDER of a PLAIN (hidden-info) betli → the learned defense net (beats PIMC).
-        elif (_BETLI_DEF and play_idx != 0 and sess.p_solve_contract == "betli" and not is_terit
-              and _exp36 is not None and _exp36.available()):
-            ch = _exp36.betli_defense_pick(sess.p_pos, play_idx)
-        # Everything else (and any None fallback above) → plain PIMC.
-        if ch is None:
-            ch = pimc_pick(pos=sess.p_pos, contract=sess.p_solve_contract, n_samples=_PIMC_N,
-                           seed=sess.p_seed_counter, voids_dict=sess.voids.as_dict())
+            mode = "pimc_pinned"
+        else:
+            mode = "pimc"
+        job = _recipe(sess)
+        job.update(mode=mode, seed=sess.p_seed_counter, bid=sess.bid)
+        cid = ai_pool.run("ai_pick", job)
+        ch = card_from_id(cid) if cid is not None else None
     if ch is None:
         ch = random.Random(sess.p_seed_counter).choice(pis_bridge.legal_actions(sess.p_pos))
     return _mix_equivalent(sess, play_idx, ch)

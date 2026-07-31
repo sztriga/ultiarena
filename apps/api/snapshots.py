@@ -1,5 +1,4 @@
 """JSON snapshots of a Session for the web UI (auction / kontra / play / result views)."""
-from __future__ import annotations
 
 
 import os
@@ -7,16 +6,13 @@ import random
 import sys
 import time
 import uuid
-from typing import Dict, List, Optional
+from typing import List, Optional
 
-from ulti.config import apply_deploy_defaults, env_bool, env_float, env_int
-from ulti.bidding.ladder import GPTable, overcalls, contract_name
-from ulti.bidding.auction import net_bid_fn, PASS_PENALTY
-from ulti.bidding.scorers import resolve_bidset, _play_weights, _primary_made, _hand_makeability
+from ulti.bidding.ladder import overcalls
 from ulti.solvers import pis as pis_bridge
 from ulti.scoring.units import UNITS_ORDER as _UNITS_ORDER, \
     UNIT_OBJECTIVE as _UNIT_OBJ, kontra_units as _kontra_units
-from ulti.card import card_from_id, sort_hand
+from ulti.card import sort_hand
 
 from .serialize import card_to_dict
 from .engine import Session, _bid_label  # noqa: E402

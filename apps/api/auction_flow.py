@@ -1,5 +1,4 @@
 """Auction state machine + auction->play setup (any seat may open; AI turns resolve synchronously)."""
-from __future__ import annotations
 
 
 import os
@@ -9,21 +8,18 @@ import time
 import uuid
 from typing import Dict, List, Optional
 
-from ulti.config import apply_deploy_defaults, env_bool, env_float, env_int
-from ulti.bidding.ladder import GPTable, overcalls, contract_name
+from ulti.bidding.ladder import overcalls
 from ulti.bidding.bidder import rung_ev
-from ulti.bidding.auction import net_bid_fn, PASS_PENALTY
-from ulti.bidding.scorers import resolve_bidset, _play_weights, _primary_made, _hand_makeability
+from ulti.bidding.auction import PASS_PENALTY
+from ulti.bidding.scorers import resolve_bidset, _play_weights
 from ulti.bidding.deal import deal_12_10_10
 from ulti.solvers import pis as pis_bridge
 from ulti.solvers import determinize as _det
 from ulti.scoring.units import UNITS_ORDER as _UNITS_ORDER, \
     UNIT_OBJECTIVE as _UNIT_OBJ, kontra_units as _kontra_units
-from ultisolver._solver_core import set_multi_weights
-from ulti.card import card_from_id, sort_hand
 from fastapi import HTTPException
 
-from .engine import Session, _GP, _SUIT_HU, _bid_fn, _bid_label, _play_lock, _provider  # noqa: E402
+from .engine import Session, _GP, _SUIT_HU, _bid_fn, _bid_label, _provider  # noqa: E402
 from .ai_play import _advance_play  # noqa: E402
 
 
@@ -225,15 +221,14 @@ def _setup_play(sess: Session) -> None:
     sess.play_hands0 = [sol, d1, d2]
     sess.play_talon = talon
 
-    with _play_lock:
-        if weights is not None:
-            set_multi_weights(**weights)
-        sess.p_pos = pis_bridge.build_position(
-            hands=[list(sol), list(d1), list(d2)], soloist=0, leader=0,
-            contract=build_c, trump=t, talon=list(talon),
-            declare_marriages=(t is not None), marriage_restrict=restrict,
-            has_ulti=bool(bid.ulti),   # 7esre tartás: hold the trump 7 when the game has an ulti
-        )
+    # Building the position never solves — no weights, no lock. The weight vector
+    # travels with every worker job instead (sess.p_weights via _recipe).
+    sess.p_pos = pis_bridge.build_position(
+        hands=[list(sol), list(d1), list(d2)], soloist=0, leader=0,
+        contract=build_c, trump=t, talon=list(talon),
+        declare_marriages=(t is not None), marriage_restrict=restrict,
+        has_ulti=bool(bid.ulti),   # 7esre tartás: hold the trump 7 when the game has an ulti
+    )
     sess.voids = _det.Voids()
     # Live kontra-able units: a simple game has one (its primary); a combined game
     # exposes each committed unit separately. Colorless (betli / no-trump duri) keep

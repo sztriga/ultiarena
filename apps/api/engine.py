@@ -3,7 +3,6 @@
 Everything the auction/kontra/play/snapshot modules have in common lives here so the
 dependency graph stays a fan (engine <- flows <- routes), never a cycle.
 """
-from __future__ import annotations
 
 
 import time
@@ -39,10 +38,9 @@ _REPO = Path(__file__).resolve().parents[2]
 from ulti.config import apply_deploy_defaults, env_bool, env_float, env_int  # noqa: E402
 apply_deploy_defaults()  # deployed defaults; explicit env still wins
 
-from ulti.bidding.ladder import GPTable, overcalls, contract_name  # noqa: E402
-from ulti.bidding.auction import net_bid_fn, PASS_PENALTY  # noqa: E402
+from ulti.bidding.ladder import GPTable, contract_name
+from ulti.bidding.auction import net_bid_fn
 from ulti.bidding.provider import NetProvider  # noqa: E402
-from ulti.bidding.scorers import resolve_bidset, _play_weights, _primary_made, _hand_makeability  # noqa: E402
 from ulti.bidding.deal import deal_12_10_10  # noqa: E402
 try:
     from ulti.betli import defense as _exp36  # noqa: E402  (exp36 betli-defense net; models/betli/betli_defense.pt)
@@ -50,7 +48,6 @@ except Exception:  # pragma: no cover
     _exp36 = None
 from ulti.scoring.units import UNITS_ORDER as _UNITS_ORDER, \
     UNIT_OBJECTIVE as _UNIT_OBJ, kontra_units as _kontra_units  # noqa: E402
-from ulti.card import card_from_id, sort_hand  # noqa: E402
 
 
 
@@ -106,7 +103,8 @@ def _bid_label(bid) -> str:
 
 # The play solver's multi-game weights (`set_multi_weights`) are PROCESS-GLOBAL,
 # so all AI play across every live session must be serialized.
-_play_lock = RLock()
+# (the old process-wide _play_lock is gone — AI decisions run in the worker pool,
+# see apps.api.ai_pool; in-process solver users take ai_pool.solver_lock)
 
 
 # ── AI singletons (lazy) ────────────────────────────────────────────────────────
@@ -223,6 +221,22 @@ def _reap_idle_sessions() -> None:
 _SUIT_HU = {"hearts": "piros", "acorns": "makk", "leaves": "zöld", "bells": "tök"}
 
 
+
+
+def _recipe(sess: "Session") -> dict:
+    """Everything a worker needs to rebuild this session's live position — primitives
+    only (the ai_pool boundary is pickled). Deterministic: build_position + the move
+    history reproduce sess.p_pos exactly (same rebuild /play/analysis always used)."""
+    return {
+        "hands0": [[c.id for c in h] for h in sess.play_hands0],
+        "talon": [c.id for c in sess.play_talon],
+        "build_c": sess.p_build_contract, "solve_c": sess.p_solve_contract,
+        "trump": sess.trump, "restrict": sess.p_restrict,
+        "has_ulti": bool(getattr(sess.bid, "ulti", False)),
+        "weights": sess.p_weights,
+        "history": [(h["player_id"], h["card"]["id"]) for h in sess.p_history],
+        "voids": sess.voids.as_dict() if sess.voids is not None else None,
+    }
 
 
 def _get(game_id: str) -> Session:

@@ -1,5 +1,4 @@
 """In-game kontra: offers, AI decisions (exp27 per-unit rules), levels, the oracle kontra dict."""
-from __future__ import annotations
 
 
 import os
@@ -7,21 +6,14 @@ import random
 import sys
 import time
 import uuid
-from typing import Dict, List, Optional
+from typing import List
 
-from ulti.config import apply_deploy_defaults, env_bool, env_float, env_int
-from ulti.bidding.ladder import GPTable, overcalls, contract_name
-from ulti.bidding.auction import net_bid_fn, PASS_PENALTY
-from ulti.bidding.scorers import resolve_bidset, _play_weights, _primary_made, _hand_makeability
 from ulti.bidding.kontra import _sol_ev
-from ulti.solvers import pis as pis_bridge
-from ulti.solvers import determinize as _det
 from ulti.scoring.units import UNITS_ORDER as _UNITS_ORDER, \
     UNIT_OBJECTIVE as _UNIT_OBJ, kontra_units as _kontra_units
-from ultisolver._solver_core import set_multi_weights
-from ulti.card import card_from_id, sort_hand
 
-from .engine import Session, _KONTRA_NDET, _play_lock  # noqa: E402
+from .engine import Session, _recipe  # noqa: E402
+from . import ai_pool  # noqa: E402
 
 
 # ── Kontra (simple contracts only) ──────────────────────────────────────────────
@@ -36,36 +28,13 @@ _UNIT_HU = {"parti": "parti", "ulti": "ulti", "40_100": "40-100", "20_100": "20-
 
 def _unit_makeability(sess: Session, viewer: int, unit: str, salt: int) -> float:
     """P(soloist makes `unit` | viewer's own hand) — cheat-clean own-hand sampling,
-    god-solved for the unit's objective. Handles the 100-games via the multi solver."""
-    from ulti.solvers import determinize as _det
-    from ulti.eval.pimc_matchup import god_says_soloist_wins
-    solver, weights, restrict = _UNIT_OBJ[unit]
-    build_c = "durchmars" if solver == "durchmars" else ("betli" if solver == "betli" else "parti")
-    sol, d1, d2 = sess.play_hands0
-    trump, talon = sess.trump, sess.play_talon
-    with _play_lock:
-        if weights is not None:
-            set_multi_weights(**weights)
-        root = pis_bridge.build_position(
-            hands=[list(sol), list(d1), list(d2)], soloist=0, leader=0, contract=build_c,
-            trump=trump, talon=list(talon), declare_marriages=(trump is not None),
-            marriage_restrict=restrict)
-        iset = _det.build_info_set(root, viewer, solver, voids=None)
-        rng = random.Random(sess.seed + salt)
-        w = valid = 0
-        for _ in range(_KONTRA_NDET):
-            try:
-                hands, tal = _det.sample_world(iset, rng)
-                spos = (pis_bridge.clone_with_hands_and_talon(root, hands, tal)
-                        if iset.talon_known is None else pis_bridge.clone_with_hands(root, hands))
-                if weights is not None:
-                    set_multi_weights(**weights)
-                valid += 1
-                if god_says_soloist_wins(spos, contract=solver):
-                    w += 1
-            except Exception:
-                continue
-    return w / float(valid) if valid else 0.0
+    god-solved for the unit's objective in a WORKER (apps.api.ai_worker does the math)."""
+    return ai_pool.run("unit_makeability", {
+        "hands0": [[c.id for c in h] for h in sess.play_hands0],
+        "talon": [c.id for c in sess.play_talon],
+        "trump": sess.trump, "unit": unit, "viewer": viewer,
+        "seed": sess.seed + salt,
+    })
 
 
 # exp27 per-unit defender-kontra gates (validated 2026-07-21 — held-out tournament vs
@@ -102,39 +71,10 @@ def _ai_defender_kontras_unit(sess: Session, pidx: int, U: str) -> bool:
 
 
 def _unit_makeability_post_trick1(sess: Session, unit: str, salt: int) -> float:
-    """P(soloist makes `unit`) from the SOLOIST's view AFTER trick 1 — they now know
-    how trick 1 went. Sample the defenders' remaining hands from the soloist's current
-    info set, rebuild a fresh unit-framed deal, REPLAY trick 1, then god-solve. Falls
-    back to the pre-trick-1 root signal for objectives that can't cleanly replay."""
-    solver, weights, restrict = _UNIT_OBJ[unit]
-    if solver == "multi":            # 100-games: no clean replay path → root signal
-        return _unit_makeability(sess, 0, unit, salt)
-    from ulti.solvers import determinize as _det
-    from ulti.eval.pimc_matchup import god_says_soloist_wins
-    trump = sess.trump
-    plays = [(h["player_id"], card_from_id(h["card"]["id"])) for h in sess.p_history[:3]]
-    iset = _det.build_info_set(sess.p_pos, 0, sess.p_solve_contract, voids=sess.voids.as_dict())
-    rng = random.Random(sess.seed + salt)
-    w, valid = 0, 0
-    for _ in range(_KONTRA_NDET):
-        try:
-            rem, _tal = _det.sample_world(iset, rng)          # remaining hands at current pos
-            init = [list(rem[p]) for p in range(3)]
-            for pid, card in plays:
-                init[pid].append(card)                         # rebuild the pre-trick-1 hands
-            root = pis_bridge.build_position(
-                hands=init, soloist=0, leader=0, contract=solver, trump=trump,
-                talon=list(sess.play_talon), declare_marriages=(trump is not None))
-            for _pid, card in plays:
-                pis_bridge.apply_move(root, card)              # replay trick 1
-            valid += 1
-            if god_says_soloist_wins(root, contract=solver):
-                w += 1
-        except Exception:
-            continue
-    if valid == 0:
-        return _unit_makeability(sess, 0, unit, salt)          # fall back to the pre-trick-1 signal
-    return w / float(valid)
+    """Post-trick-1 unit makeability (the soloist's rekontra signal) — worker-side."""
+    job = _recipe(sess)
+    job.update(unit=unit, viewer=0, seed=sess.seed + salt)
+    return ai_pool.run("unit_makeability_post1", job)
 
 
 def _ai_soloist_rekontras_unit(sess: Session, U: str) -> bool:
