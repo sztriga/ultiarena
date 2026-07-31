@@ -1,0 +1,236 @@
+"""Shared substrate for the play API: config knobs, AI singletons, Session store.
+
+Everything the auction/kontra/play/snapshot modules have in common lives here so the
+dependency graph stays a fan (engine <- flows <- routes), never a cycle.
+"""
+from __future__ import annotations
+
+
+import time
+import uuid
+from pathlib import Path
+from threading import RLock
+from typing import Dict, List, Optional
+
+from fastapi import HTTPException
+
+# The frontier bidder reads its knobs at import time — apply the deployment profile
+# (FLOOR/DEBIAS_PCTL/DURI_TERIT_MULT/KONTRA, one table in ulti.config) BEFORE the
+# bidding imports below, so the library sees the deployed defaults; explicit env wins.
+from ulti.config import apply_deploy_defaults, env_bool, env_float, env_int
+apply_deploy_defaults()
+
+from ulti.bidding.ladder import GPTable, contract_name  # noqa: E402
+from ulti.bidding.auction import net_bid_fn  # noqa: E402
+from ulti.bidding.provider import NetProvider  # noqa: E402
+from ulti.bidding.deal import deal_12_10_10  # noqa: E402
+try:
+    from ulti.betli import defense as _exp36  # noqa: E402  (exp36 betli-defense net)
+except Exception:  # pragma: no cover
+    _exp36 = None
+
+_REPO = Path(__file__).resolve().parents[2]
+
+# The frontier bidder reads these at import time — the champion config.
+# Re-tuned 2026-07-22 on the FIXED bidder (post the auction.py generator bug fix that unlocked
+# non-piros contracts); true head-to-head +0.40 GP/game vs the old 0.70/0.80/1.0 (exp30/exp32).
+# Deployment profile (FLOOR/DEBIAS_PCTL/DURI_TERIT_MULT/KONTRA) — one table in
+# ulti.config, applied BEFORE the bidding imports below so the library reads the
+from ulti.config import apply_deploy_defaults, env_bool, env_float, env_int  # noqa: E402
+apply_deploy_defaults()  # deployed defaults; explicit env still wins
+
+from ulti.bidding.ladder import GPTable, overcalls, contract_name  # noqa: E402
+from ulti.bidding.auction import net_bid_fn, PASS_PENALTY  # noqa: E402
+from ulti.bidding.provider import NetProvider  # noqa: E402
+from ulti.bidding.scorers import resolve_bidset, _play_weights, _primary_made, _hand_makeability  # noqa: E402
+from ulti.bidding.deal import deal_12_10_10  # noqa: E402
+try:
+    from ulti.betli import defense as _exp36  # noqa: E402  (exp36 betli-defense net; models/betli/betli_defense.pt)
+except Exception:  # pragma: no cover
+    _exp36 = None
+from ulti.scoring.units import UNITS_ORDER as _UNITS_ORDER, \
+    UNIT_OBJECTIVE as _UNIT_OBJ, kontra_units as _kontra_units  # noqa: E402
+from ulti.card import card_from_id, sort_hand  # noqa: E402
+
+
+
+_PIMC_N = env_int("PLAY_PIMC_N", 16)
+_KONTRA_NDET = env_int("PLAY_KONTRA_NDET", 6)
+_GP = GPTable()
+
+# ── Exploitative soloist play (exp31 — the champion's biggest play-side lever) ──
+# When the AI is the SOLOIST it plays SAFE-EXPLOIT instead of plain PIMC: among the
+# moves that don't sacrifice the PIMC-optimal (worst-case) value, it picks the one with
+# the best EXPECTED GP against a model of the fallible human defender. Safe = never worse
+# than PIMC vs perfect defense, better whenever the human slips; cheat-clean (samples worlds
+# from its OWN info set only). Validated exp31 (full-game GP, terített-gated): +0.6..+0.75
+# GP/deal vs a fallible defender, 0 regression vs a perfect one, ~1.3-1.6 s/move. Gated OFF
+# on terített (open hand → no hidden info to exploit + amplified stakes). EXPLOIT=0 disables.
+_EXPLOIT      = env_bool("EXPLOIT", True)          # deployed ON = the frontier
+# Modeled human mistake rate. Retuned 0.30 → 0.15 (overnight exp33 robustness matrix, 2026-07-23):
+# a LOW modeled ε dominates — pooled strength gain +0.75 vs +0.34 GP/deal (t+3.3), AND it's the only
+# value that stays safe against a near-perfect defender (over-modeling — assuming the opponent is
+# sloppier than they are — set aggressive traps that BACKFIRE vs strong defense). Conservative
+# modeling captures the easy traps without gambling on unlikely mistakes.
+_EXPLOIT_EPS  = env_float("EXPLOIT_EPS", 0.15)
+_EXPLOIT_NW   = env_int("EXPLOIT_NW", 16)        # sampled worlds per decision
+_EXPLOIT_FRAC = env_float("EXPLOIT_FRAC", 0.10)  # safe-set slack (rel. to value spread)
+
+# ── exp37: imperfect/bluff PLAIN betli bidding — PROMOTED 2026-07-24 (BETLI_REAL_BID=0 reverts).
+# The bidder scores PLAIN betli by a REALISTIC-defense make-prob (not the god double-dummy), so it
+# bids the cheap 5p betli on hands that make vs imperfect defenders (exp38 ladder: 5.9% of bids,
+# +4.84 GP/bid; ~+0.16 GP/game). rebetli/terített keep the god prob (they're voluntary doublings).
+_BETLI_REAL_BID = env_bool("BETLI_REAL_BID", True)
+# ── exp36: learned betli-DEFENSE net for a PLAIN (hidden-info) betli — PROMOTED 2026-07-24 (BETLI_DEF=0
+# reverts to PIMC). −21pp soloist steal vs PIMC (benchmark). Scoped to PLAIN betli — terített betli is
+# already defended near-god by the reveal (must_hold). Falls back to PIMC if the net is unavailable.
+_BETLI_DEF = env_bool("BETLI_DEF", True)
+# ── exp39: extend the realistic-defense prob to REBETLI (the HIDDEN 10p doubling) — PROMOTED 2026-07-25
+# (REBETLI_REAL_BID=0 reverts). Lets the AI escalate betli→rebetli when its realistic make is near-certain
+# (gated behind REBETLI_FLOOR=0.90, higher than plain betli's 0.80). exp39 self-play: rebetli 8.5% of bids,
+# +8.14 GP/bid, does NOT cannibalise ulti; head-to-head vs the rebetli-off frontier +0.16 GP/game (within
+# noise → ~neutral, mildly +). This is the human-like "bid betli, escalate to rebetli when confident" move.
+_REBETLI_REAL_BID = env_bool("REBETLI_REAL_BID", True)
+# ── anti-tell: randomise inside an equivalence block (MIX_EQUIV=0 reverts). Whatever picks
+# the card — PIMC, the exp36 net, the exploit soloist — deterministically returns the same
+# member of a provably-equivalent run, which leaks "I hold nothing above this". Mixing is
+# free: block members lead to the same game (tests/ulti/test_block_equivalence.py).
+_MIX_EQUIV = env_bool("MIX_EQUIV", True)
+
+
+def _bid_label(bid) -> str:
+    """Display name for a specific contract. Hungarian 'színtelen' for the
+    no-trump games (the internal ladder name says 'colorless', which is
+    test-locked — rename only at the UI boundary)."""
+    return contract_name(bid).replace("colorless", "színtelen")
+
+# The play solver's multi-game weights (`set_multi_weights`) are PROCESS-GLOBAL,
+# so all AI play across every live session must be serialized.
+_play_lock = RLock()
+
+
+# ── AI singletons (lazy) ────────────────────────────────────────────────────────
+
+_provider_lock = RLock()
+_provider_obj = None
+_bid_fn_obj = None
+
+
+def _bid_fn():
+    global _provider_obj, _bid_fn_obj
+    with _provider_lock:
+        if _bid_fn_obj is None:
+            # Load the exp37 realistic-betli head; net_bid_fn(betli_real=...) gates whether it's used.
+            _provider_obj = NetProvider(
+                calibrate=True, betli_real_dir=str(_REPO / "models/ulti/betli"))
+            _bid_fn_obj = net_bid_fn(_provider_obj, betli_real=_BETLI_REAL_BID,
+                                     rebetli_real=_REBETLI_REAL_BID)
+        return _bid_fn_obj
+
+
+def _provider():
+    _bid_fn()
+    return _provider_obj
+
+
+# ── Session ─────────────────────────────────────────────────────────────────────
+
+class Session:
+    """One in-flight game: auction state machine → kontra → pis play position."""
+
+    def __init__(self, *, seat: int, seed: int) -> None:
+        self.id = uuid.uuid4().hex[:12]
+        self.last_touch = time.time()   # idle-expiry clock (see _reap)
+        self.seat = seat            # the user's real auction seat (0/1/2)
+        self.seed = seed
+        self.redeals = 0            # dead-deal (all-pass) re-deals in this session
+        self.phase = "bid"          # bid -> (kontra -> play -> done); all-pass re-deals in place
+
+        # ── auction state (real-seat space) ──
+        sol12, d1, d2 = deal_12_10_10(seed)
+        self.a_hands: List[list] = [list(sol12[:10]), list(d1), list(d2)]
+        self.a_talon: list = list(sol12[10:])
+        self.a_current: Optional[dict] = None    # {pid, rung, trump, ev, bid}
+        self.a_passes = 0
+        self.a_turn = 0
+        self.a_reclaim_offered = False           # forehand's post-all-pass last look
+        self.a_done = False
+        self.a_winner: Optional[int] = None
+        self.a_history: List[dict] = []
+        # Two-step: the forehand (seat 0) is dealt the talon and starts in the BID
+        # step (holds 12 → dropdown: passz buries 2, or a contract). Everyone else
+        # starts in the AUCTION step (holds 10 → Felveszem to pick the talon up and
+        # then bid, or Passz to decline without touching it). `a_awaiting_bid` is the
+        # bid step; it flips True on pickup / the forehand's reclaim.
+        self.a_awaiting_bid = (seat == 0)
+        # True once you REACHED the bid step via a pickup (Felveszem / reclaim) rather
+        # than being dealt the 12 — used to ring the 2 talon cards you just took up.
+        self.a_picked_up = False
+
+        # ── speech-bubble events: [{player, text}, ...] drained per snapshot ──
+        self.bubbles: List[dict] = []
+
+        # ── kontra state (PER-UNIT, interleaved with trick 1) ──
+        # Each defender may kontra any live unit right after playing their first card;
+        # the soloist may rekontra after trick 1. A simple game has ONE live unit (its
+        # primary → unchanged deployed behavior); a combined game (100 / ulti-duri /
+        # ulti-40-100 / …) exposes every committed unit separately (milan: "combined →
+        # minden külön kontrázható"). Colored units are shared (együtt sírunk); colorless
+        # (betli / no-trump duri) keep separate per-defender counters.
+        self.k_units: List[str] = []             # live kontra-able units ([] → no kontra round)
+        self.k_colorless = False                 # betli / no-trump duri → per-defender separate
+        self.k_def: Dict[str, Dict[int, bool]] = {}   # k_def[unit][defender 1/2] = kontra'd
+        self.k_off = {1: False, 2: False}        # each defender's kontra decision made (once)
+        self.k_rekontra: Dict[str, bool] = {}    # k_rekontra[unit] = soloist rekontra'd that unit
+        self.k_rk_off = False                    # soloist rekontra decision made (once)
+        self.k_level = 0                          # display level (max over units × defenders)
+        self.k_next: Optional[dict] = None       # pending human decision {role, play_index, units}
+
+        # ── play state (play-index space, soloist = 0) ──
+        self.p_pos = None
+        self.bid = None                          # scoring.oracle.BidSet
+        self.bid_name: Optional[str] = None      # display label of the chosen game
+        self.rung = None
+        self.trump: Optional[str] = None
+        self.p_build_contract = "parti"
+        self.p_solve_contract = "multi"
+        self.p_restrict: Optional[str] = None
+        self.p_weights: Optional[dict] = None
+        self.human_play_index = 0
+        self.play_hands0: List[list] = []        # [sol, d1, d2] in play space
+        self.play_talon: list = []
+        self.voids = None
+        self.p_history: List[dict] = []
+        self.p_seed_counter = seed * 31337
+        self.result: Optional[dict] = None
+
+
+_sessions: Dict[str, Session] = {}
+_sessions_lock = RLock()
+# Idle sessions are reaped so an abandoned tab can't grow the process forever (the
+# puzzle sessions already expire; play sessions used to live until process death).
+# 6h idle default — no live game with a human at the table idles that long.
+_SESSION_TTL = env_int("PLAY_SESSION_TTL", 21600)
+
+
+def _reap_idle_sessions() -> None:
+    """Drop sessions idle past the TTL. Called under _sessions_lock."""
+    cutoff = time.time() - _SESSION_TTL
+    for gid in [g for g, s in _sessions.items() if s.last_touch < cutoff]:
+        _sessions.pop(gid, None)
+
+
+_SUIT_HU = {"hearts": "piros", "acorns": "makk", "leaves": "zöld", "bells": "tök"}
+
+
+
+
+def _get(game_id: str) -> Session:
+    with _sessions_lock:
+        sess = _sessions.get(game_id)
+    if sess is None:
+        raise HTTPException(status_code=404, detail=f"unknown game_id {game_id}")
+    sess.last_touch = time.time()
+    return sess
+
+

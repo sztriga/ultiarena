@@ -35,7 +35,7 @@ for _k, _v in {
 }.items():
     os.environ[_k] = _v
 
-from apps.api import play as P                       # noqa: E402
+from apps.api import ai_play as P                    # noqa: E402  (the mixer lives here since the play.py split)
 from ulti.solvers import pis                         # noqa: E402
 from ultisolver._solver_core import set_multi_weights  # noqa: E402
 
