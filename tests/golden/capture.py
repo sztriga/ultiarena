@@ -16,6 +16,7 @@ import hashlib
 import json
 import os
 import sys
+import tempfile
 
 # ── pin every env knob that affects play BEFORE importing play.py (it reads at import) ──
 _PINNED = {
@@ -27,6 +28,11 @@ _PINNED = {
 }
 for k, v in _PINNED.items():
     os.environ[k] = v
+
+# Harness games are synthetic (scripted human, fixed seeds) and must never land in the
+# real games DB — they would swamp the handful of games an actual person played. Send
+# recording to a throwaway file unless the caller deliberately points GAMES_DB somewhere.
+os.environ.setdefault("GAMES_DB", os.path.join(tempfile.gettempdir(), "ulti_harness_games.db"))
 
 _REPO = os.environ.get("REPO_ROOT") or os.path.abspath(
     os.path.join(os.path.dirname(__file__), "..", ".."))

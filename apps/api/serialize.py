@@ -7,7 +7,7 @@ happens here, in one place.
 """
 from __future__ import annotations
 
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, Optional
 
 from ulti.card import Card, RANKS, SUITS, card_from_id
 from ulti.game import Licit, Phase, UltiGame
@@ -25,10 +25,8 @@ def card_id_to_dict(card_id: int) -> Dict:
     return card_to_dict(card_from_id(card_id))
 
 
-def hand_to_list(hand: List[Card]) -> List[Dict]:
-    """Sorted by suit then rank — matches replay.py display order."""
-    sc = sorted(hand, key=lambda c: (c.suit_index, c.rank_index))
-    return [card_to_dict(c) for c in sc]
+# NB: there is deliberately no hand-sorting helper here. Display order lives in
+# ulti.card.sort_hand — one rule, because the colourless contracts read the Ten low.
 
 
 def phase_name(phase: Phase) -> str:

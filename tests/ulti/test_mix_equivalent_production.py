@@ -17,8 +17,13 @@ that is exactly what is asserted here.
 from __future__ import annotations
 
 import os
+import tempfile
 
 import pytest
+
+# These are synthetic games; keep them out of the real games DB.
+os.environ.setdefault("GAMES_DB",
+                      os.path.join(tempfile.gettempdir(), "ulti_harness_games.db"))
 
 # Pin every knob that affects play BEFORE importing play.py (it reads env at import).
 for _k, _v in {

@@ -33,6 +33,7 @@ from pydantic import BaseModel, Field
 # play.py has already put the exp dirs on sys.path; import it first so its side effects run,
 # then reuse its net singleton + Hungarian suit map.
 from .play import _provider, _SUIT_HU  # noqa: E402
+from ulti.card import sort_hand         # noqa: E402
 from .serialize import card_to_dict     # noqa: E402
 
 from ulti.vnet.pickup import featurize        # noqa: E402
@@ -158,10 +159,11 @@ class Puzzle:
             "trump": self.trump,
             "prompt": self.prompt(),
             "difficulty": round(self.difficulty, 2),
-            # sorted by suit then rank (same order as the game hand) — display only;
-            # all logic is card-id keyed, so order never affects scoring.
+            # Display only — all logic is card-id keyed, so order never affects scoring.
+            # Same ordering rule as the play table (ulti.card.sort_hand), including the
+            # 10-low reading for the colourless contracts (betli / színtelen duri).
             "cards": [card_to_dict(c) for c in
-                      sorted(self.cards12, key=lambda c: (c.suit_index, c.rank_index))],
+                      sort_hand(self.cards12, not _CONTRACTS[self.contract]["colored"])],
         }
 
 

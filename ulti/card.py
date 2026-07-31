@@ -65,3 +65,33 @@ def card_from_id(card_id: int) -> Card:
 def fresh_deck() -> List[Card]:
     """Return a new list of all 32 cards (unshuffled)."""
     return list(DECK)
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Card ordering — ONE definition, used everywhere
+# ──────────────────────────────────────────────────────────────────────────────
+# Every hand shown to a player goes through hand_sort_key/sort_hand: the play table,
+# the auction, the bid step, Villámtalon. The web UI renders whatever order the API
+# sends and does no sorting of its own, so changing the order here changes it
+# everywhere — there is deliberately nowhere else to change.
+#
+# Suit order is a DISPLAY choice (piros first, as Hungarian players lay a hand out) and
+# is independent of suit_index, which is only the id encoding.
+DISPLAY_SUIT_ORDER = {'hearts': 0, 'bells': 1, 'leaves': 2, 'acorns': 3}
+
+# Colourless games (betli / színtelen duri) demote the Ten under the alsó, so a suit runs
+# 7 8 9 10 J Q K A instead of 7 8 9 J Q K 10 A. Same ordering the solver uses for those
+# contracts (see ulti.solvers.blocks.strength) — a hand must be read the way it plays.
+COLORLESS_RANK = {'7': 0, '8': 1, '9': 2, '10': 3,
+                  'lower': 4, 'upper': 5, 'king': 6, 'ace': 7}
+
+
+def hand_sort_key(card: Card, colorless: bool = False):
+    """Display sort key for one card. ``colorless`` → betli / színtelen duri ordering."""
+    rank = COLORLESS_RANK[card.rank] if colorless else card.rank_index
+    return (DISPLAY_SUIT_ORDER[card.suit], rank)
+
+
+def sort_hand(cards, colorless: bool = False) -> List[Card]:
+    """Return ``cards`` in display order. The one way a hand gets sorted."""
+    return sorted(cards, key=lambda c: hand_sort_key(c, colorless))

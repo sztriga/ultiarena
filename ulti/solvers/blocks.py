@@ -47,12 +47,7 @@ from __future__ import annotations
 
 from typing import Any, FrozenSet, Iterable, List, Optional, Sequence
 
-from ulti.card import DECK, Card
-
-# Colourless (betli / no-trump durchmars) rank order: the Ten is demoted under the Jack,
-# so a suit runs 7 8 9 10 J Q K A. The single source of truth for this ordering.
-COLORLESS_RANK = {"7": 0, "8": 1, "9": 2, "10": 3,
-                  "lower": 4, "upper": 5, "king": 6, "ace": 7}
+from ulti.card import COLORLESS_RANK, DECK, Card
 
 _TEN_POINT_RANKS = ("10", "ace")
 

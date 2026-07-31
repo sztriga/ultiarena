@@ -59,7 +59,7 @@ from ulti.bidding.kontra import _sol_ev  # noqa: E402
 from ulti.bidding.deal import deal_12_10_10  # noqa: E402
 from ulti.solvers import pis as pis_bridge  # noqa: E402
 from ulti.solvers import determinize as _det  # noqa: E402
-from ulti.solvers.blocks import COLORLESS_RANK, equivalent_moves  # noqa: E402
+from ulti.solvers.blocks import equivalent_moves  # noqa: E402
 from ulti.eval.pimc_matchup import pimc_pick  # noqa: E402
 try:
     from ulti.betli import defense as _exp36  # noqa: E402  (exp36 betli-defense net; models/betli/betli_defense.pt)
@@ -67,7 +67,7 @@ except Exception:  # pragma: no cover
     _exp36 = None
 from ulti.scoring.oracle import score as score_oracle  # noqa: E402
 from ultisolver._solver_core import set_multi_weights  # noqa: E402
-from ulti.card import card_from_id  # noqa: E402
+from ulti.card import card_from_id, sort_hand  # noqa: E402
 
 from .serialize import card_to_dict
 
@@ -1019,12 +1019,12 @@ def _auction_snapshot(sess: Session) -> dict:
     # auction step (holding 10): you may pick the talon up iff a legal bid exists
     cur_rung = sess.a_current["rung"] if sess.a_current else None
     can_pickup = is_turn and (not sess.a_awaiting_bid) and bool(overcalls(cur_rung))
-    own = sorted(sess.a_hands[sess.seat], key=lambda c: c.id)
+    own = sort_hand(sess.a_hands[sess.seat])
     bid_hand = None
     talon_ids: List[int] = []
     if awaiting_bid:                # bid step → reveal your 10 + the talon (12)
         talon_ids = [c.id for c in sess.a_talon]
-        twelve = sorted(list(sess.a_hands[sess.seat]) + list(sess.a_talon), key=lambda c: c.id)
+        twelve = sort_hand(list(sess.a_hands[sess.seat]) + list(sess.a_talon))
         bid_hand = [card_to_dict(c) for c in twelve]
     cur = None
     if sess.a_current is not None:
@@ -1061,23 +1061,12 @@ def _auction_snapshot(sess: Session) -> dict:
     }
 
 
-# Colorless games (betli / színtelen duri) rank the Ten LOW — it sits between the 9 and the
-# alsó (10-low), so the displayed hand must reorder accordingly. (milan 2026-07-29)
-# COLORLESS_RANK lives in ulti.solvers.blocks — one definition, shared with the block rule.
-
-
-def _hand_sort_key(c, colorless: bool):
-    if colorless:
-        return (c.suit_index, COLORLESS_RANK.get(c.rank, c.rank_index))
-    return (c.suit_index, c.rank_index)
-
-
 def _play_hands_dict(sess: Session, reveal_all: bool, reveal_sol: bool = False) -> List[List[Optional[dict]]]:
     hands = pis_bridge.hands_by_player(sess.p_pos)
     colorless = sess.trump is None                      # betli / színtelen duri
     out: List[List[Optional[dict]]] = []
     for pid in range(3):
-        h = sorted(hands[pid], key=lambda c: _hand_sort_key(c, colorless))
+        h = sort_hand(hands[pid], colorless)
         # terített reveal: the soloist (play-index 0) is shown to everyone once open
         if reveal_all or pid == sess.human_play_index or (reveal_sol and pid == 0):
             out.append([card_to_dict(c) for c in h])
@@ -1160,7 +1149,7 @@ def _play_snapshot(sess: Session) -> dict:
 
 def _trump_snapshot(sess: Session) -> dict:
     """You won a plain colored game — declare the trump before play begins."""
-    hand = sorted(sess.a_hands[sess.seat], key=lambda c: c.id)
+    hand = sort_hand(sess.a_hands[sess.seat])
     return {
         "contract": _bid_label(sess.a_current["bid"]),
         "trump_options": ["acorns", "leaves", "bells"],
@@ -1517,7 +1506,8 @@ def play_analysis(req: AnalysisRequest) -> dict:
         "marriage_restrict": sess.p_restrict, "multi_weights": weights,
         "declare_marriages": trump is not None,
         "soloist": 0, "human_play_index": sess.human_play_index, "leader": 0, "trump": trump,
-        "initial_hands": [[card_to_dict(c) for c in h] for h in (sol, d1, d2)],
+        "initial_hands": [[card_to_dict(c) for c in sort_hand(h, trump is None)]
+                          for h in (sol, d1, d2)],
         "talon": [card_to_dict(c) for c in sess.play_talon],
         "per_ply": per_ply,
         "analysis_ms": (time.perf_counter() - t0) * 1000.0,

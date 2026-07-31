@@ -28,16 +28,10 @@ const SEAT_META: Record<Seat, { short: string; flavor: string; accent: string }>
        accent: "linear-gradient(135deg, #2b5fa8 0%, #5089d6 100%)" },
 };
 
-const SUIT_ORDER: Record<Suit, number> = { hearts: 0, bells: 1, leaves: 2, acorns: 3 };
-const RANK_ORDER: Record<Rank, number> = {
-  "7": 0, "8": 1, "9": 2, lower: 3, upper: 4, king: 5, "10": 6, ace: 7,
-};
-function sortedHand(cards: Card[]): Card[] {
-  return [...cards].sort((a, b) => {
-    const s = SUIT_ORDER[a.suit] - SUIT_ORDER[b.suit];
-    return s !== 0 ? s : RANK_ORDER[a.rank] - RANK_ORDER[b.rank];
-  });
-}
+// Card order is decided ONCE, server-side, in ulti.card.sort_hand — it has to be, because
+// the colourless contracts (betli / színtelen duri) read the Ten low and only the backend
+// knows the contract. Every hand below is rendered in the order the API sent it; do not
+// re-sort here or that rule silently stops applying.
 function placeholderHand(n: number, offset: number): Card[] {
   const out: Card[] = [];
   for (let i = 0; i < n; i++) out.push({ suit: "acorns", rank: "7", id: -(offset + i + 1) });
@@ -446,12 +440,15 @@ export function PlayVsAI() {
 
   const analysisView = useMemo(() => {
     if (!analysis) return null;
-    const hands: Card[][] = analysis.initial_hands.map((h) => [...h]);
+    // Track what each player has played, then derive hands by FILTERING the initial
+    // hands the API sent. Filtering preserves order, so the server's card order (the
+    // one rule, ulti.card.sort_hand) survives scrubbing — nothing is re-sorted here.
+    const played: Set<number>[] = [new Set(), new Set(), new Set()];
     let trick: { player_id: 0 | 1 | 2; card: Card }[] = [];
     for (let i = 0; i < scrubPly && i < effectivePlies.length; i++) {
       const p = effectivePlies[i];
       if (trick.length === 3) trick = [];
-      hands[p.player_id] = hands[p.player_id].filter((c) => c.id !== p.chosen_card.id);
+      played[p.player_id].add(p.chosen_card.id);
       trick.push({ player_id: p.player_id, card: p.chosen_card });
     }
     let activePlayer: 0 | 1 | 2 | null = null;
@@ -462,9 +459,11 @@ export function PlayVsAI() {
       activePlayer = last.player_id;
       legalIds = new Set<number>(last.legal_card_ids);
       branchAtPly = scrubPly - 1;
-      // Restore the just-played card so the user can click any alternative to fork.
-      hands[last.player_id] = [...hands[last.player_id], last.chosen_card];
+      // Keep the just-played card in hand so the user can click an alternative to fork.
+      played[last.player_id].delete(last.chosen_card.id);
     }
+    const hands: Card[][] = analysis.initial_hands.map(
+      (h, pid) => h.filter((c) => !played[pid].has(c.id)));
     return { hands, currentTrick: trick, activePlayer, legalIds, branchAtPly,
              currentPly: scrubPly, thisPly: scrubPly > 0 ? effectivePlies[scrubPly - 1] : null };
   }, [analysis, scrubPly, effectivePlies]);
@@ -609,7 +608,7 @@ export function PlayVsAI() {
           <section>
             {error && <div className="error">{error}</div>}
             <UltiTable
-              hands={[sortedHand(a.hands[0]), sortedHand(a.hands[1]), sortedHand(a.hands[2])]}
+              hands={[a.hands[0], a.hands[1], a.hands[2]]}
               seats={anaSeats}
               currentTrick={a.currentTrick}
               activePlayer={a.activePlayer}
@@ -758,7 +757,7 @@ export function PlayVsAI() {
   // ── Trump select — you won a plain colored game; declare the suit before play ──
   if (state.phase === "trump_select") {
     const opts = state.trump_options ?? ["acorns", "leaves", "bells"];
-    const handCards = sortedHand((state.own_hand ?? []) as Card[]);
+    const handCards = (state.own_hand ?? []) as Card[];
     const meSeat = state.seat as Seat;
     const tHands: [Card[], Card[], Card[]] = [[], [], []];
     for (let s = 0 as Seat; s <= 2; s = (s + 1) as Seat) {
@@ -807,8 +806,8 @@ export function PlayVsAI() {
     const awaitingBid = !!auction.awaiting_bid;    // bid step: you hold 12
     const canPickup = !!auction.can_pickup;        // auction step: may Felveszem
     const handCards = awaitingBid
-      ? sortedHand((state.bid_hand ?? []) as Card[])        // 12 — bid step
-      : sortedHand((state.own_hand ?? []) as Card[]);       // 10 — auction step
+      ? ((state.bid_hand ?? []) as Card[])                  // 12 — bid step
+      : ((state.own_hand ?? []) as Card[]);                 // 10 — auction step
     const talonSet = new Set(state.talon_ids ?? []);
     const showTalon = !!auction.picked_up;         // ring the 2 cards you just took up
     const hist = auction.history.slice(-4);
@@ -958,7 +957,7 @@ export function PlayVsAI() {
   const tableHands: [Card[], Card[], Card[]] = [[], [], []];
   for (let s = 0 as Seat; s <= 2; s = (s + 1) as Seat) {
     if (s === hpi || (revealSol && s === 0)) {
-      tableHands[s] = sortedHand((state.hands?.[s] ?? []).filter((c): c is Card => c !== null));
+      tableHands[s] = (state.hands?.[s] ?? []).filter((c): c is Card => c !== null);
     } else {
       tableHands[s] = placeholderHand(state.hand_sizes?.[s] ?? 0, s * 100);
     }
