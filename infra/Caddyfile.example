@@ -1,0 +1,13 @@
+# UltiArena behind ultiarena.hu — Caddy terminates TLS (automatic Let's Encrypt)
+# and proxies to the app (apps/serve.sh on :8000).
+#
+# TESTING GATE: the whole site sits behind HTTP Basic Auth — milan + 2 friends
+# share one login. Drop the basic_auth block to go public.
+# Run: caddy run --config infra/Caddyfile   (ports 80+443 forwarded to this Mac)
+ultiarena.hu, www.ultiarena.hu {
+    encode gzip
+    basic_auth {
+        ulti {PASTE_HASH_FROM: caddy hash-password}
+    }
+    reverse_proxy 127.0.0.1:8000
+}

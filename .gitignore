@@ -45,3 +45,4 @@ tsconfig.tsbuildinfo
 *.npz
 *.jsonl
 data/
+infra/Caddyfile

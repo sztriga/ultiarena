@@ -1,7 +1,0 @@
-# UltiArena behind ultiarena.hu — Caddy terminates TLS (automatic Let's Encrypt)
-# and proxies to the app (apps/serve.sh on :8000).
-# Run: caddy run --config infra/Caddyfile   (needs ports 80+443 forwarded to this Mac)
-ultiarena.hu, www.ultiarena.hu {
-    encode gzip
-    reverse_proxy 127.0.0.1:8000
-}
