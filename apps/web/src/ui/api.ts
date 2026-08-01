@@ -140,7 +140,9 @@ export interface PlayScore {
   sol_card?:     number;             // soloist card points, marriage bonus removed
   def_card?:     number;             // defender card points, marriage bonus removed (+ talon)
   marr?:         number[];           // marriage declaration bonus per play-index [soloist, def1, def2]
-  sol_tricks?:   number;             // tricks taken — the tally that matters in colorless games
+  mode?:         "tricks" | "points";  // what the running tally means in this contract
+  def_marriage_counts?: boolean;     // false in a bid 100 — defender marriages score nothing
+  sol_tricks?:   number;             // tricks taken — the tally that matters in trick contracts
   def_tricks?:   number;
 }
 

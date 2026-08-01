@@ -711,9 +711,9 @@ export function PlayVsAI() {
               </span>
               {state.contract_value != null && <span className="play-badge-value">{state.contract_value}p</span>}
             </div>
-            {state.score && state.trump === null ? (
-              /* Colorless (betli / színtelen duri): card points mean nothing — the
-                 running tally that matters is TRICKS taken (milan 2026-08-01). */
+            {state.score && (state.score.mode === "tricks" || state.trump === null) ? (
+              /* Betli and durchmars (either colour): the objective is TRICKS, so the
+                 card-point race is noise — show the tally that decides the game. */
               <div className="play-info-scores">
                 <span className={hpi === 0 ? "play-score-me" : ""}>Játékos <b>{state.score.sol_tricks ?? 0}</b> ütés</span>
                 <span className="play-score-sep">·</span>
@@ -721,9 +721,12 @@ export function PlayVsAI() {
               </div>
             ) : state.score && (() => {
               const sc = state.score; const vis = state.history?.length ?? 0;
+              // A bid 100 replaces the párti, so a DEFENDER's marriage scores nothing —
+              // don't show points that cannot affect the outcome (milan 2026-08-02).
+              const defMarr = sc.def_marriage_counts === false ? 0
+                : (vis > 1 ? (sc.marr?.[1] ?? 0) : 0) + (vis > 2 ? (sc.marr?.[2] ?? 0) : 0);
               const solDisp = (sc.sol_card ?? sc.sol_points) + (sc.marr?.[0] ?? 0);
-              const defDisp = (sc.def_card ?? sc.def_points)
-                + (vis > 1 ? (sc.marr?.[1] ?? 0) : 0) + (vis > 2 ? (sc.marr?.[2] ?? 0) : 0);
+              const defDisp = (sc.def_card ?? sc.def_points) + defMarr;
               return (
                 <div className="play-info-scores">
                   <span className={hpi === 0 ? "play-score-me" : ""}>Játékos <b>{solDisp}</b></span>

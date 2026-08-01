@@ -136,6 +136,16 @@ def _play_snapshot(sess: Session) -> dict:
         # there, so the UI shows these instead (milan 2026-08-01).
         "sol_tricks": len(caps[0]) // 3,
         "def_tricks": (len(caps[1]) + len(caps[2])) // 3,
+        # What the running tally MEANS in this contract (milan 2026-08-02):
+        #   durchmars (any colour) + betli → the objective is TRICKS; card points are
+        #     noise, so the UI shows the trick race instead.
+        #   a bid 40-100/20-100 → the declared 100 replaces the párti, so a DEFENDER's
+        #     marriage scores nothing at all. Adding it to their displayed total (as we
+        #     did) invented points that cannot affect the result.
+        "mode": ("tricks" if (getattr(sess.bid, "durchmars", False)
+                              or getattr(sess.bid, "betli", False)) else "points"),
+        "def_marriage_counts": not (getattr(sess.bid, "forty_hundred", False)
+                                    or getattr(sess.bid, "twenty_hundred", False)),
     }
     # The human's own captured cards (won tricks), for the bottom-of-screen pile.
     captured = [card_to_dict(pis_bridge._to_o(c)) for c in caps[sess.human_play_index]]
