@@ -26,7 +26,7 @@ from pathlib import Path
 from threading import RLock, Thread
 from typing import Dict, List, Optional
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 
 # play.py has already put the exp dirs on sys.path; import it first so its side effects run,
@@ -35,6 +35,7 @@ from .play import _provider, _SUIT_HU  # noqa: E402
 from ulti.card import sort_hand         # noqa: E402
 from ulti.config import env_int         # noqa: E402
 from .serialize import card_to_dict     # noqa: E402
+from .limits import guard_new_session   # noqa: E402
 
 from ulti.vnet.pickup import featurize        # noqa: E402
 from ulti.eval.dojo import (                  # noqa: E402
@@ -326,12 +327,15 @@ class SolveRequest(BaseModel):
 
 
 @router.post("/puzzle/new")
-def puzzle_new() -> dict:
-    # prune finished/stale sessions (keep memory bounded)
+def puzzle_new(request: Request) -> dict:
+    # prune finished/stale sessions (keep memory bounded), then cap: each puzzle
+    # session owns a background filler THREAD, so unbounded sessions = unbounded threads.
     with _sessions_lock:
         for gid in [g for g, s in _sessions.items() if s.expired()]:
             _sessions[gid].stop(); _sessions.pop(gid, None)
+        ip = guard_new_session(request, _sessions, lambda s: getattr(s, "owner_ip", None))
     sess = PuzzleSession()
+    sess.owner_ip = ip
     sess.start_first()                 # blocks on first-ever net load; then the queue is warm
     with _sessions_lock:
         _sessions[sess.id] = sess

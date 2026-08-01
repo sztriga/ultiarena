@@ -44,9 +44,10 @@ from ulti.card import card_from_id, sort_hand
 from fastapi import HTTPException
 
 from .serialize import card_to_dict
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 from pydantic import BaseModel, Field
 
+from .limits import guard_new_session  # noqa: E402
 from .engine import (  # noqa: E402,F401  (re-exports: puzzle uses _provider/_SUIT_HU)
     _GP, _REPO, _SESSION_TTL, _SUIT_HU, _bid_fn, _bid_label, _get,
     _provider, _reap_idle_sessions, _recipe, _sessions, _sessions_lock, Session,
@@ -78,13 +79,16 @@ class NewRequest(BaseModel):
 
 
 @router.post("/play/new")
-def play_new(req: NewRequest) -> dict:
+def play_new(req: NewRequest, request: Request) -> dict:
     t0 = time.perf_counter()
+    with _sessions_lock:
+        _reap_idle_sessions()           # cheap O(n) sweep on the rare new-game call
+        ip = guard_new_session(request, _sessions, lambda s: getattr(s, "owner_ip", None))
     rng = random.Random(req.seed)
     seed = req.seed if req.seed is not None else rng.randint(1, 2**31 - 1)
     sess = Session(seat=req.seat, seed=seed)
+    sess.owner_ip = ip
     with _sessions_lock:
-        _reap_idle_sessions()           # cheap O(n) sweep on the rare new-game call
         _sessions[sess.id] = sess
     _advance_auction(sess)
     snap = _snapshot(sess)

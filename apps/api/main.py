@@ -15,6 +15,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from .pis import router as pis_router
+from .limits import limit_middleware
 from .play import router as play_router
 from .puzzle import router as puzzle_router
 
@@ -33,6 +34,10 @@ app.add_middleware(
 def health() -> dict:
     return {"status": "ok"}
 
+
+# Abuse guardrails (see apps/api/limits.py) — the site is publicly reachable with no
+# password, so per-IP rate/concurrency/session caps do the protecting.
+app.middleware("http")(limit_middleware)
 
 app.include_router(pis_router,    prefix="/api")   # /pis/explore — post-game analysis branches
 app.include_router(play_router,   prefix="/api")   # /play/* — the full Ulti game
