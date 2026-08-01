@@ -711,7 +711,15 @@ export function PlayVsAI() {
               </span>
               {state.contract_value != null && <span className="play-badge-value">{state.contract_value}p</span>}
             </div>
-            {state.score && (() => {
+            {state.score && state.trump === null ? (
+              /* Colorless (betli / színtelen duri): card points mean nothing — the
+                 running tally that matters is TRICKS taken (milan 2026-08-01). */
+              <div className="play-info-scores">
+                <span className={hpi === 0 ? "play-score-me" : ""}>Játékos <b>{state.score.sol_tricks ?? 0}</b> ütés</span>
+                <span className="play-score-sep">·</span>
+                <span className={hpi !== 0 ? "play-score-me" : ""}>Védők <b>{state.score.def_tricks ?? 0}</b> ütés</span>
+              </div>
+            ) : state.score && (() => {
               const sc = state.score; const vis = state.history?.length ?? 0;
               const solDisp = (sc.sol_card ?? sc.sol_points) + (sc.marr?.[0] ?? 0);
               const defDisp = (sc.def_card ?? sc.def_points)

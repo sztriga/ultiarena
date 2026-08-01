@@ -240,8 +240,12 @@ def _setup_play(sess: Session) -> None:
     sess.phase = "play"
 
     # Marriage announcements (bemondás) → "Van 40-em!" / "Van 20-am!".
+    # NOT in a bid 40-100/20-100: the declared 100 announces the marriage by itself,
+    # and no other marriage scores anything there (the 100 replaces the párti, so
+    # even the silent riders are off) — the bubbles would be pure noise (milan).
     marr: Dict[int, str] = {}
-    for player in range(3):
+    announce_marriages = not (bid.forty_hundred or bid.twenty_hundred)
+    for player in (range(3) if announce_marriages else ()):
         parts = [f"Van {pts}-{'em' if pts == 40 else 'am'}!"
                  for (p, _suit, pts) in getattr(sess.p_pos, "marriages", []) if p == player]
         if parts:

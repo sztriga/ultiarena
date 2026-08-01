@@ -131,6 +131,11 @@ def _play_snapshot(sess: Session) -> dict:
         "sol_card": int(scores[0]) - marr_pts[0],              # card points only (no marriage bonus)
         "def_card": int(scores[1]) + int(scores[2]) - marr_pts[1] - marr_pts[2] + def_talon,
         "marr": marr_pts,                                      # [soloist, def1, def2] bonus
+        # Trick counts — the meaningful running tally for the COLORLESS games
+        # (betli: soloist must take none; duri: all ten). Card points mean nothing
+        # there, so the UI shows these instead (milan 2026-08-01).
+        "sol_tricks": len(caps[0]) // 3,
+        "def_tricks": (len(caps[1]) + len(caps[2])) // 3,
     }
     # The human's own captured cards (won tricks), for the bottom-of-screen pile.
     captured = [card_to_dict(pis_bridge._to_o(c)) for c in caps[sess.human_play_index]]
