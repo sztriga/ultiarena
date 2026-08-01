@@ -41,3 +41,11 @@ app.include_router(puzzle_router, prefix="/api")   # /puzzle/* — Villámtalon 
 # Hungarian Tell-deck card images at /cards (card_piece_<S><R>.jpg + card_back.png).
 _CARDS_DIR = Path(__file__).resolve().parents[2] / "assets" / "cards"
 app.mount("/cards", StaticFiles(directory=str(_CARDS_DIR)), name="cards")
+
+# ── production static serving ────────────────────────────────────────────────────
+# When the web app has been built (apps/web/dist exists), serve it directly — one
+# process hosts both the API and the SPA, which is what sits behind the domain.
+# Dev is unaffected: vite (5173) proxies /api and dist is simply not mounted if absent.
+_DIST = Path(__file__).resolve().parents[1] / "web" / "dist"
+if _DIST.exists():
+    app.mount("/", StaticFiles(directory=str(_DIST), html=True), name="spa")
