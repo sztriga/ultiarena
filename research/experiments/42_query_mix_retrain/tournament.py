@@ -102,7 +102,7 @@ def _init():
     from ulti.bidding.provider import NetProvider
     b37 = str(_REPO / "models" / "ulti" / "betli")
     prov_f = NetProvider(calibrate=True, betli_real_dir=b37)
-    prov_c = NetProvider(weights_dir=str(_HERE / "candidate_full"),
+    prov_c = NetProvider(weights_dir=str(_HERE / os.environ.get("CAND_DIR", "candidate_full")),
                          calibrate=True, betli_real_dir=b37)
     _BID = {"FRONTIER": net_bid_fn(prov_f, betli_real=True, rebetli_real=True, **CFG),
             "CAND":     net_bid_fn(prov_c, betli_real=True, rebetli_real=True, **CFG)}
@@ -206,7 +206,7 @@ def _worker(seed):
 
 def main():
     n = int(os.environ.get("N", "600"))
-    out = _HERE / ("mu_" + MATCHUP.replace(":", "_") + ".jsonl")
+    out = _HERE / ("mu_" + os.environ.get("CAND_DIR", "candidate_full").replace("candidate_", "") + "_" + MATCHUP.replace(":", "_") + ".jsonl")
     seen = set()
     if out.exists():
         seen = {json.loads(l)["seed"] for l in open(out)}
