@@ -110,12 +110,19 @@ async def limit_middleware(request: Request, call_next):
                 _inflight[ip] = max(0, _inflight[ip] - 1)
 
 
-def guard_new_session(request: Optional[Request], sessions: dict, owner_of) -> str:
-    """Called before creating a game/puzzle. Raises 429 when the caps are hit;
-    returns the owning IP so the caller can tag the session.
+def guard_new_session(request: Optional[Request], sessions: dict, owner_of,
+                      on_evict=None) -> str:
+    """Called before creating a game/puzzle; returns the owning IP so the caller can
+    tag the new session.
 
-    ``owner_of(session) -> ip`` lets each store answer "whose is this?" without this
-    module knowing either session type.
+    Per-IP cap EVICTS rather than refuses: a real player clicking "Új játék" a few
+    times, or reloading the tab, would otherwise be locked out for hours by their own
+    abandoned games. Dropping their OLDEST session bounds memory just as well and is
+    invisible to an honest user, while a script still cannot accumulate more than the
+    cap. Only the GLOBAL cap refuses — that one means the server is genuinely full.
+
+    ``owner_of(session) -> ip``; ``on_evict(session)`` releases resources (a puzzle
+    session owns a background thread).
     """
     ip = client_ip(request)
     if RATE_LIMIT_RPM <= 0 or request is None:      # local/in-process caller → no caps
@@ -123,8 +130,17 @@ def guard_new_session(request: Optional[Request], sessions: dict, owner_of) -> s
     if len(sessions) >= MAX_SESSIONS_TOTAL:
         raise HTTPException(status_code=429,
                             detail="A szerver megtelt — próbáld újra pár perc múlva.")
-    mine = sum(1 for s in sessions.values() if owner_of(s) == ip)
-    if mine >= MAX_SESSIONS_PER_IP:
-        raise HTTPException(status_code=429,
-                            detail="Túl sok megkezdett játék — fejezd be vagy zárd be őket.")
+    mine = [(gid, s) for gid, s in sessions.items() if owner_of(s) == ip]
+    if len(mine) >= MAX_SESSIONS_PER_IP:
+        # play sessions track last_touch; puzzle sessions track start — either way,
+        # oldest activity goes first.
+        mine.sort(key=lambda kv: getattr(kv[1], "last_touch", None)
+                  or getattr(kv[1], "start", 0.0))
+        for gid, sess in mine[:len(mine) - MAX_SESSIONS_PER_IP + 1]:
+            if on_evict is not None:
+                try:
+                    on_evict(sess)
+                except Exception:
+                    pass
+            sessions.pop(gid, None)
     return ip

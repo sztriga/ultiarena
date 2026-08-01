@@ -333,7 +333,8 @@ def puzzle_new(request: Request = None) -> dict:
     with _sessions_lock:
         for gid in [g for g, s in _sessions.items() if s.expired()]:
             _sessions[gid].stop(); _sessions.pop(gid, None)
-        ip = guard_new_session(request, _sessions, lambda s: getattr(s, "owner_ip", None))
+        ip = guard_new_session(request, _sessions, lambda s: getattr(s, "owner_ip", None),
+                               on_evict=lambda s: s.stop())
     sess = PuzzleSession()
     sess.owner_ip = ip
     sess.start_first()                 # blocks on first-ever net load; then the queue is warm
