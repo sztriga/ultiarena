@@ -327,7 +327,7 @@ class SolveRequest(BaseModel):
 
 
 @router.post("/puzzle/new")
-def puzzle_new(request: Request) -> dict:
+def puzzle_new(request: Request = None) -> dict:
     # prune finished/stale sessions (keep memory bounded), then cap: each puzzle
     # session owns a background filler THREAD, so unbounded sessions = unbounded threads.
     with _sessions_lock:

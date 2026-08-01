@@ -79,7 +79,7 @@ class NewRequest(BaseModel):
 
 
 @router.post("/play/new")
-def play_new(req: NewRequest, request: Request) -> dict:
+def play_new(req: NewRequest, request: Request = None) -> dict:
     t0 = time.perf_counter()
     with _sessions_lock:
         _reap_idle_sessions()           # cheap O(n) sweep on the rare new-game call

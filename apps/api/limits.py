@@ -20,7 +20,7 @@ from __future__ import annotations
 import time
 from collections import defaultdict, deque
 from threading import RLock
-from typing import Deque, Dict
+from typing import Deque, Dict, Optional
 
 from fastapi import HTTPException, Request
 from fastapi.responses import JSONResponse
@@ -45,9 +45,14 @@ _HEAVY = ("/api/play/move", "/api/play/new", "/api/play/bid", "/api/play/pass",
           "/api/puzzle/new", "/api/puzzle/solve", "/api/pis/explore")
 
 
-def client_ip(request: Request) -> str:
+def client_ip(request: Optional[Request]) -> str:
     """The real visitor's IP. Cloudflare sets CF-Connecting-IP and, because the tunnel
-    is the only way in, it cannot be spoofed by a client."""
+    is the only way in, it cannot be spoofed by a client.
+
+    ``None`` means an in-process caller (the golden harness, tests, tournaments) —
+    those are trusted and bypass the caps entirely."""
+    if request is None:
+        return "local"
     cf = request.headers.get("cf-connecting-ip")
     if cf:
         return cf.strip()
@@ -105,7 +110,7 @@ async def limit_middleware(request: Request, call_next):
                 _inflight[ip] = max(0, _inflight[ip] - 1)
 
 
-def guard_new_session(request: Request, sessions: dict, owner_of) -> str:
+def guard_new_session(request: Optional[Request], sessions: dict, owner_of) -> str:
     """Called before creating a game/puzzle. Raises 429 when the caps are hit;
     returns the owning IP so the caller can tag the session.
 
@@ -113,7 +118,7 @@ def guard_new_session(request: Request, sessions: dict, owner_of) -> str:
     module knowing either session type.
     """
     ip = client_ip(request)
-    if RATE_LIMIT_RPM <= 0:
+    if RATE_LIMIT_RPM <= 0 or request is None:      # local/in-process caller → no caps
         return ip
     if len(sessions) >= MAX_SESSIONS_TOTAL:
         raise HTTPException(status_code=429,
