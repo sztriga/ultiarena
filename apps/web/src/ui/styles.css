@@ -765,7 +765,7 @@ html, body, #root {
 .play-captured-trick { display: flex; gap: 1px; }               /* one won trick = 3 backs */
 .play-captured-reveal { display: flex; flex-direction: column; gap: 8px; max-height: 60vh; overflow-y: auto; }
 .play-captured-trick-row { display: flex; gap: 4px; }
-.play-kontra-text { font-size: 13px; }
+.play-kontra-text { font-size: 13.5px; line-height: 1.5; }
 
 /* Talon pile — floats on the LEFT, vertically centered, out of the table's flow (so it
    never shifts the opponent row / hand). Face-down during play, face-up at game end. */
@@ -787,8 +787,8 @@ html, body, #root {
 .play-vs-ai .main { align-items: start; height: 100%; }
 .play-col-main { min-height: 0; }
 /* Persistent contract + score panel in the sidebar (moved off the table). */
-.play-info-panel { display: flex; flex-direction: column; align-items: center; gap: 7px;
-  text-align: center; margin-bottom: 10px; padding: 12px 14px; }
+.play-info-panel { display: flex; flex-direction: column; align-items: center; gap: 11px;
+  text-align: center; margin-bottom: 14px; padding: 18px 16px; }
 .play-info-contract { display: flex; gap: 8px; align-items: center; justify-content: center; flex-wrap: wrap; }
 .play-info-scores { font-size: 14px; color: var(--muted, #9ca3af); }
 .play-info-scores b { color: var(--text, #e7ebef); }
@@ -810,28 +810,28 @@ html, body, #root {
 
 /* End-of-hand action buttons — Következő full width, secondary buttons share the next row.
    Kept small so the box doesn't feel crowded. */
-.play-side-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
-.play-side-actions .betli-hu-deal-btn { flex: 1 1 100%; margin-bottom: 2px; }
-.play-side-actions .btn { flex: 1 1 0; white-space: nowrap; font-size: 12px; padding: 7px 10px; height: auto; }
+.play-side-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
+.play-side-actions .betli-hu-deal-btn { flex: 1 1 100%; margin-bottom: 4px; }
+.play-side-actions .btn { flex: 1 1 0; white-space: nowrap; font-size: 13px; padding: 9px 12px; height: auto; }
 
 /* Sidebar box above the Játékmenet log — hosts the kontra decision and the
    end-of-hand result instead of a bottom-floating popup. Empty/idle otherwise. */
 .play-side-box {
-  min-height: 84px; margin-bottom: 12px; border-radius: 12px;
+  min-height: 96px; margin-bottom: 14px; border-radius: 12px;
   border: 1px solid rgba(255,255,255,0.08); background: var(--panel-2, #15181c);
-  display: flex; align-items: center; justify-content: center; padding: 16px 16px 18px;
+  display: flex; align-items: center; justify-content: center; padding: 22px 20px 24px;
 }
 .play-side-inner { width: 100%; }
 .play-side-title { font-size: 11px; font-weight: 700; text-transform: uppercase;
-  letter-spacing: 0.4px; color: #d23552; margin-bottom: 5px; }
-.play-side-result { padding: 2px; }
-.play-side-result .betli-hu-result-headline { font-size: 16px; margin-bottom: 2px; }
-.play-side-result .betli-hu-result-sub { font-size: 11px; }
+  letter-spacing: 0.4px; color: #d23552; margin-bottom: 10px; }
+.play-side-result { padding: 6px 2px; }
+.play-side-result .betli-hu-result-headline { font-size: 17px; margin-bottom: 6px; }
+.play-side-result .betli-hu-result-sub { font-size: 12px; }
 .play-side-idle { color: var(--muted, #5b636e); font-size: 12px; font-weight: 700;
   letter-spacing: 1px; opacity: 0.5; }
 
 /* Per-unit kontra picker (combined games) — pill toggles, one per live unit. */
-.play-kontra-units { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.play-kontra-units { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 .play-kontra-unit {
   padding: 4px 10px; border-radius: 999px; border: 1px solid var(--border, #333);
   background: transparent; color: var(--text, #dfe3e8); font-size: 12px; font-weight: 700;
@@ -983,3 +983,20 @@ html, body, #root {
 .puzzle-final-label { color: var(--muted); text-transform: uppercase; letter-spacing: 0.09em; font-size: 12px; margin-top: -2px; }
 .puzzle-final-stats { display: flex; gap: 22px; color: var(--muted); font-size: 14px; margin-top: 6px; }
 .puzzle-final-stats b { color: var(--text); }
+
+/* Kontra decision as a CENTERED POPUP (milan 2026-08-01 — "at least I'd like to
+   try it"). Reuses the modal backdrop; deliberately NOT dismissable by clicking
+   outside — the decision is mandatory, "Tovább" is the way past it. The sidebar
+   box shows its idle text meanwhile. */
+.play-kontra-modal {
+  background: var(--panel-2, #15181c); border: 1px solid rgba(210, 53, 82, 0.45);
+  border-radius: 14px; padding: 26px 30px 28px; width: min(440px, 92vw);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.6), 0 0 0 4px rgba(210, 53, 82, 0.07);
+  animation: kontra-pop-in 160ms ease-out;
+}
+.play-kontra-modal .play-side-title { font-size: 13px; margin-bottom: 12px; }
+.play-kontra-modal .play-kontra-text { font-size: 14.5px; }
+@keyframes kontra-pop-in {
+  from { transform: scale(0.94); opacity: 0; }
+  to   { transform: scale(1);    opacity: 1; }
+}

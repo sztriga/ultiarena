@@ -633,25 +633,35 @@ export function PlayVsAI() {
     </div>
   );
 
-  // The side box above the Játékmenet log: hosts the kontra decision, then the
-  // end-of-hand result — instead of a bottom-floating popup. Empty when idle.
+  // The side box above the Játékmenet log: the end-of-hand result lives here;
+  // the kontra decision pops up centered instead (kontraModal below).
   const sideBox = (
     <div className="play-side-box">
-      {inKontra && kontra?.pending ? (
-        <KontraBox kontra={kontra} contract={state.contract} trump={state.trump}
-                   loading={loading} kontraSel={kontraSel}
-                   onKontra={onKontra} toggleKontraUnit={toggleKontraUnit} />
-      ) : terminal && result ? (
+      {terminal && result ? (
         renderResult(result, true)
       ) : (
         <div className="play-side-idle">
-          {state.phase === "play" && !terminal
-            ? (animating || loading ? "A gép lép…" : isMyTurn ? "Te jössz" : "A gép lép…")
-            : "Ulti vs AI"}
+          {inKontra
+            ? "Kontra döntés…"
+            : state.phase === "play" && !terminal
+              ? (animating || loading ? "A gép lép…" : isMyTurn ? "Te jössz" : "A gép lép…")
+              : "Ulti vs AI"}
         </div>
       )}
     </div>
   );
+
+  // The kontra decision demands attention → a centered popup. Not dismissable by
+  // clicking the backdrop — the decision is mandatory ("Tovább" passes it).
+  const kontraModal = inKontra && kontra?.pending ? (
+    <div className="play-modal-backdrop">
+      <div className="play-kontra-modal">
+        <KontraBox kontra={kontra} contract={state.contract} trump={state.trump}
+                   loading={loading} kontraSel={kontraSel}
+                   onKontra={onKontra} toggleKontraUnit={toggleKontraUnit} />
+      </div>
+    </div>
+  ) : null;
 
   return (
     <div className="app betli-hu-game play-vs-ai">
@@ -757,6 +767,8 @@ export function PlayVsAI() {
           </div>
         </div>
       )}
+
+      {kontraModal}
 
       {showCard && (
         <div className="play-modal-backdrop" onClick={() => setShowCard(false)}>
