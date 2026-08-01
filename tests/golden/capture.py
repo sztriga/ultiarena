@@ -10,7 +10,7 @@ is reproducible byte-for-byte.
 Run against any repo that has apps/api/play.py:
     REPO_ROOT=/path/to/repo python golden_capture.py > transcripts.json
 Compare two repos:
-    diff <(REPO_ROOT=oldtawer python golden_capture.py) <(REPO_ROOT=trickster python golden_capture.py)
+    diff <(REPO_ROOT=repoA python golden_capture.py) <(REPO_ROOT=repoB python golden_capture.py)
 """
 import hashlib
 import json

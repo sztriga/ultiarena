@@ -3,7 +3,7 @@ Perfect-information solver endpoint.
 
 POST /api/pis/probe
     Generate a (currently betli-only) biased deal, solve it face-up with
-    the trickster Cython alpha-beta solver, return the verdict + every
+    the ultisolver Cython alpha-beta solver, return the verdict + every
     legal opening move's value + the principal variation + diagnostics.
 
 POST /api/pis/explore

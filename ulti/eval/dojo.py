@@ -1,7 +1,7 @@
 """
 Biased deal generator + forced-contract match/arena runner.
 
-Ports trickster's ``UltiDojo.deal`` to oldtawer's ``Card`` model and drives
+Ports the legacy ``UltiDojo.deal`` to the ``ulti.card`` model and drives
 ``UltiGame`` into a forced contract using the dealt cards, so two specialists
 can be compared head-to-head on the contract they were trained for.
 
@@ -24,7 +24,7 @@ existing FastAPI callers.
 
 Differences from trickster's UltiDojo:
 - Always seeds the contract-mandatory cards (e.g. trump 7 for Ulti) into
-  the declarer's hand. oldtawer's ``Licit.ULTI`` requires it; trickster's
+  the declarer's hand. The legacy ``Licit.ULTI`` required it; the old engine's
   training-time dojo sometimes generates trump-7-less hands that we'd have
   to throw away.
 """

@@ -1,7 +1,7 @@
 """
 Perfect-information solver bridge.
 
-Translator between oldtawer types (``ulti.card.Card``) and trickster's
+Translator between UltiArena's card model (``ulti.card.Card``) and the standalone
 contract-agnostic Cython solver in ``ultisolver._solver_core``. The
 solver itself — alpha-beta search, transposition table, principal-
 variation walker, contract-specific cull/order/terminal hooks — lives
@@ -39,7 +39,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from ulti.card import Card as _OCard
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Card mapping (oldtawer ↔ trickster)
+# Card mapping (ulti.card ↔ ultisolver)
 # ──────────────────────────────────────────────────────────────────────────────
 # 32-card decks on both sides; rank order matches semantically. Suit names
 # are identical in spirit (Hearts/Bells/Leaves/Acorns); only the integer
@@ -82,7 +82,7 @@ def _to_o(c: _TCard) -> _OCard:
 
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Contract list (mirrors trickster's _CONTRACT_MAP)
+# Contract list (mirrors ultisolver's _CONTRACT_MAP)
 # ──────────────────────────────────────────────────────────────────────────────
 
 CONTRACTS: Tuple[str, ...] = ('betli', 'ulti', 'parti', 'durchmars')
@@ -104,7 +104,7 @@ def build_position(
     marriage_restrict: Optional[str] = None,
     has_ulti: Optional[bool] = None,
 ) -> Any:
-    """Build an opaque solver position from oldtawer-typed inputs.
+    """Build an opaque solver position from ``ulti.card``-typed inputs.
 
     The position starts at trick 1 with the given leader on the move and
     no captures yet. To analyse a mid-game position, build the start-of-
@@ -205,7 +205,7 @@ def apply_move(pos: Any, card: _OCard) -> None:
 
 
 def hands_by_player(pos: Any) -> List[List[_OCard]]:
-    """Snapshot every player's remaining cards (oldtawer ``Card``)."""
+    """Snapshot every player's remaining cards (``ulti.card.Card``)."""
     return [[_to_o(c) for c in h] for h in pos.hands]
 
 

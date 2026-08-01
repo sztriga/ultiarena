@@ -177,7 +177,7 @@ def _trump_snapshot(sess: Session) -> dict:
 
 def _snapshot(sess: Session) -> dict:
     base = {"game_id": sess.id, "seat": sess.seat, "seed": sess.seed, "phase": sess.phase}
-    # Drain speech-bubble events (send once, then clear) — matches trickster.
+    # Drain speech-bubble events (send once, then clear).
     base["bubbles"] = list(sess.bubbles)
     sess.bubbles = []
     if sess.phase in ("bid", "passed"):

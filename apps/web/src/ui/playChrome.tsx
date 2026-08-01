@@ -111,7 +111,7 @@ export function applyStepToVisible(cur: PlayState, target: PlayState): PlayState
 
 
 // Timed speech bubble for one seat (ported from trickster's useUltiBubble):
-// imperative show(text), visible 2200ms then a 400ms fade. Uses oldtawer's
+// imperative show(text), visible 2200ms then a 400ms fade. Uses the app's
 // existing .ulti-speech-bubble / .ulti-bubble-in|out styles.
 export function useUltiBubble(): { show: (t: string) => void; clear: () => void; node: ReactNode } {
   const [text, setText] = useState<string | null>(null);

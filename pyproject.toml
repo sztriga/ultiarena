@@ -3,7 +3,7 @@ requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "trickster"
+name = "ultiarena"
 version = "0.3.0"
 description = "Ulti AI — base-event bidder + web app. Snapszer engine lives isolated under snapszer/ (run standalone)."
 readme = "README.md"

@@ -57,16 +57,16 @@ def _weighted_sample_no_replace(items, weights, k, rng):
 
 
 # ---------------------------------------------------------------------------
-# Suit string conversion (trickster enum → oldtawer name)
+# Suit string conversion (ultisolver enum → ulti.card name)
 # ---------------------------------------------------------------------------
 
 def _suit_name(s) -> str:
-    """Return the oldtawer-style suit string for either an oldtawer ``str``
-    or a trickster ``Suit`` enum value (which is itself a ``StrEnum`` —
+    """Return the ``ulti.card`` suit string for either a plain ``str``
+    or an ultisolver ``Suit`` enum value (which is itself a ``StrEnum`` —
     careful, ``isinstance(s, str)`` is True even for the enum)."""
     if s in _pis._TSUIT_TO_OSUIT:
         return _pis._TSUIT_TO_OSUIT[s]
-    return s  # oldtawer plain string suit
+    return s  # already a plain string suit
 
 
 # ---------------------------------------------------------------------------
@@ -96,7 +96,7 @@ def _no_must_hold(pos) -> Dict[int, List[Card]]:
     return {}
 
 
-# Stubs for future contracts. Port the trickster ``build_auction_constraints``
+# Stubs for future contracts. Port the legacy ``build_auction_constraints``
 # logic here when you wire up ulti / 40-100 benches.
 def _ulti_must_hold(pos) -> Dict[int, List[Card]]:
     """Ulti auction rule: the soloist must hold the trump 7 (and is

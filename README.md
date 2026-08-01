@@ -1,4 +1,4 @@
-# trickster
+# UltiArena
 
 An **Ulti** AI (base-event bidder + full web app), with an isolated **Snapszer** engine kept alongside.
 
@@ -25,7 +25,7 @@ research/        all 37 experiments (frozen research; not on the runtime path)
 tests/           ulti golden transcripts + snapszer engine tests
 ```
 
-`ulti/` + `apps/` have **zero** `trickster` imports — the name `trickster` belongs only to the
+`ulti/` + `apps/` have **zero** `trickster` imports — that package name belongs only to the
 isolated snapszer package, so the two games can never collide.
 
 ## Run the Ulti app
@@ -50,5 +50,5 @@ PYTHONPATH=snapszer pytest tests/snapszer     # snapszer engine
 python tests/golden/capture.py                # golden transcript of the Ulti AI (behavior net)
 ```
 
-Provenance: consolidated from the `oldtawer` fork + this repo's Snapszer engine; the pre-consolidation
+Provenance (formerly `trickster`): consolidated from the `oldtawer` fork + the original repo's Snapszer engine; the pre-consolidation
 state of both is tagged `pre-consolidation`.
