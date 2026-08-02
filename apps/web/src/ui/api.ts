@@ -50,7 +50,7 @@ export interface PisExploreResponse {
   verdict:       "soloist" | "defenders";
 }
 
-// ── PIMC play-through (god annotates every move) ──────────────────────────
+// ── Play (Ulti vs AI) ─────────────────────────────────────────────────────
 
 export interface PlayLegalBid {
   kind:          "pass" | "start" | "bid";   // Passz · Kezdés (holder) · a contract
@@ -233,7 +233,7 @@ export interface PlayOngoing {
   idle_s: number;
 }
 
-// ── Training jobs ───────────────────────────────────────────────────────────
+// ── Villámtalon puzzle ──────────────────────────────────────────────────────
 
 export interface PuzzlePuzzle {
   puzzle_id: string;

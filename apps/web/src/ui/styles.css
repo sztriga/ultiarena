@@ -304,7 +304,6 @@ html, body, #root {
   gap: 6px;
 }
 
-.ulti-hand,
 .hand-row {
   display: flex;
   gap: 8px;
@@ -473,13 +472,6 @@ html, body, #root {
 
 .muted { color: var(--muted); }
 .row   { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
-.tab-btn.is-active {
-  color: var(--text);
-  background: var(--panel);
-  border-color: var(--border);
-  border-bottom: 1px solid var(--panel);
-  margin-bottom: -1px;
-}
 
 /* ── betli.hu splash ──────────────────────────────────────────────────── */
 
@@ -511,12 +503,6 @@ html, body, #root {
   background-clip: text;
   -webkit-text-fill-color: transparent;
   filter: drop-shadow(0 4px 16px rgba(71, 97, 138, 0.30));
-}
-
-.betli-hu-tile.is-active {
-  color: #fff;
-  border-color: rgba(255,255,255,0.35);
-  transform: translateY(-3px);
 }
 
 .betli-hu-deal-btn {
@@ -637,21 +623,6 @@ html, body, #root {
 .betli-hu-log-scroll::-webkit-scrollbar      { width: 8px; }
 .betli-hu-log-scroll::-webkit-scrollbar-thumb { background: #2a2f36; border-radius: 4px; }
 .betli-hu-log-scroll::-webkit-scrollbar-track { background: transparent; }
-.betli-hu-result.is-win  { border-color: rgba(58, 174, 101, 0.35); }
-.betli-hu-result.is-loss { border-color: rgba(210, 53, 82, 0.30); }
-.betli-hu-result-headline {
-  font-size: 22px;
-  font-weight: 700;
-  letter-spacing: 0.2px;
-  color: var(--text, #e7ebef);
-  margin-bottom: 3px;
-}
-.betli-hu-result.is-win  .betli-hu-result-headline { color: #74c187; }
-.betli-hu-result.is-loss .betli-hu-result-headline { color: #d68f9b; }
-.betli-hu-result-sub {
-  font-size: 13px;
-  color: #aab1ba;
-}
 
 /* In-game layout: don't stretch the play area to fill the viewport. Let
    the table and result banner be their *natural* height, and have the
@@ -723,8 +694,6 @@ html, body, #root {
   cursor: pointer;
 }
 .ulti-bid-select:focus { outline: none; border-color: var(--accent, #5089d6); }
-.play-hist-act.pass { color: var(--muted, #8b93a1); }
-.play-hist-act.bid  { color: #c07ee0; }
 .play-badge {
   display: inline-block; padding: 4px 16px; border-radius: 10px; font-size: 13px; font-weight: 700;
   letter-spacing: 0.3px; background: rgba(100, 180, 255, 0.15);

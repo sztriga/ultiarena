@@ -9,15 +9,6 @@ import { SUIT_HUN, SUIT_SYMBOL } from "./cards";
 
 type Seat = 0 | 1 | 2;
 
-export const SEAT_META: Record<Seat, { short: string; flavor: string; accent: string }> = {
-  0: { short: "P0 · Forehand", flavor: "You act first in the auction.",
-       accent: "linear-gradient(135deg, #6b1f8a 0%, #a23ed1 100%)" },
-  1: { short: "P1 · Middle",   flavor: "Second to act.",
-       accent: "linear-gradient(135deg, #2b5fa8 0%, #5089d6 100%)" },
-  2: { short: "P2 · Rear",     flavor: "Third to act.",
-       accent: "linear-gradient(135deg, #2b5fa8 0%, #5089d6 100%)" },
-};
-
 // Card order is decided ONCE, server-side, in ulti.card.sort_hand — it has to be, because
 // the colourless contracts (betli / színtelen duri) read the Ten low and only the backend
 // knows the contract. Every hand below is rendered in the order the API sent it; do not

@@ -8,8 +8,7 @@ import type { Card } from "./cards";
 
 type Seat = 0 | 1 | 2;
 import { UltiTable, TalonStrip, type SeatChrome } from "./UltiTable";
-import { CardView } from "./CardView";
-import { CardChip, KONTRA_WORD, PLAYER_LABEL, ROLE_LABEL, TRUMP_LABEL,
+import { CardChip, KONTRA_WORD, PLAYER_LABEL, TRUMP_LABEL,
          type AnalysisView, type EffectivePly } from "./playChrome";
 
 export function ResultPanel({ r, withAnalysis, loading, analysisLoading, hasRounds,

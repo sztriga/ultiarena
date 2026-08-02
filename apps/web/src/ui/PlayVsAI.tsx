@@ -7,14 +7,14 @@
 // the betli tab and animates the AI's cards one at a time. Server is
 // authoritative — every action POSTs and the AI's turns come back resolved.
 
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { api, type PlayState, type PlayLegalBid, type PlayAnalysis, type PlayOngoing, type PlayResult } from "./api";
 import { deviceId } from "./device";
-import type { Card, Suit, Rank } from "./cards";
+import type { Card, Suit } from "./cards";
 import { SUIT_HUN, SUIT_SYMBOL } from "./cards";
 import { CardBack, CardView } from "./CardView";
-import { UltiTable, TalonStrip, type SeatChrome } from "./UltiTable";
+import { UltiTable, type SeatChrome } from "./UltiTable";
 import { useStepScrubber } from "./useStepScrubber";
 import { PuzzleRush } from "./PuzzleRush";
 import { AnalysisBoard, AuctionPanel, KontraBox, ResultPanel, Splash } from "./playPanels";
@@ -22,11 +22,21 @@ import { AnalysisBoard, AuctionPanel, KontraBox, ResultPanel, Splash } from "./p
 type Seat = 0 | 1 | 2;
 
 import {
-  SEAT_META, PLAYER_LABEL, TRUMP_LABEL, KONTRA_WORD, ROLE_LABEL, RANK_SHORT,
+  TRUMP_LABEL, KONTRA_WORD, ROLE_LABEL,
   ANIM_STEP_MS, ANIM_TRICK_PAUSE_MS, placeholderHand, CardChip,
   applyUserPlay, playBaseline, applyStepToVisible, useUltiBubble,
-  EffectivePly, type AnalysisView,
+  EffectivePly,
 } from "./playChrome";
+
+/** The auction-style table: your cards at the bottom, 10 face-down placeholders
+ * elsewhere. Shared by the bid, trump-select and passed views so they can never
+ * drift apart. */
+function auctionTable(meSeat: Seat, own: Card[]) {
+  const hands = ([0, 1, 2] as Seat[]).map(
+    (s) => (s === meSeat ? own : placeholderHand(10, s * 100))) as [Card[], Card[], Card[]];
+  const hidden = new Set<Seat>(([0, 1, 2] as Seat[]).filter((s) => s !== meSeat));
+  return { hands, hidden };
+}
 
 export function PlayVsAI() {
   const [showPuzzle, setShowPuzzle] = useState(false);   // Villámtalon mini-game overlay
@@ -445,11 +455,7 @@ export function PlayVsAI() {
     const opts = state.trump_options ?? ["acorns", "leaves", "bells"];
     const handCards = (state.own_hand ?? []) as Card[];
     const meSeat = state.seat as Seat;
-    const tHands: [Card[], Card[], Card[]] = [[], [], []];
-    for (let s = 0 as Seat; s <= 2; s = (s + 1) as Seat) {
-      tHands[s] = s === meSeat ? handCards : placeholderHand(10, s * 100);
-    }
-    const tHidden = new Set<0 | 1 | 2>(([0, 1, 2] as Seat[]).filter((s) => s !== meSeat));
+    const { hands: tHands, hidden: tHidden } = auctionTable(meSeat, handCards);
     const tChrome = (pid: Seat): SeatChrome => ({ label: <>P{pid}{pid === meSeat ? " (te)" : ""}</> });
     const tSeats = { 0: tChrome(0), 1: tChrome(1), 2: tChrome(2) };
     const trumpPanel = (
@@ -487,30 +493,20 @@ export function PlayVsAI() {
   //    top-left/right, your hand fanned at the bottom. One ladder dropdown
   //    (Passz / Kezdés / a contract) + one confirm button in the trick zone. ──
   if (state.phase === "bid" && auction) {
-    const isHolder = !!auction.is_holder;          // you own the standing bid
-    const reclaim = !!auction.reclaim;             // forehand's last look after all-pass
     const awaitingBid = !!auction.awaiting_bid;    // bid step: you hold 12
-    const canPickup = !!auction.can_pickup;        // auction step: may Felveszem
     const handCards = awaitingBid
       ? ((state.bid_hand ?? []) as Card[])                  // 12 — bid step
       : ((state.own_hand ?? []) as Card[]);                 // 10 — auction step
     const talonSet = new Set(state.talon_ids ?? []);
     const showTalon = !!auction.picked_up;         // ring the 2 cards you just took up
-    const hist = auction.history.slice(-4);
     const meSeat = state.seat as Seat;
 
-    const kind = selBid?.kind ?? "bid";
     const needsDiscard = awaitingBid;                       // bid step always buries/discards 2
     const canConfirm = !!selBid && discards.size === 2;
-    const confirmLabel = kind === "pass" ? "Passzolok" : isHolder ? "Emelek" : "Licitálok";
 
     // Same table as play — opponents face down top-left/right, your hand fanned at
     // the bottom — but the central trick "playing area" is hidden until play starts.
-    const bidHands: [Card[], Card[], Card[]] = [[], [], []];
-    for (let s = 0 as Seat; s <= 2; s = (s + 1) as Seat) {
-      bidHands[s] = s === meSeat ? handCards : placeholderHand(10, s * 100);
-    }
-    const bidHidden = new Set<0 | 1 | 2>(([0, 1, 2] as Seat[]).filter((s) => s !== meSeat));
+    const { hands: bidHands, hidden: bidHidden } = auctionTable(meSeat, handCards);
     const bidChrome = (pid: Seat): SeatChrome => ({
       label: (
         <>
@@ -568,18 +564,20 @@ export function PlayVsAI() {
 
   // terített: after trick 1 the soloist (play-index 0) lays their hand face-up for the defenders.
   const revealSol = !!state.reveal_soloist;
-  const tableHands: [Card[], Card[], Card[]] = [[], [], []];
-  for (let s = 0 as Seat; s <= 2; s = (s + 1) as Seat) {
-    if (passed) {
-      // no play data — your auction hand as it stood at the third pass, backs elsewhere
-      tableHands[s] = s === hpi ? ((state.own_hand ?? []) as Card[]) : placeholderHand(10, s * 100);
-    } else if (s === hpi || (revealSol && s === 0)) {
-      tableHands[s] = (state.hands?.[s] ?? []).filter((c): c is Card => c !== null);
-    } else {
-      tableHands[s] = placeholderHand(state.hand_sizes?.[s] ?? 0, s * 100);
+  // passed = no play data: your auction hand as it stood at the third pass, backs
+  // elsewhere — the same table the bid/trump views build.
+  const passedTable = passed ? auctionTable(hpi, (state.own_hand ?? []) as Card[]) : null;
+  const tableHands: [Card[], Card[], Card[]] = passedTable?.hands ?? [[], [], []];
+  if (!passedTable) {
+    for (let s = 0 as Seat; s <= 2; s = (s + 1) as Seat) {
+      if (s === hpi || (revealSol && s === 0)) {
+        tableHands[s] = (state.hands?.[s] ?? []).filter((c): c is Card => c !== null);
+      } else {
+        tableHands[s] = placeholderHand(state.hand_sizes?.[s] ?? 0, s * 100);
+      }
     }
   }
-  const hiddenSeats = new Set<0 | 1 | 2>(
+  const hiddenSeats = passedTable?.hidden ?? new Set<0 | 1 | 2>(
     ([0, 1, 2] as Seat[]).filter((s) => s !== hpi && !(revealSol && s === 0)));
   const roleTag = (pid: Seat): SeatChrome => ({
     label: passed ? (
@@ -600,10 +598,6 @@ export function PlayVsAI() {
   });
   const seats = { 0: roleTag(0), 1: roleTag(1), 2: roleTag(2) };
   const legalSet = new Set<number>(state.legal_card_ids ?? []);
-
-  const kontraTag = kLevel > 0
-    ? <span className="ulti-role-tag" style={{ background: "#d23552", color: "#fff", marginLeft: 6 }}>{KONTRA_WORD[kLevel]}</span>
-    : null;
 
   // The talon: 2 cards face-down beside the table during play, flipped up at the end.
   const talonCount = state.talon_count ?? 2;

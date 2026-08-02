@@ -16,6 +16,11 @@ export interface Card {
 export const SUITS: Suit[] = ["acorns", "leaves", "hearts", "bells"];
 export const RANKS: Rank[] = ["7", "8", "9", "lower", "upper", "king", "10", "ace"];
 
+/** The backend's card-id encoding (ulti.card): id = suit_index*8 + rank_index. */
+export function cardFromId(id: number): Card {
+  return { id, suit: SUITS[Math.floor(id / 8)], rank: RANKS[id % 8] };
+}
+
 const SUIT_CHAR: Record<Suit, string> = {
   acorns: "A",
   leaves: "L",
@@ -75,8 +80,4 @@ export function cardLabel(card: Card): string {
 
 export function isPointCard(card: Card): boolean {
   return card.rank === "10" || card.rank === "ace";
-}
-
-export function rankPower(card: Card): number {
-  return RANKS.indexOf(card.rank);
 }

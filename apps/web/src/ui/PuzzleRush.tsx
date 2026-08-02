@@ -6,17 +6,13 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 import { api } from "./api";
 import type { PuzzleState, PuzzleResult } from "./api";
 import type { Card, Rank, Suit } from "./cards";
-import { SUITS, RANKS, SUIT_SYMBOL } from "./cards";
+import { cardFromId, SUIT_SYMBOL } from "./cards";
 import { HandView } from "./CardView";
 
 const RANK_SHORT: Record<Rank, string> = {
   "7": "7", "8": "8", "9": "9", lower: "J", upper: "Q", king: "K", "10": "10", ace: "A",
 };
 const SUIT_HU: Record<Suit, string> = { hearts: "piros", acorns: "makk", leaves: "zöld", bells: "tök" };
-
-function cardFromId(id: number): Card {
-  return { id, suit: SUITS[Math.floor(id / 8)], rank: RANKS[id % 8] };
-}
 
 function Chip({ card }: { card: Card }) {
   return (
