@@ -66,13 +66,14 @@ function agoLabel(idleS: number): string {
   return `${Math.round(idleS / 3600)} órája`;
 }
 
-export function Splash({ loading, error, onNew, onPuzzle, ongoing = [], onResume }: {
+export function Splash({ loading, error, onNew, onPuzzle, ongoing = [], onResume, onDiscard }: {
   loading: boolean;
   error: string | null;
   onNew: () => void;
   onPuzzle: () => void;
   ongoing?: PlayOngoing[];
   onResume?: (gameId: string) => void;
+  onDiscard?: (gameId: string) => void;
 }) {
   return (
     <div className="app betli-hu-splash">
@@ -92,13 +93,19 @@ export function Splash({ loading, error, onNew, onPuzzle, ongoing = [], onResume
             <div className="splash-ongoing">
               <div className="splash-ongoing-title">Folyamatban lévő játékaid</div>
               {ongoing.map(g => (
-                <button key={g.game_id} className="splash-ongoing-item" disabled={loading}
-                        onClick={() => onResume(g.game_id)}>
-                  <span className="splash-ongoing-name">{g.contract ?? "licit zajlik"}</span>
-                  <span className="splash-ongoing-meta">
-                    {PHASE_HU[g.phase] ?? g.phase} · {agoLabel(g.idle_s)}
-                  </span>
-                </button>
+                <div key={g.game_id} className="splash-ongoing-item">
+                  <button className="splash-ongoing-main" disabled={loading}
+                          onClick={() => onResume(g.game_id)}>
+                    <span className="splash-ongoing-name">{g.contract ?? "licit zajlik"}</span>
+                    <span className="splash-ongoing-meta">
+                      {PHASE_HU[g.phase] ?? g.phase} · {agoLabel(g.idle_s)}
+                    </span>
+                  </button>
+                  {onDiscard && (
+                    <button className="splash-ongoing-x" title="Játék törlése" disabled={loading}
+                            onClick={() => onDiscard(g.game_id)}>×</button>
+                  )}
+                </div>
               ))}
             </div>
           )}

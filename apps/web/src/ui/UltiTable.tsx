@@ -154,7 +154,7 @@ function SoloistHand({
       }
     : undefined;
   return (
-    <div>
+    <div className="ulti-bottom-seat">
       <div className="ulti-bubble-anchor" style={{ height: 0, position: "relative" }}>
         {chrome.bubbleNode ?? (chrome.bubble && (
           <div

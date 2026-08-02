@@ -180,6 +180,11 @@ export function PlayVsAI() {
     finally { setLoading(false); }
   }, [resetBubbles]);
 
+  const onDiscardGame = useCallback((gid: string) => {
+    setOngoing((o) => o.filter((g) => g.game_id !== gid));   // optimistic
+    api.playDelete(gid).catch(() => {});
+  }, []);
+
   // Next round rotates who holds the 12 (the opener) — after an all-pass too
   // (milan 2026-08-02).
   const onPlayAgain = useCallback(async (rotate = true) => {
@@ -419,7 +424,7 @@ export function PlayVsAI() {
   if (!state) {
     return <Splash loading={loading} error={error}
                    onNew={onNew} onPuzzle={() => setShowPuzzle(true)}
-                   ongoing={ongoing} onResume={onResume} />;
+                   ongoing={ongoing} onResume={onResume} onDiscard={onDiscardGame} />;
   }
 
   // ── Post-game analysis overlay (god solver + branch exploration) ────────────
