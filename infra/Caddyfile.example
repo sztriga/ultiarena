@@ -14,7 +14,11 @@
     admin off
 }
 
-http://127.0.0.1:8080 {
+# :8080 = match ANY Host (the tunnel forwards Host: ultiarena.hu — a host-qualified
+# address like http://127.0.0.1:8080 would silently match nothing and serve empty
+# 200s); `bind` is what restricts the LISTENER to loopback.
+:8080 {
+    bind 127.0.0.1
     encode gzip
     request_body {
         max_size 64KB
