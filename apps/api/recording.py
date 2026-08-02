@@ -7,6 +7,13 @@ deployed for multiplayer, only THIS module changes (→ Postgres); callers stay 
 and (for AI) the `agent` config. Today the human seat is an anonymous session id and the
 others are the frontier AI. When auth + human-vs-human land, real user_ids just fill in —
 no schema change, and a seat being `human` with a user_id already models a real opponent.
+Until then the human seat carries its client `ip` (from the session's owner), which is
+what distinguishes "who played what" during friends-testing — query it with
+``json_extract(players, '$[<human_seat>].ip')``. Two players behind one NAT share an IP.
+
+**Real games only:** ``should_record(origin)`` is the single gate — in-process drivers
+(golden harness, pytest, tournaments) have no HTTP request behind their sessions, get
+owner "local", and must never write here.
 
 Each row is one finished game with the full transcript (deal + auction + every action +
 kontra + marriages + scores), so a game can be replayed and re-solved offline.
@@ -48,6 +55,12 @@ CREATE INDEX IF NOT EXISTS ix_games_created ON games(created_at);
 CREATE INDEX IF NOT EXISTS ix_games_contract ON games(contract);
 -- Future: CREATE TABLE users(id TEXT PRIMARY KEY, ...); user_ids in players[].user_id reference it.
 """
+
+
+def should_record(origin: str | None) -> bool:
+    """True iff a session belongs to a real client (HTTP request → an owner IP).
+    ``None``/"local" = an in-process driver (tests, harnesses, tournaments) → skip."""
+    return origin is not None and origin != "local"
 
 
 def _db() -> sqlite3.Connection:

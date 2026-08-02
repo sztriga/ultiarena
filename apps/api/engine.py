@@ -7,6 +7,7 @@ dependency graph stays a fan (engine <- flows <- routes), never a cycle.
 
 import time
 import uuid
+from contextlib import contextmanager
 from pathlib import Path
 from threading import RLock
 from typing import Dict, List, Optional
@@ -120,6 +121,7 @@ class Session:
 
     def __init__(self, *, seat: int, seed: int) -> None:
         self.id = uuid.uuid4().hex[:12]
+        self.lock = RLock()             # serializes ALL actions on this one game (see _hold)
         self.last_touch = time.time()   # idle-expiry clock (see _reap)
         self.seat = seat            # the user's real auction seat (0/1/2)
         self.seed = seed
@@ -228,5 +230,19 @@ def _get(game_id: str) -> Session:
         raise HTTPException(status_code=404, detail=f"unknown game_id {game_id}")
     sess.last_touch = time.time()
     return sess
+
+
+@contextmanager
+def _hold(game_id: str):
+    """Look up a session and hold ITS lock for the whole request — every action on one
+    game is serialized (two tabs on the same game_id, a double-fired click racing the
+    check-then-mutate in a route), while different games stay fully parallel.
+
+    Lock order is safe by construction: _sessions_lock is taken only inside _get and
+    RELEASED before sess.lock is acquired; nothing under sess.lock ever takes
+    _sessions_lock or another session's lock."""
+    sess = _get(game_id)
+    with sess.lock:
+        yield sess
 
 

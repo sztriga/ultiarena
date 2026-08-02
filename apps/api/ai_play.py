@@ -184,8 +184,14 @@ def _finish(sess: Session) -> None:
     }
 
     # ── record the finished game for later AI analysis (best-effort; never breaks a game) ──
+    # ONLY games with a real client behind them: in-process drivers (golden harness,
+    # pytest, tournaments) create sessions without an HTTP request → owner "local" →
+    # skipped. Before this gate, test runs buried the real games 121 rows to 14.
+    origin = getattr(sess, "owner_ip", None)
     try:
-        from .recording import record_game
+        from .recording import record_game, should_record
+        if not should_record(origin):
+            return
         record_game({
             "id": sess.id, "created_at": time.time(), "seed": sess.seed,
             "contract": sess.bid_name, "trump": sess.trump,
@@ -194,7 +200,8 @@ def _finish(sess: Session) -> None:
             "seat_gp": seat_gp,
             "players": [                          # seat → identity (user-aware for later auth / human-vs-human)
                 {"seat": s, "kind": "human" if s == sess.seat else "ai",
-                 "user_id": None, "agent": None if s == sess.seat else "frontier"}
+                 "user_id": None, "ip": origin if s == sess.seat else None,
+                 "agent": None if s == sess.seat else "frontier"}
                 for s in range(3)
             ],
             "transcript": {                        # play-index space (0 = soloist); auction is real-seat
