@@ -26,48 +26,30 @@ Sessions live in-memory; restart the server to clear them.
 from __future__ import annotations
 
 
-import os
 import random
-import sys
 import time
-import uuid
-from typing import Dict, List, Optional
+from typing import List, Optional
 
-from ulti.config import apply_deploy_defaults, env_bool, env_float, env_int
-from ulti.bidding.ladder import GPTable, overcalls, contract_name
+from ulti.bidding.ladder import overcalls
 from ulti.bidding.recipe import sol_marriages
-from ulti.bidding.auction import net_bid_fn, PASS_PENALTY
 from ulti.solvers import pis as pis_bridge
-from ulti.scoring.units import UNITS_ORDER as _UNITS_ORDER, \
-    UNIT_OBJECTIVE as _UNIT_OBJ, kontra_units as _kontra_units
+from ulti.scoring.units import kontra_units as _kontra_units  # noqa: F401  (re-export: tests/ulti/test_kontra_units.py)
 from ulti.card import card_from_id, sort_hand
-from fastapi import HTTPException
-
-from .serialize import card_to_dict
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 
-from .limits import guard_new_session  # noqa: E402
-from .engine import (  # noqa: E402,F401  (re-exports: puzzle uses _provider/_SUIT_HU)
-    _GP, _REPO, _SESSION_TTL, _SUIT_HU, _bid_fn, _bid_label, _get,
-    _provider, _reap_idle_sessions, _recipe, _sessions, _sessions_lock, Session,
+from .serialize import card_to_dict
+from .limits import guard_new_session
+from .engine import (
+    Session, _get, _reap_idle_sessions, _recipe, _sessions, _sessions_lock,
 )
-from .auction_flow import (  # noqa: E402
-    _advance_auction, _apply_bid, _human_bundle, _legal_bids, _redeal,
-    _resolve_auction, _setup_play, _weakest_two,
+from .auction_flow import (
+    _advance_auction, _apply_bid, _human_bundle, _resolve_auction, _setup_play,
 )
-from .kontra_flow import (  # noqa: E402
-    _apply_kontra_ai, _available_units, _kontra_dict, _next_kontra_offer,
-    _recompute_k_level, _UNIT_HU,
-)
-from .ai_play import (  # noqa: E402,F401
-    _advance_play, _ai_play_pick, _finish, _mix_equivalent, _record_play,
-    _terit_revealed,
-)
-from . import ai_pool  # noqa: E402
-from .snapshots import (  # noqa: E402
-    _auction_snapshot, _play_hands_dict, _play_snapshot, _snapshot, _trump_snapshot,
-)
+from .kontra_flow import _recompute_k_level, _UNIT_HU
+from .ai_play import _advance_play, _record_play
+from . import ai_pool
+from .snapshots import _snapshot
 
 router = APIRouter()
 
@@ -81,14 +63,15 @@ class NewRequest(BaseModel):
 @router.post("/play/new")
 def play_new(req: NewRequest, request: Request = None) -> dict:
     t0 = time.perf_counter()
-    with _sessions_lock:
-        _reap_idle_sessions()           # cheap O(n) sweep on the rare new-game call
-        ip = guard_new_session(request, _sessions, lambda s: getattr(s, "owner_ip", None))
     rng = random.Random(req.seed)
     seed = req.seed if req.seed is not None else rng.randint(1, 2**31 - 1)
-    sess = Session(seat=req.seat, seed=seed)
-    sess.owner_ip = ip
+    sess = Session(seat=req.seat, seed=seed)      # just the deal — no AI work yet
     with _sessions_lock:
+        _reap_idle_sessions()           # cheap O(n) sweep on the rare new-game call
+        # guard + insert under ONE lock hold — the cap check and the insert must be
+        # atomic or concurrent creates can both pass and overshoot the cap.
+        sess.owner_ip = guard_new_session(
+            request, _sessions, lambda s: getattr(s, "owner_ip", None))
         _sessions[sess.id] = sess
     _advance_auction(sess)
     snap = _snapshot(sess)

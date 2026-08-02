@@ -1,25 +1,20 @@
 """AI card play: exploit soloist (exp31), betli-defense net (exp36), PIMC, the anti-tell mixer, scoring."""
 
 
-import os
 import random
-import sys
 import time
-import uuid
 from typing import List
 
 from ulti.bidding.scorers import _primary_made
 from ulti.solvers import pis as pis_bridge
 from ulti.solvers.blocks import equivalent_moves
 from ulti.scoring.oracle import score as score_oracle
-from ulti.scoring.units import UNITS_ORDER as _UNITS_ORDER, \
-    UNIT_OBJECTIVE as _UNIT_OBJ, kontra_units as _kontra_units
 from ulti.card import card_from_id
 
 from .serialize import card_to_dict
-from .engine import Session, _BETLI_DEF, _EXPLOIT, _MIX_EQUIV, _exp36, _recipe  # noqa: E402
-from . import ai_pool  # noqa: E402
-from .kontra_flow import _apply_kontra_ai, _kontra_dict, _next_kontra_offer  # noqa: E402
+from .engine import Session, _BETLI_DEF, _EXPLOIT, _MIX_EQUIV, _exp36, _recipe
+from . import ai_pool
+from .kontra_flow import _apply_kontra_ai, _kontra_dict, _next_kontra_offer
 
 
 # ── Play ─────────────────────────────────────────────────────────────────────────

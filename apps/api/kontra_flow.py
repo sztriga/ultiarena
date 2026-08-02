@@ -1,19 +1,13 @@
 """In-game kontra: offers, AI decisions (exp27 per-unit rules), levels, the oracle kontra dict."""
 
 
-import os
-import random
-import sys
-import time
-import uuid
 from typing import List
 
 from ulti.bidding.kontra import _sol_ev
-from ulti.scoring.units import UNITS_ORDER as _UNITS_ORDER, \
-    UNIT_OBJECTIVE as _UNIT_OBJ, kontra_units as _kontra_units
+from ulti.scoring.units import UNITS_ORDER as _UNITS_ORDER
 
-from .engine import Session, _recipe  # noqa: E402
-from . import ai_pool  # noqa: E402
+from .engine import Session, _recipe
+from . import ai_pool
 
 
 # ── Kontra (simple contracts only) ──────────────────────────────────────────────

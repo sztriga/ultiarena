@@ -1,11 +1,6 @@
 """Auction state machine + auction->play setup (any seat may open; AI turns resolve synchronously)."""
 
 
-import os
-import random
-import sys
-import time
-import uuid
 from typing import Dict, List, Optional
 
 from ulti.bidding.ladder import overcalls
@@ -15,12 +10,11 @@ from ulti.bidding.scorers import resolve_bidset, _play_weights
 from ulti.bidding.deal import deal_12_10_10
 from ulti.solvers import pis as pis_bridge
 from ulti.solvers import determinize as _det
-from ulti.scoring.units import UNITS_ORDER as _UNITS_ORDER, \
-    UNIT_OBJECTIVE as _UNIT_OBJ, kontra_units as _kontra_units
+from ulti.scoring.units import kontra_units as _kontra_units
 from fastapi import HTTPException
 
-from .engine import Session, _GP, _SUIT_HU, _bid_fn, _bid_label, _provider  # noqa: E402
-from .ai_play import _advance_play  # noqa: E402
+from .engine import Session, _GP, _SUIT_HU, _bid_fn, _bid_label, _provider
+from .ai_play import _advance_play
 
 
 # ── Auction (any seat may open) ─────────────────────────────────────────────────

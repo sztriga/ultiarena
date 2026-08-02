@@ -32,7 +32,15 @@ app.add_middleware(
 
 @app.get("/api/health")
 def health() -> dict:
-    return {"status": "ok"}
+    """Liveness + a glance at load. Exempt from the rate limits (see limits.py), so
+    uptime monitors can poll it freely; exposes only counts, never session data."""
+    from .engine import _sessions as _play_sessions
+    from .puzzle import _sessions as _puzzle_sessions
+    return {
+        "status": "ok",
+        "play_sessions": len(_play_sessions),
+        "puzzle_sessions": len(_puzzle_sessions),
+    }
 
 
 # Abuse guardrails (see apps/api/limits.py) — the site is publicly reachable with no

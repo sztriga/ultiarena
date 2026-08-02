@@ -16,6 +16,8 @@ from fastapi import HTTPException
 # The frontier bidder reads its knobs at import time — apply the deployment profile
 # (FLOOR/DEBIAS_PCTL/DURI_TERIT_MULT/KONTRA, one table in ulti.config) BEFORE the
 # bidding imports below, so the library sees the deployed defaults; explicit env wins.
+# Champion config re-tuned 2026-07-22 on the FIXED bidder (post the auction.py generator
+# bug that unlocked non-piros contracts); true head-to-head +0.40 GP/game (exp30/exp32).
 from ulti.config import apply_deploy_defaults, env_bool, env_float, env_int
 apply_deploy_defaults()
 
@@ -24,31 +26,11 @@ from ulti.bidding.auction import net_bid_fn  # noqa: E402
 from ulti.bidding.provider import NetProvider  # noqa: E402
 from ulti.bidding.deal import deal_12_10_10  # noqa: E402
 try:
-    from ulti.betli import defense as _exp36  # noqa: E402  (exp36 betli-defense net)
+    from ulti.betli import defense as _exp36  # noqa: E402  (exp36 betli-defense net; models/ulti/betli/betli_defense.pt)
 except Exception:  # pragma: no cover
     _exp36 = None
 
 _REPO = Path(__file__).resolve().parents[2]
-
-# The frontier bidder reads these at import time — the champion config.
-# Re-tuned 2026-07-22 on the FIXED bidder (post the auction.py generator bug fix that unlocked
-# non-piros contracts); true head-to-head +0.40 GP/game vs the old 0.70/0.80/1.0 (exp30/exp32).
-# Deployment profile (FLOOR/DEBIAS_PCTL/DURI_TERIT_MULT/KONTRA) — one table in
-# ulti.config, applied BEFORE the bidding imports below so the library reads the
-from ulti.config import apply_deploy_defaults, env_bool, env_float, env_int  # noqa: E402
-apply_deploy_defaults()  # deployed defaults; explicit env still wins
-
-from ulti.bidding.ladder import GPTable, contract_name
-from ulti.bidding.auction import net_bid_fn
-from ulti.bidding.provider import NetProvider  # noqa: E402
-from ulti.bidding.deal import deal_12_10_10  # noqa: E402
-try:
-    from ulti.betli import defense as _exp36  # noqa: E402  (exp36 betli-defense net; models/betli/betli_defense.pt)
-except Exception:  # pragma: no cover
-    _exp36 = None
-from ulti.scoring.units import UNITS_ORDER as _UNITS_ORDER, \
-    UNIT_OBJECTIVE as _UNIT_OBJ, kontra_units as _kontra_units  # noqa: E402
-
 
 
 _PIMC_N = env_int("PLAY_PIMC_N", 16)

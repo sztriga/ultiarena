@@ -18,7 +18,7 @@ live in ulti.config; set RATE_LIMIT_RPM=0 to disable the whole layer for local w
 from __future__ import annotations
 
 import time
-from collections import defaultdict, deque
+from collections import deque
 from threading import RLock
 from typing import Deque, Dict, Optional
 
@@ -35,9 +35,11 @@ MAX_SESSIONS_TOTAL = env_int("MAX_SESSIONS_TOTAL", 200)
 MAX_SESSIONS_PER_IP = env_int("MAX_SESSIONS_PER_IP", 12)
 
 _WINDOW = 60.0
+_SWEEP_EVERY = 300.0      # cadence of the stale-IP sweep (amortized into check_rate)
 _lock = RLock()
-_hits: Dict[str, Deque[float]] = defaultdict(deque)
-_inflight: Dict[str, int] = defaultdict(int)
+_hits: Dict[str, Deque[float]] = {}
+_inflight: Dict[str, int] = {}
+_last_sweep = 0.0
 
 # Requests that make the AI think — these are the ones worth metering hard.
 _HEAVY = ("/api/play/move", "/api/play/new", "/api/play/bid", "/api/play/pass",
@@ -67,13 +69,32 @@ def _prune(dq: Deque[float], now: float) -> None:
         dq.popleft()
 
 
+def _sweep(now: float) -> None:
+    """Drop IPs that went quiet, so the maps stay bounded by RECENT visitors, not by
+    every address ever seen. Called under _lock; amortized to once per _SWEEP_EVERY."""
+    global _last_sweep
+    if now - _last_sweep < _SWEEP_EVERY:
+        return
+    _last_sweep = now
+    for ip in list(_hits):
+        _prune(_hits[ip], now)
+        if not _hits[ip] and _inflight.get(ip, 0) <= 0:
+            del _hits[ip]
+    for ip in list(_inflight):
+        if _inflight[ip] <= 0:
+            del _inflight[ip]
+
+
 def check_rate(ip: str) -> bool:
     """True if this request is within the per-IP window."""
     if RATE_LIMIT_RPM <= 0:
         return True
     now = time.time()
     with _lock:
-        dq = _hits[ip]
+        _sweep(now)
+        dq = _hits.get(ip)
+        if dq is None:
+            dq = _hits[ip] = deque()
         _prune(dq, now)
         if len(dq) >= RATE_LIMIT_RPM:
             return False
@@ -96,24 +117,34 @@ async def limit_middleware(request: Request, call_next):
     heavy = any(path.startswith(h) for h in _HEAVY)
     if heavy:
         with _lock:
-            if _inflight[ip] >= MAX_INFLIGHT_PER_IP:
+            if _inflight.get(ip, 0) >= MAX_INFLIGHT_PER_IP:
                 return JSONResponse(
                     status_code=429,
                     content={"detail": "Egyszerre túl sok játék — várd meg az előzőt."},
                     headers={"Retry-After": "5"})
-            _inflight[ip] += 1
+            _inflight[ip] = _inflight.get(ip, 0) + 1
     try:
         return await call_next(request)
     finally:
+        # Runs on success, exception AND client-disconnect cancellation — the counter
+        # can never leak. Zeroed entries are dropped so the map tracks only live work.
         if heavy:
             with _lock:
-                _inflight[ip] = max(0, _inflight[ip] - 1)
+                n = _inflight.get(ip, 1) - 1
+                if n <= 0:
+                    _inflight.pop(ip, None)
+                else:
+                    _inflight[ip] = n
 
 
 def guard_new_session(request: Optional[Request], sessions: dict, owner_of,
                       on_evict=None) -> str:
     """Called before creating a game/puzzle; returns the owning IP so the caller can
     tag the new session.
+
+    CONTRACT: the caller must hold its sessions lock across guard + insert (one
+    critical section), otherwise two concurrent creates can both pass the cap check
+    and land the store above the cap.
 
     Per-IP cap EVICTS rather than refuses: a real player clicking "Új játék" a few
     times, or reloading the tab, would otherwise be locked out for hours by their own

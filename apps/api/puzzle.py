@@ -18,20 +18,16 @@ from __future__ import annotations
 
 import itertools
 import random
-import sys
 import time
 import uuid
 from collections import deque
-from pathlib import Path
 from threading import RLock, Thread
 from typing import Dict, List, Optional
 
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 
-# play.py has already put the exp dirs on sys.path; import it first so its side effects run,
-# then reuse its net singleton + Hungarian suit map.
-from .play import _provider, _SUIT_HU  # noqa: E402
+from .engine import _provider, _SUIT_HU  # shared net singleton + Hungarian suit map
 from ulti.card import sort_hand         # noqa: E402
 from ulti.config import env_int         # noqa: E402
 from .serialize import card_to_dict     # noqa: E402
@@ -330,16 +326,17 @@ class SolveRequest(BaseModel):
 def puzzle_new(request: Request = None) -> dict:
     # prune finished/stale sessions (keep memory bounded), then cap: each puzzle
     # session owns a background filler THREAD, so unbounded sessions = unbounded threads.
+    # Guard + insert under ONE lock hold (atomic cap check); the constructor only
+    # starts the filler thread, so holding the lock across it is cheap.
     with _sessions_lock:
         for gid in [g for g, s in _sessions.items() if s.expired()]:
             _sessions[gid].stop(); _sessions.pop(gid, None)
         ip = guard_new_session(request, _sessions, lambda s: getattr(s, "owner_ip", None),
                                on_evict=lambda s: s.stop())
-    sess = PuzzleSession()
-    sess.owner_ip = ip
-    sess.start_first()                 # blocks on first-ever net load; then the queue is warm
-    with _sessions_lock:
+        sess = PuzzleSession()
+        sess.owner_ip = ip
         _sessions[sess.id] = sess
+    sess.start_first()                 # blocks on first-ever net load; then the queue is warm
     return sess.snapshot()
 
 

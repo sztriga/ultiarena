@@ -1,13 +1,32 @@
-# UltiArena behind ultiarena.hu — Caddy terminates TLS (automatic Let's Encrypt)
-# and proxies to the app (apps/serve.sh on :8000).
+# UltiArena behind ultiarena.hu via Cloudflare Tunnel — copy to infra/Caddyfile
+# (the real file is gitignored so local tweaks never land in git).
 #
-# TESTING GATE: the whole site sits behind HTTP Basic Auth — milan + 2 friends
-# share one login. Drop the basic_auth block to go public.
-# Run: caddy run --config infra/Caddyfile   (ports 80+443 forwarded to this Mac)
-ultiarena.hu, www.ultiarena.hu {
+# Chain: internet → Cloudflare (TLS) → cloudflared tunnel → 127.0.0.1:8080 (Caddy)
+#        → 127.0.0.1:8000 (apps/serve.sh).
+#
+# LOOPBACK ONLY: the app's per-IP abuse limits trust CF-Connecting-IP, which is only
+# safe while the tunnel is the sole way in — never bind this (or the app) to 0.0.0.0.
+#
+# To gate the whole site behind a shared password, uncomment basic_auth and paste a
+# hash from: caddy hash-password
+{
+    auto_https off
+    admin off
+}
+
+http://127.0.0.1:8080 {
     encode gzip
-    basic_auth {
-        ulti {PASTE_HASH_FROM: caddy hash-password}
+    request_body {
+        max_size 64KB
     }
+    header {
+        X-Content-Type-Options nosniff
+        X-Frame-Options DENY
+        Referrer-Policy strict-origin-when-cross-origin
+        -Server
+    }
+    # basic_auth {
+    #     ulti {PASTE_HASH_FROM: caddy hash-password}
+    # }
     reverse_proxy 127.0.0.1:8000
 }

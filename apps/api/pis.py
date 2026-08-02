@@ -18,16 +18,13 @@ contract dropdown later is just exposing it through the request schema.
 """
 from __future__ import annotations
 
-import time
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
-from ulti.eval.dojo import deal_betli
 from ulti.solvers import pis as pis_bridge
-from ulti.solvers import pimc as pimc_player
-from ulti.card import Card, card_from_id
+from ulti.card import card_from_id
 
 from . import ai_pool
 from .serialize import card_to_dict

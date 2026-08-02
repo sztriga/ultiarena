@@ -1,24 +1,17 @@
 """JSON snapshots of a Session for the web UI (auction / kontra / play / result views)."""
 
 
-import os
-import random
-import sys
-import time
-import uuid
 from typing import List, Optional
 
 from ulti.bidding.ladder import overcalls
 from ulti.solvers import pis as pis_bridge
-from ulti.scoring.units import UNITS_ORDER as _UNITS_ORDER, \
-    UNIT_OBJECTIVE as _UNIT_OBJ, kontra_units as _kontra_units
 from ulti.card import sort_hand
 
 from .serialize import card_to_dict
-from .engine import Session, _bid_label  # noqa: E402
-from .auction_flow import _legal_bids  # noqa: E402
-from .kontra_flow import _UNIT_HU  # noqa: E402
-from .ai_play import _terit_revealed  # noqa: E402
+from .engine import Session, _bid_label
+from .auction_flow import _legal_bids
+from .kontra_flow import _UNIT_HU
+from .ai_play import _terit_revealed
 
 
 def _auction_snapshot(sess: Session) -> dict:

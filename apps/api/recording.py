@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
+import sys
 from pathlib import Path
 from threading import RLock
 
@@ -54,6 +55,11 @@ def _db() -> sqlite3.Connection:
     if _conn is None:
         Path(_DB_PATH).parent.mkdir(parents=True, exist_ok=True)
         _conn = sqlite3.connect(_DB_PATH, check_same_thread=False)
+        # WAL: analysis tooling reads this file WHILE the server writes — under the
+        # default rollback journal a concurrent reader gets "database is locked".
+        _conn.execute("PRAGMA journal_mode=WAL")
+        _conn.execute("PRAGMA busy_timeout=5000")
+        _conn.execute("PRAGMA synchronous=NORMAL")
         _conn.executescript(_SCHEMA)
         _conn.commit()
     return _conn
@@ -78,5 +84,8 @@ def record_game(rec: dict) -> None:
                 ),
             )
             db.commit()
-    except Exception:
-        pass   # recording must never break a game
+    except Exception as e:
+        # Never break a game over logging — but a data-collection deployment must not
+        # fail SILENTLY either: one stderr line makes a dead recorder findable.
+        print(f"[recording] game {rec.get('id', '?')} NOT recorded: {e!r}",
+              file=sys.stderr, flush=True)

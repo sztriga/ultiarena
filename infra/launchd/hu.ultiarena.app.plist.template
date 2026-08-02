@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>hu.ultiarena.app</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/zsh</string>
+        <string>__REPO__/apps/serve.sh</string>
+    </array>
+    <key>WorkingDirectory</key>
+    <string>__REPO__</string>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <!-- Crash-restarts must not npm-build in a loop; deploys build explicitly
+             (services.sh deploy) before kickstarting this job. -->
+        <key>SKIP_BUILD</key>
+        <string>1</string>
+        <key>PATH</key>
+        <string>__PYDIR__:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+    </dict>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+    <key>ThrottleInterval</key>
+    <integer>10</integer>
+    <key>StandardOutPath</key>
+    <string>__REPO__/data/logs/app.log</string>
+    <key>StandardErrorPath</key>
+    <string>__REPO__/data/logs/app.log</string>
+</dict>
+</plist>
