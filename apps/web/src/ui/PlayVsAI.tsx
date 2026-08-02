@@ -435,85 +435,6 @@ export function PlayVsAI() {
   }
 
 
-  // ── All-passed — the TABLE STAYS exactly as it was at the third pass (your
-  // cards, the face-down opponents, the talon); only the panel under the trick
-  // area swaps to the result box (milan 2026-08-02: the playing area must not
-  // vanish). Következő rotates the 12-holder like after any round. ──
-  if (state.phase === "passed") {
-    const r = state.result ?? null;
-    const meSeat = state.seat as Seat;
-    const handCards = (state.own_hand ?? []) as Card[];
-    const pHands: [Card[], Card[], Card[]] = [[], [], []];
-    for (let s = 0 as Seat; s <= 2; s = (s + 1) as Seat) {
-      pHands[s] = s === meSeat ? handCards : placeholderHand(10, s * 100);
-    }
-    const pHidden = new Set<0 | 1 | 2>(([0, 1, 2] as Seat[]).filter((s) => s !== meSeat));
-    const pSeats = {
-      0: { label: <>P0{meSeat === 0 ? " (te)" : ""}</> },
-      1: { label: <>P1{meSeat === 1 ? " (te)" : ""}</> },
-      2: { label: <>P2{meSeat === 2 ? " (te)" : ""}</> },
-    };
-    return (
-      <div className="app betli-hu-game play-vs-ai">
-        <main className="main">
-          <section>
-            {error && <div className="error">{error}</div>}
-            <UltiTable
-              hands={pHands}
-              seats={pSeats}
-              currentTrick={[]}
-              activePlayer={null}
-              legalIds={null}
-              seatNames={{ 0: "P0", 1: "P1", 2: "P2" }}
-              hiddenSeats={pHidden}
-              bottomSeat={meSeat}
-              hideTrick
-              belowTrick={<div className="play-passed-panel">{r ? renderResult(r, false) : null}</div>}
-            />
-          </section>
-        </main>
-
-        {showCard && (
-          <div className="play-modal-backdrop" onClick={() => setShowCard(false)}>
-            <div className="play-modal" onClick={(e) => e.stopPropagation()}>
-              <div className="play-modal-head">
-                <span>Pontszámok ({rounds.length} kör)</span>
-                <button className="btn" onClick={() => setShowCard(false)}>×</button>
-              </div>
-              <table className="play-sc-table">
-                <thead><tr><th>#</th><th>Játék</th><th>Te</th><th>Gép 1</th><th>Gép 2</th></tr></thead>
-                <tbody>
-                  {rounds.map((rr, i) => (
-                    <tr key={i}>
-                      <td>{i + 1}</td>
-                      <td>{rr.contract}{(rr.silents?.length ?? 0) > 0 &&
-                        <span className="play-sc-silent"> · {rr.silents!.join(", ")}</span>}</td>
-                      {([0, 1, 2] as const).map((s) => (
-                        <td key={s} className={`${rr.gp[s] > 0 ? "play-sc-pos" : rr.gp[s] < 0 ? "play-sc-neg" : ""} ${s === 0 ? "play-sc-you" : ""}`}>
-                          {rr.gp[s] > 0 ? "+" : ""}{rr.gp[s]}
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-                <tfoot>
-                  <tr>
-                    <td></td><td>Összesen</td>
-                    {([0, 1, 2] as const).map((s) => (
-                      <td key={s} className={`${matchGp[s] > 0 ? "play-sc-pos" : matchGp[s] < 0 ? "play-sc-neg" : ""} ${s === 0 ? "play-sc-you" : ""}`}>
-                        {matchGp[s] > 0 ? "+" : ""}{matchGp[s]}
-                      </td>
-                    ))}
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  }
-
   // ── Trump select — you won a plain colored game; declare the suit before play ──
   if (state.phase === "trump_select") {
     const opts = state.trump_options ?? ["acorns", "leaves", "bells"];
@@ -628,9 +549,12 @@ export function PlayVsAI() {
     );
   }
 
-  // ── Play / Kontra / Done ────────────────────────────────────────────────────
-  const hpi = (state.human_play_index ?? 0) as Seat;
-  const terminal = !!state.terminal;
+  // ── Play / Kontra / Done / Passed — ONE shell for all of them. A passed deal
+  // is just a terminal state with no play data (milan 2026-08-02: never a
+  // separate screen); the result panel renders mid-field for every ending. ──
+  const passed = state.phase === "passed";
+  const hpi = (passed ? state.seat : (state.human_play_index ?? 0)) as Seat;
+  const terminal = !!state.terminal || passed;
   const result = state.result ?? null;
   const kontra = state.kontra ?? null;
   const inKontra = state.phase === "kontra" && !!kontra?.is_human_turn;
@@ -641,7 +565,10 @@ export function PlayVsAI() {
   const revealSol = !!state.reveal_soloist;
   const tableHands: [Card[], Card[], Card[]] = [[], [], []];
   for (let s = 0 as Seat; s <= 2; s = (s + 1) as Seat) {
-    if (s === hpi || (revealSol && s === 0)) {
+    if (passed) {
+      // no play data — your auction hand as it stood at the third pass, backs elsewhere
+      tableHands[s] = s === hpi ? ((state.own_hand ?? []) as Card[]) : placeholderHand(10, s * 100);
+    } else if (s === hpi || (revealSol && s === 0)) {
       tableHands[s] = (state.hands?.[s] ?? []).filter((c): c is Card => c !== null);
     } else {
       tableHands[s] = placeholderHand(state.hand_sizes?.[s] ?? 0, s * 100);
@@ -650,7 +577,13 @@ export function PlayVsAI() {
   const hiddenSeats = new Set<0 | 1 | 2>(
     ([0, 1, 2] as Seat[]).filter((s) => s !== hpi && !(revealSol && s === 0)));
   const roleTag = (pid: Seat): SeatChrome => ({
-    label: (
+    label: passed ? (
+      // a passed deal has no soloist/defender roles — neutral seat labels
+      <>
+        P{pid}
+        {pid === hpi && <span className="ulti-role-tag" style={{ background: "#3a6", color: "#fff" }}>te</span>}
+      </>
+    ) : (
       <>
         <span className={`ulti-role-tag ${pid === 0 ? "ulti-role-soloist" : "ulti-role-defender"}`}>
           {pid === 0 ? "Játékos" : "Védő"}
@@ -681,23 +614,12 @@ export function PlayVsAI() {
     </div>
   );
 
-  // The side box above the Játékmenet log: the end-of-hand result lives here;
-  // the kontra decision pops up centered instead (kontraModal below).
-  const sideBox = (
-    <div className="play-side-box">
-      {terminal && result ? (
-        renderResult(result, true)
-      ) : (
-        <div className="play-side-idle">
-          {inKontra
-            ? "Kontra döntés…"
-            : state.phase === "play" && !terminal
-              ? (animating || loading ? "A gép lép…" : isMyTurn ? "Te jössz" : "A gép lép…")
-              : "Ulti vs AI"}
-        </div>
-      )}
-    </div>
-  );
+  // End-of-hand result — MID-FIELD for every ending (played or passed): at
+  // terminal the trick slots are useless, so the result panel takes their place.
+  // No sidebar result slot (milan 2026-08-02).
+  const resultPanel = terminal && result ? (
+    <div className="play-result-panel">{renderResult(result, !passed)}</div>
+  ) : undefined;
 
   // The kontra decision pops up centered over the PLAYING FIELD (not the whole
   // screen) — the backdrop is absolute inside play-col-main. Not dismissable by
@@ -726,10 +648,12 @@ export function PlayVsAI() {
             activePlayer={terminal || state.phase === "kontra" ? null : (state.current_player ?? null)}
             legalIds={isMyTurn ? legalSet : null}
             onCardClick={isMyTurn ? onPlayCard : undefined}
-            seatNames={{ 0: "Játékos", 1: "Védő", 2: "Védő" }}
+            seatNames={passed ? { 0: "P0", 1: "P1", 2: "P2" } : { 0: "Játékos", 1: "Védő", 2: "Védő" }}
             hiddenSeats={hiddenSeats}
             bottomSeat={hpi}
             aboveDefenders={talonNode}
+            hideTrick={terminal}
+            belowTrick={resultPanel}
           />
 
           {/* Your captured (won) tricks — face down, in groups of 3. Click to reveal. */}
@@ -756,7 +680,7 @@ export function PlayVsAI() {
           <div className="panel play-info-panel">
             <div className="play-info-contract">
               <span className={`play-badge ${state.trump === "hearts" ? "is-piros" : ""} ${(state.contract ?? "").includes("betli") ? "is-betli" : ""}`}>
-                {state.contract}{state.trump && <> · {TRUMP_LABEL(state.trump)}</>}
+                {state.contract ?? result?.contract}{state.trump && <> · {TRUMP_LABEL(state.trump)}</>}
                 {kLevel > 0 && <span className="play-badge-kontra"> · {KONTRA_WORD[kLevel]}</span>}
               </span>
               {state.contract_value != null && <span className="play-badge-value">{state.contract_value}p</span>}
@@ -786,7 +710,6 @@ export function PlayVsAI() {
               );
             })()}
           </div>
-          {sideBox}
           <div className="panel betli-hu-log-panel">
             <div className="panel-title">Játékmenet</div>
             <div className="betli-hu-log-scroll play-log">
