@@ -58,6 +58,9 @@ router = APIRouter()
 class NewRequest(BaseModel):
     seat: int = Field(..., ge=0, le=2)
     seed: Optional[int] = None
+    # Anonymous browser identity (localStorage uuid) — lists/resumes "your" games and
+    # becomes the user mapping when real accounts land. NOT trusted for limits.
+    device_id: Optional[str] = Field(None, pattern=r"^[0-9a-fA-F-]{8,64}$")
 
 
 @router.post("/play/new")
@@ -66,6 +69,7 @@ def play_new(req: NewRequest, request: Request = None) -> dict:
     rng = random.Random(req.seed)
     seed = req.seed if req.seed is not None else rng.randint(1, 2**31 - 1)
     sess = Session(seat=req.seat, seed=seed)      # just the deal — no AI work yet
+    sess.device_id = req.device_id
     with _sessions_lock:
         _reap_idle_sessions()           # cheap O(n) sweep on the rare new-game call
         # guard + insert under ONE lock hold — the cap check and the insert must be
@@ -379,6 +383,28 @@ class StateRequest(BaseModel):
 def play_state(req: StateRequest) -> dict:
     with _hold(req.game_id) as sess:
         return _snapshot(sess)
+
+
+class MineRequest(BaseModel):
+    device_id: str = Field(..., pattern=r"^[0-9a-fA-F-]{8,64}$")
+
+
+@router.post("/play/mine")
+def play_mine(req: MineRequest) -> dict:
+    """This browser's live games (newest first), so the splash can offer resume.
+    Listing by device_id leaks nothing across players: the id is a uuid the client
+    generated for itself, and game ids only ever go to whoever created them."""
+    now = time.time()
+    with _sessions_lock:
+        mine = [s for s in _sessions.values()
+                if getattr(s, "device_id", None) == req.device_id]
+    mine.sort(key=lambda s: s.last_touch, reverse=True)
+    return {"games": [{
+        "game_id": s.id, "phase": s.phase, "seat": s.seat,
+        "contract": s.bid_name,               # null until the auction resolves
+        "trump": s.trump,
+        "idle_s": max(0, round(now - s.last_touch)),
+    } for s in mine]}
 
 
 @router.delete("/play/session/{game_id}")

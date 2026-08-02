@@ -3,7 +3,7 @@
 // originals (pinned by the UI golden snapshots).
 import type React from "react";
 
-import type { PlayAnalysis, PlayLegalBid, PlayResult, PlayState } from "./api";
+import type { PlayAnalysis, PlayLegalBid, PlayOngoing, PlayResult, PlayState } from "./api";
 import type { Card } from "./cards";
 
 type Seat = 0 | 1 | 2;
@@ -58,11 +58,24 @@ export function ResultPanel({ r, withAnalysis, loading, analysisLoading, hasRoun
   );
 }
 
-export function Splash({ loading, error, onNew, onPuzzle }: {
+const PHASE_HU: Record<string, string> = {
+  bid: "licit", trump_select: "aduválasztás", kontra: "kontra",
+  play: "játszma", done: "befejezett",
+};
+
+function agoLabel(idleS: number): string {
+  if (idleS < 60) return "az előbb";
+  if (idleS < 3600) return `${Math.round(idleS / 60)} perce`;
+  return `${Math.round(idleS / 3600)} órája`;
+}
+
+export function Splash({ loading, error, onNew, onPuzzle, ongoing = [], onResume }: {
   loading: boolean;
   error: string | null;
   onNew: () => void;
   onPuzzle: () => void;
+  ongoing?: PlayOngoing[];
+  onResume?: (gameId: string) => void;
 }) {
   return (
     <div className="app betli-hu-splash">
@@ -78,6 +91,20 @@ export function Splash({ loading, error, onNew, onPuzzle }: {
               Villámtalon
             </button>
           </div>
+          {ongoing.length > 0 && onResume && (
+            <div className="splash-ongoing">
+              <div className="splash-ongoing-title">Folyamatban lévő játékaid</div>
+              {ongoing.map(g => (
+                <button key={g.game_id} className="splash-ongoing-item" disabled={loading}
+                        onClick={() => onResume(g.game_id)}>
+                  <span className="splash-ongoing-name">{g.contract ?? "licit zajlik"}</span>
+                  <span className="splash-ongoing-meta">
+                    {PHASE_HU[g.phase] ?? g.phase} · {agoLabel(g.idle_s)}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
           {error && <div className="error" style={{ marginTop: 14, maxWidth: 480, margin: "14px auto 0" }}>{error}</div>}
         </section>
       </main>

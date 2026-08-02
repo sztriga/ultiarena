@@ -218,9 +218,19 @@ export interface PlayAnalysis {
   analysis_ms:       number;
 }
 
-export interface PlayNewRequest { seat: 0 | 1 | 2; seed?: number; }
+export interface PlayNewRequest { seat: 0 | 1 | 2; seed?: number; device_id?: string; }
 export interface PlayBidRequest {
   game_id: string; rung_index: number; bid_index: number; trump: string | null; discard_ids: number[];
+}
+
+/** One live game of this browser, as listed on the splash (resume). */
+export interface PlayOngoing {
+  game_id: string;
+  phase: string;                 // bid | trump_select | kontra | play | done
+  seat: number;
+  contract: string | null;       // null until the auction resolves
+  trump: string | null;
+  idle_s: number;
 }
 
 // ── Training jobs ───────────────────────────────────────────────────────────
@@ -270,6 +280,7 @@ export const api = {
   playAnalysis: (req: { game_id: string }) => http<PlayAnalysis>("POST", "/play/analysis", req),
   playMove:   (req: { game_id: string; card_id: number }) => http<PlayState>("POST", "/play/move", req),
   playState:  (game_id: string)                            => http<PlayState>("POST", "/play/state", { game_id }),
+  playMine:   (device_id: string)                          => http<{ games: PlayOngoing[] }>("POST", "/play/mine", { device_id }),
   playDelete: (game_id: string)                            => http<{ deleted: boolean }>("DELETE", `/play/session/${game_id}`),
   puzzleNew:   ()                                            => http<PuzzleState>("POST", "/puzzle/new"),
   puzzleSolve: (req: { game_id: string; discard_ids: number[] }) => http<PuzzleState>("POST", "/puzzle/solve", req),

@@ -38,6 +38,9 @@ export function makeFixtureApi() {
     playPickup: async () => next("/play/pickup"),
     playTrump: async () => next("/play/trump"),
     playState: async () => next("/play/state"),
+    // Out-of-band like playDelete: the splash lists resumable games on mount; an
+    // empty list keeps the recorded endpoint sequence untouched.
+    playMine: async () => ({ games: [] }),
     playDelete: async () => ({ deleted: true }),
     pisExplore: async () => { throw new Error("pisExplore not in this fixture"); },
     puzzleNew: async () => puzzleFixture,

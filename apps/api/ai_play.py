@@ -201,6 +201,7 @@ def _finish(sess: Session) -> None:
             "players": [                          # seat → identity (user-aware for later auth / human-vs-human)
                 {"seat": s, "kind": "human" if s == sess.seat else "ai",
                  "user_id": None, "ip": origin if s == sess.seat else None,
+                 "device": getattr(sess, "device_id", None) if s == sess.seat else None,
                  "agent": None if s == sess.seat else "frontier"}
                 for s in range(3)
             ],

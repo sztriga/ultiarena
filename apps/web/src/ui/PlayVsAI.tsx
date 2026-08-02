@@ -9,7 +9,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
-import { api, type PlayState, type PlayLegalBid, type PlayAnalysis, type PlayResult } from "./api";
+import { api, type PlayState, type PlayLegalBid, type PlayAnalysis, type PlayOngoing, type PlayResult } from "./api";
+import { deviceId } from "./device";
 import type { Card, Suit, Rank } from "./cards";
 import { SUIT_HUN, SUIT_SYMBOL } from "./cards";
 import { CardBack, CardView } from "./CardView";
@@ -34,6 +35,7 @@ export function PlayVsAI() {
   const [pending, setPending] = useState<PlayState | null>(null);   // animation target
   const [loading, setLoading] = useState(false);
   const [error,   setError]   = useState<string | null>(null);
+  const [ongoing, setOngoing] = useState<PlayOngoing[]>([]);        // this browser's live games (splash resume)
 
   const [selPos,   setSelPos]   = useState<number | null>(null);   // index into legal_bids
   const [selTrump, setSelTrump] = useState<string | null>(null);
@@ -147,12 +149,29 @@ export function PlayVsAI() {
     return auction.legal_bids[selPos] ?? null;
   }, [auction, selPos]);
 
+  // Splash: list this browser's live games so an accidentally closed tab can resume.
+  useEffect(() => {
+    if (state !== null) return;
+    let alive = true;
+    api.playMine(deviceId())
+      .then(r => { if (alive) setOngoing(r.games); })
+      .catch(() => { if (alive) setOngoing([]); });
+    return () => { alive = false; };
+  }, [state]);
+
   const onNew = useCallback(async () => {
     setLoading(true); setError(null); setPending(null); resetBubbles();
     try {
       // You always open the first deal as the 12-card holder (seat 0).
-      setState(await api.playNew({ seat: 0, seed: undefined }));
+      setState(await api.playNew({ seat: 0, seed: undefined, device_id: deviceId() }));
     } catch (e) { setError(String(e)); setState(null); }
+    finally { setLoading(false); }
+  }, [resetBubbles]);
+
+  const onResume = useCallback(async (gid: string) => {
+    setLoading(true); setError(null); setPending(null); resetBubbles();
+    try { setState(await api.playState(gid)); }
+    catch (e) { setError(String(e)); setState(null); }
     finally { setLoading(false); }
   }, [resetBubbles]);
 
@@ -163,7 +182,7 @@ export function PlayVsAI() {
     const next = (rotate ? (state.seat + 1) % 3 : state.seat) as Seat;
     const old = state.game_id;
     setLoading(true); setError(null); setPending(null); resetBubbles();
-    try { setState(await api.playNew({ seat: next })); api.playDelete(old).catch(() => {}); }
+    try { setState(await api.playNew({ seat: next, device_id: deviceId() })); api.playDelete(old).catch(() => {}); }
     catch (e) { setError(String(e)); }
     finally { setLoading(false); }
   }, [state, resetBubbles]);
@@ -394,7 +413,8 @@ export function PlayVsAI() {
 
   if (!state) {
     return <Splash loading={loading} error={error}
-                   onNew={onNew} onPuzzle={() => setShowPuzzle(true)} />;
+                   onNew={onNew} onPuzzle={() => setShowPuzzle(true)}
+                   ongoing={ongoing} onResume={onResume} />;
   }
 
   // ── Post-game analysis overlay (god solver + branch exploration) ────────────

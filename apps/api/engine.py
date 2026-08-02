@@ -123,6 +123,11 @@ class Session:
         self.id = uuid.uuid4().hex[:12]
         self.lock = RLock()             # serializes ALL actions on this one game (see _hold)
         self.last_touch = time.time()   # idle-expiry clock (see _reap)
+        # Identity vs abuse-control are SEPARATE axes: device_id is a client-generated
+        # uuid (localStorage) = "whose game is this" — it lists/resumes games and will
+        # map onto a real user account when auth lands. owner_ip (set by the route) is
+        # what the caps key on, because a client can mint device ids at will.
+        self.device_id: Optional[str] = None
         self.seat = seat            # the user's real auction seat (0/1/2)
         self.seed = seed
         self.redeals = 0            # dead-deal (all-pass) re-deals in this session

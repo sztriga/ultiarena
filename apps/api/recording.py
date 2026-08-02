@@ -7,9 +7,10 @@ deployed for multiplayer, only THIS module changes (→ Postgres); callers stay 
 and (for AI) the `agent` config. Today the human seat is an anonymous session id and the
 others are the frontier AI. When auth + human-vs-human land, real user_ids just fill in —
 no schema change, and a seat being `human` with a user_id already models a real opponent.
-Until then the human seat carries its client `ip` (from the session's owner), which is
-what distinguishes "who played what" during friends-testing — query it with
-``json_extract(players, '$[<human_seat>].ip')``. Two players behind one NAT share an IP.
+Until then the human seat carries its client `ip` (from the session's owner) and its
+`device` (the browser's localStorage uuid) — "who played what" during friends-testing
+is ``json_extract(players, '$[<human_seat>].device')``, with ip as the fallback for
+old rows/clients. Two players behind one NAT share an ip but never a device.
 
 **Real games only:** ``should_record(origin)`` is the single gate — in-process drivers
 (golden harness, pytest, tournaments) have no HTTP request behind their sessions, get

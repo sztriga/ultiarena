@@ -543,6 +543,25 @@ html, body, #root {
   border: 1px solid #3f5a7d;
   font-weight: 600;
 }
+/* splash: this browser's live games, resumable (device-id listed) */
+.splash-ongoing {
+  width: 260px; margin: 26px auto 0;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.splash-ongoing-title {
+  font-size: 12px; font-weight: 600; letter-spacing: 0.06em;
+  text-transform: uppercase; color: #7d92a8; margin-bottom: 2px;
+}
+.splash-ongoing-item {
+  display: flex; justify-content: space-between; align-items: baseline; gap: 12px;
+  padding: 9px 14px; border-radius: 8px; cursor: pointer;
+  background: transparent; border: 1px solid #33475f;
+  color: #c8d6e5; font: inherit; font-size: 14px; text-align: left;
+}
+.splash-ongoing-item:hover:not(:disabled) { border-color: #3f5a7d; background: #1d2a3a; }
+.splash-ongoing-item:disabled { opacity: 0.5; cursor: default; }
+.splash-ongoing-name { font-weight: 600; }
+.splash-ongoing-meta { font-size: 12px; color: #7d92a8; white-space: nowrap; }
 .betli-hu-deal-btn--ghost:hover:not(:disabled) {
   transform: translateY(-2px);
   filter: none;
