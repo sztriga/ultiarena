@@ -55,15 +55,11 @@ export function ResultPanel({ r, withAnalysis, loading, analysisLoading, hasRoun
   );
 }
 
-const PHASE_HU: Record<string, string> = {
-  bid: "licit", trump_select: "aduválasztás", kontra: "kontra",
-  play: "játszma", done: "befejezett", passed: "mindenki passzolt",
-};
-
+// Terse on purpose (milan 2026-08-02: no wordy rows) — "most" / "5p" / "2ó".
 function agoLabel(idleS: number): string {
-  if (idleS < 60) return "az előbb";
-  if (idleS < 3600) return `${Math.round(idleS / 60)} perce`;
-  return `${Math.round(idleS / 3600)} órája`;
+  if (idleS < 60) return "most";
+  if (idleS < 3600) return `${Math.round(idleS / 60)}p`;
+  return `${Math.round(idleS / 3600)}ó`;
 }
 
 export function Splash({ loading, error, onNew, onPuzzle, ongoing = [], onResume, onDiscard }: {
@@ -96,10 +92,8 @@ export function Splash({ loading, error, onNew, onPuzzle, ongoing = [], onResume
                 <div key={g.game_id} className="splash-ongoing-item">
                   <button className="splash-ongoing-main" disabled={loading}
                           onClick={() => onResume(g.game_id)}>
-                    <span className="splash-ongoing-name">{g.contract ?? "licit zajlik"}</span>
-                    <span className="splash-ongoing-meta">
-                      {PHASE_HU[g.phase] ?? g.phase} · {agoLabel(g.idle_s)}
-                    </span>
+                    <span className="splash-ongoing-name">{g.contract ?? "licit"}</span>
+                    <span className="splash-ongoing-meta">{agoLabel(g.idle_s)}</span>
                   </button>
                   {onDiscard && (
                     <button className="splash-ongoing-x" title="Játék törlése" disabled={loading}

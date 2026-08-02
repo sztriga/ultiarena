@@ -556,28 +556,31 @@ html, body, #root {
   font-size: 12px; font-weight: 600; letter-spacing: 0.06em;
   text-transform: uppercase; color: #7d92a8; margin-bottom: 2px;
 }
+/* FIXED-SIZE rows — one line, no wrap, no growth; long names ellipsize. */
 .splash-ongoing-item {
-  display: flex; align-items: stretch;
+  display: flex; align-items: stretch; height: 38px;
   border-radius: 8px; border: 1px solid #33475f; overflow: hidden;
 }
 .splash-ongoing-item:hover { border-color: #3f5a7d; }
 .splash-ongoing-main {
-  flex: 1; display: flex; justify-content: space-between; align-items: baseline;
-  gap: 12px; padding: 9px 14px; cursor: pointer;
+  flex: 1; min-width: 0; display: flex; justify-content: space-between;
+  align-items: center; gap: 10px; padding: 0 12px; cursor: pointer;
   background: transparent; border: none;
   color: #c8d6e5; font: inherit; font-size: 14px; text-align: left;
 }
 .splash-ongoing-main:hover:not(:disabled) { background: #1d2a3a; }
 .splash-ongoing-main:disabled { opacity: 0.5; cursor: default; }
+.splash-ongoing-name {
+  font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.splash-ongoing-meta { font-size: 12px; color: #7d92a8; white-space: nowrap; }
 .splash-ongoing-x {
-  flex: 0 0 auto; padding: 0 12px; cursor: pointer;
+  flex: 0 0 auto; width: 34px; cursor: pointer;
   background: transparent; border: none; border-left: 1px solid #33475f;
   color: #7d92a8; font: inherit; font-size: 15px; line-height: 1;
 }
 .splash-ongoing-x:hover:not(:disabled) { background: #2a1a20; color: #ff8fa3; }
 .splash-ongoing-x:disabled { opacity: 0.5; cursor: default; }
-.splash-ongoing-name { font-weight: 600; }
-.splash-ongoing-meta { font-size: 12px; color: #7d92a8; white-space: nowrap; }
 .betli-hu-deal-btn--ghost:hover:not(:disabled) {
   transform: translateY(-2px);
   filter: none;
