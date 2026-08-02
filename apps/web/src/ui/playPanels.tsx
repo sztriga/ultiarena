@@ -24,10 +24,8 @@ export function ResultPanel({ r, withAnalysis, loading, analysisLoading, hasRoun
   onShowCard: () => void;
   onAbandon: () => void;
 }) {
-  // passz is a scored round like any other — we just never played it. It re-deals
-  // with the SAME dealer (rotate=false) and has nothing for the god solver to analyse.
   // No sentences here: the signed number IS the message; everything else is a chip.
-  const passed = r.contract === "passz";
+  // passz rounds rotate the 12-holder like any other round (milan 2026-08-02).
   const sign = r.human_gp > 0 ? "+" : r.human_gp < 0 ? "−" : "";
   return (
     <div className={`play-side-inner play-side-result ${r.user_won ? "is-win" : "is-loss"}`}>
@@ -42,7 +40,7 @@ export function ResultPanel({ r, withAnalysis, loading, analysisLoading, hasRoun
         ))}
       </div>
       <div className="play-side-actions">
-        <button className="betli-hu-deal-btn betli-hu-deal-btn--sm" onClick={() => onPlayAgain(!passed)} disabled={loading}>
+        <button className="betli-hu-deal-btn betli-hu-deal-btn--sm" onClick={() => onPlayAgain(true)} disabled={loading}>
           {loading ? "Osztás…" : "Következő"}
         </button>
         <button className="btn" onClick={onOpenAnalysis} disabled={!withAnalysis || analysisLoading}>

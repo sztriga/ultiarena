@@ -814,9 +814,13 @@ html, body, #root {
 .play-vs-ai .ulti-auction-current { margin-bottom: 8px; }
 .play-vs-ai .ulti-auction-history { max-height: 56px; margin-bottom: 8px; }
 
-/* All-passed left panel (no play happened). */
-.play-passed-note { padding: 48px 20px; text-align: center; color: var(--muted, #9ca3af);
-  font-size: 15px; border: 1px dashed var(--border); border-radius: 12px; }
+/* All-passed: the result box sits under the (unchanged) table, where the auction
+   panel was. */
+.play-passed-panel {
+  margin: 10px auto 0; max-width: 360px; padding: 16px 20px 18px;
+  background: var(--panel-2, #15181c); border: 1px solid var(--border, #262a30);
+  border-radius: 14px;
+}
 
 /* End-of-hand action buttons — Következő full width, secondary buttons share the next row.
    Kept small so the box doesn't feel crowded. */

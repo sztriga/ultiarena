@@ -18,9 +18,12 @@ from .ai_play import _advance_play
 
 # ── Auction (any seat may open) ─────────────────────────────────────────────────
 
-def _bid_ai(sess: Session, pid: int, current_rung) -> Optional[tuple]:
-    cards12 = list(sess.a_hands[pid]) + list(sess.a_talon)
-    return _bid_fn()(cards12, current_rung, None)
+def _bid_ai(sess: Session, pid: int, current_rung, threshold: float) -> Optional[tuple]:
+    """One AI seat's auction turn. The hand and the talon go in SEPARATELY, with the
+    pass/bid threshold, so the bidder makes the pickup decision blind — it may only look
+    at the talon once it has committed to announcing a game (ulti.bidding.auction)."""
+    return _bid_fn()(list(sess.a_hands[pid]), list(sess.a_talon), current_rung,
+                     threshold, None)
 
 
 def _weakest_two(cards12: list, trump: Optional[str]):
@@ -107,12 +110,10 @@ def _advance_auction(sess: Session) -> None:
             return  # user decides (open or overcall)
         # AI seat
         if sess.a_current is None:
-            pick = _bid_ai(sess, turn, None)
-            ok = pick is not None and pick[0] > -PASS_PENALTY
+            pick = _bid_ai(sess, turn, None, -PASS_PENALTY)
         else:
-            pick = _bid_ai(sess, turn, sess.a_current["rung"])
-            ok = pick is not None and pick[0] > -sess.a_current["ev"]
-        if ok:
+            pick = _bid_ai(sess, turn, sess.a_current["rung"], -sess.a_current["ev"])
+        if pick is not None:
             _apply_bid(sess, turn, pick)
             sess.a_passes = 0
         else:
@@ -152,8 +153,8 @@ def _finish_passed(sess: Session) -> None:
     any other round: passz is on the ladder, we just never PLAY it. The forehand
     (real seat 0, the 12-holder) forfeits PASS_PENALTY per defender, the result box
     appears exactly as after a played hand (phase "passed" → the UI's scoring window
-    + round tally; Elemzés is meaningless, the client greys it), and the NEXT hand
-    is dealt by the SAME dealer (the client passes rotate=false on Következő)."""
+    + round tally; Elemzés is meaningless, the client greys it), and Következő
+    ROTATES the 12-holder like after any round (milan 2026-08-02)."""
     pen = float(PASS_PENALTY)
     seat_gp = [-2.0 * pen, pen, pen]          # real-seat space; forehand = real seat 0
     human_gp = seat_gp[sess.seat]

@@ -180,8 +180,8 @@ export function PlayVsAI() {
     finally { setLoading(false); }
   }, [resetBubbles]);
 
-  // Next round rotates who holds the 12 (the opener). A dead deal (all passed)
-  // is re-dealt by the same dealer, so pass rotate=false there.
+  // Next round rotates who holds the 12 (the opener) — after an all-pass too
+  // (milan 2026-08-02).
   const onPlayAgain = useCallback(async (rotate = true) => {
     if (!state) return;
     const next = (rotate ? (state.seat + 1) % 3 : state.seat) as Seat;
@@ -435,18 +435,41 @@ export function PlayVsAI() {
   }
 
 
-  // ── All-passed — SAME shell + result box as a played game (just no table/play). ──
+  // ── All-passed — the TABLE STAYS exactly as it was at the third pass (your
+  // cards, the face-down opponents, the talon); only the panel under the trick
+  // area swaps to the result box (milan 2026-08-02: the playing area must not
+  // vanish). Következő rotates the 12-holder like after any round. ──
   if (state.phase === "passed") {
     const r = state.result ?? null;
+    const meSeat = state.seat as Seat;
+    const handCards = (state.own_hand ?? []) as Card[];
+    const pHands: [Card[], Card[], Card[]] = [[], [], []];
+    for (let s = 0 as Seat; s <= 2; s = (s + 1) as Seat) {
+      pHands[s] = s === meSeat ? handCards : placeholderHand(10, s * 100);
+    }
+    const pHidden = new Set<0 | 1 | 2>(([0, 1, 2] as Seat[]).filter((s) => s !== meSeat));
+    const pSeats = {
+      0: { label: <>P0{meSeat === 0 ? " (te)" : ""}</> },
+      1: { label: <>P1{meSeat === 1 ? " (te)" : ""}</> },
+      2: { label: <>P2{meSeat === 2 ? " (te)" : ""}</> },
+    };
     return (
       <div className="app betli-hu-game play-vs-ai">
         <main className="main">
           <section>
             {error && <div className="error">{error}</div>}
-            <div className="play-passed-note">Mindenki passzolt</div>
-          </section>
-          <section>
-            <div className="play-side-box">{r ? renderResult(r, false) : null}</div>
+            <UltiTable
+              hands={pHands}
+              seats={pSeats}
+              currentTrick={[]}
+              activePlayer={null}
+              legalIds={null}
+              seatNames={{ 0: "P0", 1: "P1", 2: "P2" }}
+              hiddenSeats={pHidden}
+              bottomSeat={meSeat}
+              hideTrick
+              belowTrick={<div className="play-passed-panel">{r ? renderResult(r, false) : null}</div>}
+            />
           </section>
         </main>
 
