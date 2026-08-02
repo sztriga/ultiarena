@@ -614,12 +614,25 @@ export function PlayVsAI() {
     </div>
   );
 
-  // End-of-hand result — MID-FIELD for every ending (played or passed): at
-  // terminal the trick slots are useless, so the result panel takes their place.
-  // No sidebar result slot (milan 2026-08-02).
-  const resultPanel = terminal && result ? (
-    <div className="play-result-panel">{renderResult(result, !passed)}</div>
-  ) : undefined;
+  // End-of-hand result — SIDEBAR box (milan 2026-08-02: tried mid-field, reverted —
+  // a mid-field panel blocks the FINAL trick, which the animation deliberately keeps
+  // on screen). ONE slot for every ending, played or passed; idle text otherwise so
+  // the box never pops in and out.
+  const sideBox = (
+    <div className="play-side-box">
+      {terminal && result ? (
+        renderResult(result, !passed)
+      ) : (
+        <div className="play-side-idle">
+          {inKontra
+            ? "Kontra döntés…"
+            : state.phase === "play" && !terminal
+              ? (animating || loading ? "A gép lép…" : isMyTurn ? "Te jössz" : "A gép lép…")
+              : "Ulti vs AI"}
+        </div>
+      )}
+    </div>
+  );
 
   // The kontra decision pops up centered over the PLAYING FIELD (not the whole
   // screen) — the backdrop is absolute inside play-col-main. Not dismissable by
@@ -652,8 +665,7 @@ export function PlayVsAI() {
             hiddenSeats={hiddenSeats}
             bottomSeat={hpi}
             aboveDefenders={talonNode}
-            hideTrick={terminal}
-            belowTrick={resultPanel}
+            hideTrick={passed}
           />
 
           {/* Your captured (won) tricks — face down, in groups of 3. Click to reveal. */}
@@ -710,6 +722,7 @@ export function PlayVsAI() {
               );
             })()}
           </div>
+          {sideBox}
           <div className="panel betli-hu-log-panel">
             <div className="panel-title">Játékmenet</div>
             <div className="betli-hu-log-scroll play-log">

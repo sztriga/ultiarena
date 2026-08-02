@@ -818,15 +818,6 @@ html, body, #root {
 .play-vs-ai .ulti-auction-current { margin-bottom: 8px; }
 .play-vs-ai .ulti-auction-history { max-height: 56px; margin-bottom: 8px; }
 
-/* End-of-hand result panel — MID-FIELD for every ending (played or passed). It
-   replaces the trick area at terminal, so it is sized to the space the trick slots
-   occupied (min-height 180 + 2×20 padding) — the table never jumps. */
-.play-result-panel {
-  margin: 0 auto; width: min(380px, 92%); padding: 16px 22px 18px;
-  min-height: 220px; display: flex; align-items: center; justify-content: center;
-  background: var(--panel-2, #15181c); border: 1px solid var(--border, #262a30);
-  border-radius: 14px;
-}
 
 /* End-of-hand action buttons — Következő full width, secondary buttons share the next row.
    Kept small so the box doesn't feel crowded. */
@@ -836,8 +827,15 @@ html, body, #root {
 
 /* Sidebar box above the Játékmenet log — hosts the kontra decision and the
    end-of-hand result instead of a bottom-floating popup. Empty/idle otherwise. */
+.play-side-box {
+  min-height: 96px; margin-bottom: 14px; border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.08); background: var(--panel-2, #15181c);
+  display: flex; align-items: center; justify-content: center; padding: 22px 20px 24px;
+}
 .play-side-inner { width: 100%; }
 .play-side-result { padding: 6px 2px; text-align: center; }
+.play-side-idle { color: var(--muted, #5b636e); font-size: 12px; font-weight: 700;
+  letter-spacing: 1px; opacity: 0.5; }
 
 /* End-of-hand result — the signed number IS the message; details are chips.
    No sentences (milan 2026-08-02: "simple and informative"). */
