@@ -770,21 +770,10 @@ html, body, #root {
 .play-log-card .trump-symbol { font-size: 15px; line-height: 1; }
 .play-log-rank { font-size: 12.5px; color: #e5e7eb; min-width: 34px; }
 
-/* Silent (csendes) contracts surfaced in the result + scorecard. */
-.play-silents {
-  margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px 10px;
-  justify-content: center; align-items: baseline; font-size: 12.5px;
-}
-.play-silents-label { color: var(--muted, #9ca3af); text-transform: uppercase; letter-spacing: 0.05em; font-size: 10px; }
-.play-silent-item {
-  background: rgba(255, 255, 255, 0.07); border-radius: 6px;
-  padding: 1px 7px; color: #e5e7eb; font-weight: 600;
-}
 .play-sc-silent { color: var(--muted, #9ca3af); font-size: 11px; font-style: italic; }
 .play-captured-trick { display: flex; gap: 1px; }               /* one won trick = 3 backs */
 .play-captured-reveal { display: flex; flex-direction: column; gap: 8px; max-height: 60vh; overflow-y: auto; }
 .play-captured-trick-row { display: flex; gap: 4px; }
-.play-kontra-text { font-size: 13.5px; line-height: 1.5; }
 
 /* Talon pile — floats on the LEFT, vertically centered, out of the table's flow (so it
    never shifts the opponent row / hand). Face-down during play, face-up at game end. */
@@ -804,7 +793,7 @@ html, body, #root {
    bidding and play → fills the screen, no bottom gap, and no jump between phases. */
 .play-vs-ai .table { height: calc(100vh - 104px); min-height: 460px; max-height: 820px; }
 .play-vs-ai .main { align-items: start; height: 100%; }
-.play-col-main { min-height: 0; }
+.play-col-main { min-height: 0; position: relative; }   /* anchors the kontra overlay */
 /* Persistent contract + score panel in the sidebar (moved off the table). */
 .play-info-panel { display: flex; flex-direction: column; align-items: center; gap: 12px;
   text-align: center; margin-bottom: 14px; padding: 18px 16px 20px;
@@ -845,22 +834,25 @@ html, body, #root {
 .play-side-inner { width: 100%; }
 .play-side-title { font-size: 11px; font-weight: 700; text-transform: uppercase;
   letter-spacing: 0.4px; color: #d23552; margin-bottom: 10px; }
-.play-side-result { padding: 6px 2px; }
-.play-side-result .betli-hu-result-headline { font-size: 17px; margin-bottom: 6px; }
-.play-side-result .betli-hu-result-sub { font-size: 12px; }
+.play-side-result { padding: 6px 2px; text-align: center; }
 .play-side-idle { color: var(--muted, #5b636e); font-size: 12px; font-weight: 700;
   letter-spacing: 1px; opacity: 0.5; }
 
-/* Per-unit kontra picker (combined games) — pill toggles, one per live unit. */
-.play-kontra-units { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
-.play-kontra-unit {
-  padding: 4px 10px; border-radius: 999px; border: 1px solid var(--border, #333);
-  background: transparent; color: var(--text, #dfe3e8); font-size: 12px; font-weight: 700;
-  cursor: pointer; transition: background 0.12s, border-color 0.12s;
+/* End-of-hand result — the signed number IS the message; details are chips.
+   No sentences (milan 2026-08-02: "simple and informative"). */
+.res-gp { font-size: 42px; font-weight: 800; line-height: 1; letter-spacing: -0.02em; }
+.is-win  .res-gp { color: #34d399; }
+.is-loss .res-gp { color: #f87171; }
+.res-gp-unit { font-size: 13px; font-weight: 600; color: var(--muted, #9ca3af);
+  margin-left: 7px; letter-spacing: 0.04em; }
+.res-tags { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center;
+  margin-top: 12px; }
+.res-tag {
+  padding: 3px 11px; border-radius: 999px; border: 1px solid var(--border, #33475f);
+  font-size: 12px; font-weight: 600; color: #c8d6e5; white-space: nowrap;
 }
-.play-kontra-unit:hover:not(:disabled) { border-color: #d23552; }
-.play-kontra-unit.is-sel { background: #d23552; border-color: #d23552; color: #fff; }
-.play-kontra-unit:disabled { opacity: 0.5; cursor: default; }
+.res-tag--k { border-color: rgba(210, 53, 82, 0.65); color: #ff8fa3; }
+.res-tag--s { border-color: rgba(52, 211, 153, 0.4); color: #86e8c5; }
 
 /* ─── Trickster-ported bidding overlays (auction / bid / trump) ─────────────── */
 .ulti-auction-overlay {
@@ -1005,19 +997,55 @@ html, body, #root {
 .puzzle-final-stats { display: flex; gap: 22px; color: var(--muted); font-size: 14px; margin-top: 6px; }
 .puzzle-final-stats b { color: var(--text); }
 
-/* Kontra decision as a CENTERED POPUP (milan 2026-08-01 — "at least I'd like to
-   try it"). Reuses the modal backdrop; deliberately NOT dismissable by clicking
-   outside — the decision is mandatory, "Tovább" is the way past it. The sidebar
-   box shows its idle text meanwhile. */
+/* Kontra decision — a popup centered over the PLAYING FIELD, not the screen
+   (milan 2026-08-02). The backdrop is absolute inside .play-col-main and dims
+   only the table; deliberately NOT dismissable by clicking outside — the decision
+   is mandatory, "Tovább" is the way past it. No prose inside: one big toggle per
+   kontra-able unit, then Kontra / Tovább. */
+.play-kontra-backdrop {
+  position: absolute; inset: 0; z-index: 60; border-radius: 16px;
+  background: rgba(6, 8, 12, 0.62); backdrop-filter: blur(1.5px);
+  display: flex; align-items: center; justify-content: center;
+}
 .play-kontra-modal {
-  background: var(--panel-2, #15181c); border: 1px solid rgba(210, 53, 82, 0.45);
-  border-radius: 14px; padding: 26px 30px 28px; width: min(440px, 92vw);
+  background: var(--panel-2, #15181c); border: 1px solid rgba(210, 53, 82, 0.5);
+  border-radius: 16px; padding: 24px 30px 26px; width: min(400px, 88%);
   box-shadow: 0 24px 70px rgba(0, 0, 0, 0.6), 0 0 0 4px rgba(210, 53, 82, 0.07);
   animation: kontra-pop-in 160ms ease-out;
 }
-.play-kontra-modal .play-side-title { font-size: 13px; margin-bottom: 12px; }
-.play-kontra-modal .play-kontra-text { font-size: 14.5px; }
 @keyframes kontra-pop-in {
   from { transform: scale(0.94); opacity: 0; }
   to   { transform: scale(1);    opacity: 1; }
 }
+.kontra-panel { text-align: center; }
+.kontra-kicker {
+  font-size: 12px; font-weight: 800; text-transform: uppercase;
+  letter-spacing: 0.28em; color: #d23552;
+}
+.kontra-context { margin-top: 6px; font-size: 13px; color: var(--muted, #9ca3af); }
+.kontra-units {
+  display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;
+  margin-top: 18px;
+}
+.kontra-unit {
+  font: inherit; font-size: 17px; font-weight: 800; letter-spacing: 0.01em;
+  padding: 13px 24px; border-radius: 12px; cursor: pointer;
+  border: 2px solid #4a3038; background: rgba(210, 53, 82, 0.07); color: #e8cdd3;
+  transition: transform 0.1s, border-color 0.12s, background 0.12s, box-shadow 0.12s;
+}
+.kontra-unit:hover:not(:disabled) { border-color: #d23552; transform: translateY(-1px); }
+.kontra-unit.is-sel {
+  background: #d23552; border-color: #d23552; color: #fff;
+  box-shadow: 0 6px 22px rgba(210, 53, 82, 0.45);
+}
+.kontra-unit:disabled { opacity: 0.5; cursor: default; }
+.kontra-actions { display: flex; gap: 10px; margin-top: 20px; }
+.kontra-go {
+  flex: 1; font: inherit; font-size: 15px; font-weight: 800; letter-spacing: 0.06em;
+  text-transform: uppercase; padding: 12px 18px; border-radius: 10px; cursor: pointer;
+  border: none; background: #d23552; color: #fff;
+  transition: filter 0.12s, opacity 0.12s;
+}
+.kontra-go:hover:not(:disabled) { filter: brightness(1.12); }
+.kontra-go:disabled { opacity: 0.35; cursor: default; }
+.kontra-actions .kontra-skip { flex: 0 0 auto; padding: 12px 20px; height: auto; }

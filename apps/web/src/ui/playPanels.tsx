@@ -26,23 +26,21 @@ export function ResultPanel({ r, withAnalysis, loading, analysisLoading, hasRoun
 }) {
   // passz is a scored round like any other — we just never played it. It re-deals
   // with the SAME dealer (rotate=false) and has nothing for the god solver to analyse.
+  // No sentences here: the signed number IS the message; everything else is a chip.
   const passed = r.contract === "passz";
+  const sign = r.human_gp > 0 ? "+" : r.human_gp < 0 ? "−" : "";
   return (
     <div className={`play-side-inner play-side-result ${r.user_won ? "is-win" : "is-loss"}`}>
-      <div className="betli-hu-result-headline">
-        {r.user_won ? "Nyertél" : "Vesztettél"} {Math.abs(r.human_gp)} pontot
+      <div className="res-gp">
+        {sign}{Math.abs(r.human_gp)}<span className="res-gp-unit">pont</span>
       </div>
-      <div className="betli-hu-result-sub">
-        {r.contract}{r.kontra_level > 0 ? ` · ${KONTRA_WORD[r.kontra_level]}` : ""}
+      <div className="res-tags">
+        <span className="res-tag">{r.contract}</span>
+        {r.kontra_level > 0 && <span className="res-tag res-tag--k">{KONTRA_WORD[r.kontra_level]}</span>}
+        {(r.silents ?? []).map((s, i) => (
+          <span key={i} className="res-tag res-tag--s">{s.label} {s.gp >= 0 ? "+" : ""}{s.gp}</span>
+        ))}
       </div>
-      {(r.silents?.length ?? 0) > 0 && (
-        <div className="play-silents" style={{ marginTop: 8 }}>
-          <span className="play-silents-label">csendes játékok:</span>
-          {r.silents!.map((s, i) => (
-            <span key={i} className="play-silent-item">{s.label} {s.gp >= 0 ? "+" : ""}{s.gp}</span>
-          ))}
-        </div>
-      )}
       <div className="play-side-actions">
         <button className="betli-hu-deal-btn betli-hu-deal-btn--sm" onClick={() => onPlayAgain(!passed)} disabled={loading}>
           {loading ? "Osztás…" : "Következő"}
@@ -124,52 +122,35 @@ export function KontraBox({ kontra, contract, trump, loading, kontraSel,
   onKontra: (units: string[]) => void;
   toggleKontraUnit: (key: string) => void;
 }) {
+  // No prose — a kicker, the contract for context, and one big toggle button per
+  // kontra-able unit (a single unit arrives pre-selected, so confirming stays one
+  // click). The unit buttons ARE the interface.
+  const word = kontra.role === "sol" ? "Rekontra" : "Kontra";
+  const units = kontra.units ?? [];
   return (
-    <div className="play-side-inner">
-          <div className="play-side-title">{kontra.role === "sol" ? "Rekontra döntés" : "Kontra döntés"}</div>
-          {(kontra.units?.length ?? 0) <= 1 ? (
-            /* Simple game — one unit: direct kontra / pass (as before). */
-            <>
-              <div className="play-kontra-text">
-                {kontra.role === "sol"
-                  ? <>Kontráztak: <b>{kontra.units?.[0]?.label ?? kontra.primary}</b> ({contract}) — rekontrázol?</>
-                  : <>Kontrázod: <b>{kontra.units?.[0]?.label ?? kontra.primary}</b> ({contract}{trump ? `, ${TRUMP_LABEL(trump)}` : ""})?</>}
-              </div>
-              <div className="row" style={{ gap: 8, marginTop: 10 }}>
-                <button className="btn btn-primary" onClick={() => onKontra((kontra.units ?? []).map((u) => u.key))}
-                        disabled={loading} style={{ background: "#d23552", borderColor: "#d23552" }}>
-                  {kontra.role === "sol" ? "Rekontra" : "Kontra"}
-                </button>
-                <button className="btn" onClick={() => onKontra([])} disabled={loading}>Tovább</button>
-              </div>
-            </>
-          ) : (
-            /* Combined game — pick which units to (re)kontra separately. */
-            <>
-              <div className="play-kontra-text">
-                {kontra.role === "sol"
-                  ? <>Melyik egységet rekontrázod? ({contract})</>
-                  : <>Mit kontrázol? — több is választható ({contract}{trump ? `, ${TRUMP_LABEL(trump)}` : ""})</>}
-              </div>
-              <div className="play-kontra-units">
-                {(kontra.units ?? []).map((u) => (
-                  <button key={u.key} type="button" disabled={loading}
-                          className={`play-kontra-unit ${kontraSel.has(u.key) ? "is-sel" : ""}`}
-                          onClick={() => toggleKontraUnit(u.key)}>
-                    {u.label}
-                  </button>
-                ))}
-              </div>
-              <div className="row" style={{ gap: 8, marginTop: 10 }}>
-                <button className="btn btn-primary" onClick={() => onKontra([...kontraSel])}
-                        disabled={loading || kontraSel.size === 0}
-                        style={{ background: "#d23552", borderColor: "#d23552" }}>
-                  {kontra.role === "sol" ? "Rekontra" : "Kontra"}{kontraSel.size > 0 ? ` (${kontraSel.size})` : ""}
-                </button>
-                <button className="btn" onClick={() => onKontra([])} disabled={loading}>Tovább</button>
-              </div>
-            </>
-          )}
+    <div className="kontra-panel">
+          <div className="kontra-kicker">{word}</div>
+          <div className="kontra-context">
+            {contract}{trump ? ` · ${TRUMP_LABEL(trump)}` : ""}
+          </div>
+          <div className="kontra-units">
+            {units.map((u) => (
+              <button key={u.key} type="button" disabled={loading}
+                      className={`kontra-unit ${kontraSel.has(u.key) ? "is-sel" : ""}`}
+                      onClick={() => toggleKontraUnit(u.key)}>
+                {u.label}
+              </button>
+            ))}
+          </div>
+          <div className="kontra-actions">
+            <button className="kontra-go" onClick={() => onKontra([...kontraSel])}
+                    disabled={loading || kontraSel.size === 0}>
+              {word}{units.length > 1 && kontraSel.size > 0 ? ` (${kontraSel.size})` : ""}
+            </button>
+            <button className="btn kontra-skip" onClick={() => onKontra([])} disabled={loading}>
+              Tovább
+            </button>
+          </div>
         </div>
   );
 }

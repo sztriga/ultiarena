@@ -110,14 +110,15 @@ describe("PlayVsAI golden (recorded game seat0/seed14)", () => {
           expect(container.innerHTML).toMatchSnapshot("05-kontra-offer");
           snapped_kontra = true;
         }
-        // the kontra decision is a centered POPUP now (milan 2026-08-01): toggle
-        // EVERY unit (the recording kontra'd them all), then confirm.
+        // the kontra popup is big unit toggles + Kontra/Tovább (milan 2026-08-02):
+        // toggle EVERY unit still unselected (a single unit arrives pre-selected;
+        // the recording kontra'd them all), then confirm.
         for (const unitBtn of Array.from(
-            container.querySelectorAll(".play-kontra-modal .play-kontra-unit:not(.is-sel)"))) {
+            container.querySelectorAll(".play-kontra-modal .kontra-unit:not(.is-sel)"))) {
           await click(unitBtn);
         }
         const box = container.querySelector(
-          ".play-kontra-modal .btn-primary:not([disabled])") as Element;
+          ".play-kontra-modal .kontra-go:not([disabled])") as Element;
         expect(box).toBeTruthy();
         await click(box);
       } else if (step.action === "move") {

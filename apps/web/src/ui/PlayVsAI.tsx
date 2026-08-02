@@ -105,9 +105,14 @@ export function PlayVsAI() {
   const isBidTurn = state?.phase === "bid" && !!auction?.is_human_turn;
   const animating = pending !== null;
 
-  // Clear the per-unit kontra picks whenever a fresh kontra decision surfaces.
+  // Reset the per-unit kontra picks whenever a fresh kontra decision surfaces.
+  // A single kontra-able unit starts SELECTED — the big unit button shows what's
+  // at stake and "Kontra" is one click, same as before.
   useEffect(() => {
-    if (state?.phase === "kontra" && state.kontra?.pending) setKontraSel(new Set());
+    if (state?.phase === "kontra" && state.kontra?.pending) {
+      const us = state.kontra.units ?? [];
+      setKontraSel(new Set(us.length === 1 ? [us[0].key] : []));
+    }
   }, [state?.phase, state?.kontra?.pending?.play_index, state?.kontra?.pending?.role]);
 
   // Animation driver — advance one history step per tick toward the target.
@@ -438,7 +443,7 @@ export function PlayVsAI() {
         <main className="main">
           <section>
             {error && <div className="error">{error}</div>}
-            <div className="play-passed-note">Ebben a leosztásban senki sem licitált.</div>
+            <div className="play-passed-note">Mindenki passzolt</div>
           </section>
           <section>
             <div className="play-side-box">{r ? renderResult(r, false) : null}</div>
@@ -671,10 +676,11 @@ export function PlayVsAI() {
     </div>
   );
 
-  // The kontra decision demands attention → a centered popup. Not dismissable by
-  // clicking the backdrop — the decision is mandatory ("Tovább" passes it).
+  // The kontra decision pops up centered over the PLAYING FIELD (not the whole
+  // screen) — the backdrop is absolute inside play-col-main. Not dismissable by
+  // clicking it: the decision is mandatory ("Tovább" passes it).
   const kontraModal = inKontra && kontra?.pending ? (
-    <div className="play-modal-backdrop">
+    <div className="play-kontra-backdrop">
       <div className="play-kontra-modal">
         <KontraBox kontra={kontra} contract={state.contract} trump={state.trump}
                    loading={loading} kontraSel={kontraSel}
@@ -688,6 +694,7 @@ export function PlayVsAI() {
       <main className="main">
         <section className="play-col-main">
           {error && <div className="error">{error}</div>}
+          {kontraModal}
 
           <UltiTable
             hands={tableHands}
@@ -798,8 +805,6 @@ export function PlayVsAI() {
           </div>
         </div>
       )}
-
-      {kontraModal}
 
       {showCard && (
         <div className="play-modal-backdrop" onClick={() => setShowCard(false)}>
