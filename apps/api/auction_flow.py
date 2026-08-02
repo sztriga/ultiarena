@@ -7,7 +7,6 @@ from ulti.bidding.ladder import overcalls
 from ulti.bidding.bidder import rung_ev
 from ulti.bidding.auction import PASS_PENALTY
 from ulti.bidding.scorers import resolve_bidset, _play_weights
-from ulti.bidding.deal import deal_12_10_10
 from ulti.solvers import pis as pis_bridge
 from ulti.solvers import determinize as _det
 from ulti.scoring.units import kontra_units as _kontra_units
@@ -134,7 +133,7 @@ def _resolve_auction(sess: Session) -> None:
     sess.a_done = True
     if sess.a_current is None:
         sess.a_winner = None
-        _redeal(sess)               # dead deal → fresh hand, same dealer (no empty "passed" screen)
+        _finish_passed(sess)        # dead deal → SCORED like any round (see _finish_passed)
         return
     sess.a_winner = sess.a_current["pid"]
     # The human won a plain colored game with the trump deferred → declare it now,
@@ -148,31 +147,29 @@ def _resolve_auction(sess: Session) -> None:
     _advance_play(sess)
 
 
-def _redeal(sess: Session) -> None:
-    """Everybody passed and the forehand declined the reclaim → the deal is DEAD, so
-    we RE-DEAL a fresh hand with the SAME dealer and reopen the auction (milan's rule,
-    docstring: "if all three pass the deal is dead → redeal"). No game is scored and the
-    UI never lands on an empty screen — a new hand simply appears. Re-runs the AI bid
-    turns so we pause back on the user's turn."""
-    sess.redeals += 1
-    sess.seed = (sess.seed * 1103515245 + 12345 + sess.redeals) & 0x7FFFFFFF
-    sol12, d1, d2 = deal_12_10_10(sess.seed)
-    sess.a_hands = [list(sol12[:10]), list(d1), list(d2)]
-    sess.a_talon = list(sol12[10:])
-    sess.a_current = None
-    sess.a_passes = 0
-    sess.a_turn = 0
-    sess.a_reclaim_offered = False
-    sess.a_done = False
-    sess.a_winner = None
-    sess.a_history = []
-    sess.a_awaiting_bid = (sess.seat == 0)
-    sess.a_picked_up = False
-    sess.bubbles = []
-    sess.result = None
-    sess.phase = "bid"
-    sess.p_seed_counter = sess.seed * 31337
-    _advance_auction(sess)
+def _finish_passed(sess: Session) -> None:
+    """Nobody bid (and the forehand declined the reclaim) → the deal is scored like
+    any other round: passz is on the ladder, we just never PLAY it. The forehand
+    (real seat 0, the 12-holder) forfeits PASS_PENALTY per defender, the result box
+    appears exactly as after a played hand (phase "passed" → the UI's scoring window
+    + round tally; Elemzés is meaningless, the client greys it), and the NEXT hand
+    is dealt by the SAME dealer (the client passes rotate=false on Következő)."""
+    pen = float(PASS_PENALTY)
+    seat_gp = [-2.0 * pen, pen, pen]          # real-seat space; forehand = real seat 0
+    human_gp = seat_gp[sess.seat]
+    sess.phase = "passed"
+    sess.result = {
+        "winner": "defenders",                # the two non-openers collect
+        "made": False,
+        "sol_gp_per_def": -pen,
+        "human_gp": float(human_gp),
+        "user_won": human_gp > 0,
+        "contract": "passz",
+        "kontra_level": 0,
+        "seat_gp": seat_gp,
+        "soloist_seat": 0,                    # the payer — the forehand
+        "silents": [],
+    }
 
 
 # ── Auction -> Play setup ───────────────────────────────────────────────────────

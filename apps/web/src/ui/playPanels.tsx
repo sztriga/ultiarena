@@ -24,6 +24,9 @@ export function ResultPanel({ r, withAnalysis, loading, analysisLoading, hasRoun
   onShowCard: () => void;
   onAbandon: () => void;
 }) {
+  // passz is a scored round like any other — we just never played it. It re-deals
+  // with the SAME dealer (rotate=false) and has nothing for the god solver to analyse.
+  const passed = r.contract === "passz";
   return (
     <div className={`play-side-inner play-side-result ${r.user_won ? "is-win" : "is-loss"}`}>
       <div className="betli-hu-result-headline">
@@ -41,14 +44,12 @@ export function ResultPanel({ r, withAnalysis, loading, analysisLoading, hasRoun
         </div>
       )}
       <div className="play-side-actions">
-        <button className="betli-hu-deal-btn betli-hu-deal-btn--sm" onClick={() => onPlayAgain(true)} disabled={loading}>
+        <button className="betli-hu-deal-btn betli-hu-deal-btn--sm" onClick={() => onPlayAgain(!passed)} disabled={loading}>
           {loading ? "Osztás…" : "Következő"}
         </button>
-        {withAnalysis && (
-          <button className="btn" onClick={onOpenAnalysis} disabled={analysisLoading}>
-            {analysisLoading ? "Elemzés…" : "Elemzés"}
-          </button>
-        )}
+        <button className="btn" onClick={onOpenAnalysis} disabled={!withAnalysis || analysisLoading}>
+          {analysisLoading ? "Elemzés…" : "Elemzés"}
+        </button>
         {hasRounds && (
           <button className="btn" onClick={() => onShowCard()} disabled={loading}>Pontszámok</button>
         )}
@@ -60,7 +61,7 @@ export function ResultPanel({ r, withAnalysis, loading, analysisLoading, hasRoun
 
 const PHASE_HU: Record<string, string> = {
   bid: "licit", trump_select: "aduválasztás", kontra: "kontra",
-  play: "játszma", done: "befejezett",
+  play: "játszma", done: "befejezett", passed: "mindenki passzolt",
 };
 
 function agoLabel(idleS: number): string {
