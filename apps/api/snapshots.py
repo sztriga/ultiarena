@@ -173,7 +173,7 @@ def _trump_snapshot(sess: Session) -> dict:
     hand = sort_hand(sess.a_hands[sess.seat])
     return {
         "contract": _bid_label(sess.a_current["bid"]),
-        "trump_options": ["acorns", "leaves", "bells"],
+        "trump_options": ["bells", "leaves", "acorns"],   # tök · zöld · makk (milan's order)
         "own_hand": [card_to_dict(c) for c in hand],
     }
 

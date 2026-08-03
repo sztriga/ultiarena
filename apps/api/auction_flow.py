@@ -275,7 +275,8 @@ def _legal_bids(sess: Session) -> List[dict]:
         elif r.piros:
             trumps = ["hearts"]
         else:
-            trumps = ["acorns", "leaves", "bells"]
+            trumps = ["bells", "leaves", "acorns"]   # tök · zöld · makk (milan's order);
+            # display-only for deferred-trump bids: play_bid recomputes the trump
         # One option per interchangeable contract on the rung, so the user picks
         # the specific game (40-100-duri vs ulti-duri) rather than us guessing.
         for bi, b in enumerate(r.bids):

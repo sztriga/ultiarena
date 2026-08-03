@@ -374,8 +374,11 @@ export function PlayVsAI() {
       activePlayer = last.player_id;
       legalIds = new Set<number>(last.legal_card_ids);
       branchAtPly = scrubPly - 1;
-      // Keep the just-played card in hand so the user can click an alternative to fork.
-      played[last.player_id].delete(last.chosen_card.id);
+      // The just-played card lives on the TABLE only — it used to be restored into
+      // the hand too ("click an alternative to fork"), which put it in two places
+      // at once and made the middle run one step ahead of the hands (milan spotted
+      // the desync 2026-08-02). Forking never needed it: alternatives are still in
+      // the hand and the click handler checks legal_card_ids, not hand membership.
     }
     const hands: Card[][] = analysis.initial_hands.map(
       (h, pid) => h.filter((c) => !played[pid].has(c.id)));
@@ -452,7 +455,7 @@ export function PlayVsAI() {
 
   // ── Trump select — you won a plain colored game; declare the suit before play ──
   if (state.phase === "trump_select") {
-    const opts = state.trump_options ?? ["acorns", "leaves", "bells"];
+    const opts = state.trump_options ?? ["bells", "leaves", "acorns"];   // tök · zöld · makk
     const handCards = (state.own_hand ?? []) as Card[];
     const meSeat = state.seat as Seat;
     const { hands: tHands, hidden: tHidden } = auctionTable(meSeat, handCards);
