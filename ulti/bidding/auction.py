@@ -93,27 +93,122 @@ def _best_pickup(hand_plus_talon, probs_fn, current, gp, allowed=None, pctl=DEBI
                    betli_real=betli_real, rebetli_real=rebetli_real)
 
 
+def _blind_best(hand10, probs_fn, current, gp, allowed=None, floor=None, duri_mult=None,
+                betli_real=None, rebetli_real=None, blind_pctl=None):
+    """Best (ev, rung, trump) from the 10 cards you were DEALT — the PICKUP decision.
+
+    The talon is deliberately not a parameter: you cannot look at cards you have not
+    picked up, and picking up commits you to announcing a game. Keeping it out of the
+    signature is what makes the cheat unrepresentable rather than merely discouraged
+    (it was representable before, and it came back — see the module note).
+
+    DEBIAS_PCTL does not apply — that corrects an argmax over 66 DISCARDS, and there are
+    no discards to choose between yet. But this stage has a winner's curse of its own: it
+    maximises over 4 trumps × every legal rung, so the winner is the estimate that happens
+    to be most optimistic. `blind_pctl` optionally replaces the max-over-TRUMPS for each
+    rung with that quantile, which is the same correction applied where it now belongs.
+    None = plain max (the behaviour as shipped).
+
+    Worth knowing why this exists (measured 2026-08-02): once the pickup decision moved
+    here, DEBIAS_PCTL went inert — even pctl=1.0, i.e. no debias at all, changed 0 of 40
+    auction outcomes, because it can now only reorder contracts AFTER a seat has committed
+    and the top rung wins by a wide margin anyway.
+    """
+    cand = overcalls(current)
+    if allowed is not None:
+        cand = [r for r in cand if r.index in allowed]
+    per_rung = {}
+    for trump in TRUMPS:
+        pr = probs_fn(hand10, trump, None)
+        for rung in cand:
+            ev = rung_ev(rung, pr, gp, floor=floor, duri_mult=duri_mult,
+                         betli_real=betli_real, rebetli_real=rebetli_real)
+            if ev is None:
+                continue
+            per_rung.setdefault(rung.index, {"rung": rung, "evs": [], "best": None})
+            e = per_rung[rung.index]
+            e["evs"].append(ev)
+            if e["best"] is None or ev > e["best"][0]:
+                e["best"] = (ev, None if rung.colorless else trump)
+    best = None
+    for e in per_rung.values():
+        score = (max(e["evs"]) if blind_pctl is None
+                 else float(np.quantile(e["evs"], blind_pctl)))
+        if best is None or score > best[0]:
+            best = (score, e["rung"], e["best"][1])
+    return best
+
+
 def net_bid_fn(provider, gp=None, allowed=None, pctl=DEBIAS_PCTL, floor=None, duri_mult=None,
-               betli_real=None, rebetli_real=None):
-    """Build a bid_fn(cards12, current, others) → bundle for the net+composer
-    bidder. `others` (the two other seats' hands) is accepted for API uniformity
-    but IGNORED — the net perceives only its own hand. `allowed` restricts the
-    contract set (h2h ablations). `pctl`/`floor`/`duri_mult` set this bidder's CONFIG
-    per-call (None floor/duri_mult = module globals) — lets two configs run head-to-head
-    in one process. Perfect-perception bidders (god/PIMC) supply a probs_fn that uses
-    `others`; see experiments/25_strength_ceiling."""
+               betli_real=None, rebetli_real=None, pickup_model=None,
+               pickup_floor=None, blind_pctl=None):
+    """Build a bid_fn(hand10, talon, current, threshold, others) → bundle | None.
+
+    TWO-STAGE, because Ulti is two-stage (milan 2026-08-02; originally fixed 2026-02-20
+    in the since-deleted `apps/api/ulti.py`, then reintroduced when this bidder was
+    written from scratch):
+
+      1. PICKUP — decide from your own 10 cards alone whether the hand is worth taking
+         the talon up for. `threshold` is what you must beat: the −2 pass penalty when
+         opening, or the value of defending the standing contract when overcalling.
+         Below it we return None WITHOUT EVER TOUCHING `talon`.
+      2. ANNOUNCE — only now do the 12 cards exist. Search every (trump × discard) and
+         name the game. You are committed, so if the confidence FLOOR leaves nothing
+         biddable we re-search with the floor dropped rather than pass: having picked
+         up, you must announce something.
+
+    `others` is accepted for API uniformity but IGNORED — the net perceives only its own
+    hand. `allowed` restricts the contract set (h2h ablations); `pctl`/`floor`/
+    `duri_mult`/`betli_real`/`rebetli_real` set this bidder's CONFIG per call, so two
+    configs can run head-to-head in one process. Perfect-perception bidders (god/PIMC)
+    supply a probs_fn that uses `others`; see research/experiments/25_strength_ceiling.
+    """
     gp = gp or GPTable()
+
     def _pf(hand10, trump, talon):
         return provider.base_probs(hand10, trump)
-    return lambda cards, current, others=None: _best_pickup(
-        cards, _pf, current, gp, allowed, pctl=pctl, floor=floor, duri_mult=duri_mult,
-        betli_real=betli_real, rebetli_real=rebetli_real)
+
+    def _bid(hand10, talon, current, threshold, others=None):
+        if pickup_model is not None:
+            # exp45: predict the value of the hand AFTER a pickup. The blind EV alone
+            # understates it by ~+3 GP, because picking up lets you keep the best 10 of
+            # 12 — evaluating the dealt 10 as if it were final makes the bidder passive.
+            value = pickup_model(list(hand10), current)
+        else:
+            # The confidence FLOOR is an announce-stage guard, so `pickup_floor` (default:
+            # the announce floor, i.e. legacy behaviour) governs this stage separately.
+            blind = _blind_best(hand10, _pf, current, gp, allowed,
+                                floor=(floor if pickup_floor is None else pickup_floor),
+                                duri_mult=duri_mult, betli_real=betli_real,
+                                rebetli_real=rebetli_real, blind_pctl=blind_pctl)
+            value = None if blind is None else blind[0]
+        if value is None or value <= threshold:
+            return None                       # pass — the talon was never inspected
+        twelve = list(hand10) + list(talon)
+        picked = _best_pickup(twelve, _pf, current, gp, allowed, pctl=pctl, floor=floor,
+                              duri_mult=duri_mult, betli_real=betli_real,
+                              rebetli_real=rebetli_real)
+        if picked is None:
+            # Committed by the pickup: announce the best thing available with the
+            # confidence floor lifted, instead of the impossible "put it back".
+            picked = _best_pickup(twelve, _pf, current, gp, allowed, pctl=pctl, floor=0.0,
+                                  duri_mult=duri_mult, betli_real=betli_real,
+                                  rebetli_real=rebetli_real)
+        return picked
+
+    return _bid
 
 
 def run_auction(seed, bid_fn, gp=None):
     """Architecture-agnostic 3-player talon-passing auction. `bid_fn` is either a
     single callable (all seats) or a list of 3 (per-seat, for head-to-head):
-    `bid_fn(cards12, current_rung) → (decision_ev, rung, trump, discard, hand10) | None`."""
+
+        bid_fn(hand10, talon, current_rung, threshold, others)
+            → (decision_ev, rung, trump, discard, hand10) | None
+
+    The hand and the talon are passed SEPARATELY and the pass/bid threshold is passed
+    IN, so the bidder itself decides whether the hand is worth a pickup before it may
+    look at the talon. A bidder that returns None has not seen those two cards."""
     if gp is None:
         gp = GPTable()
     fns = list(bid_fn) if isinstance(bid_fn, (list, tuple)) else [bid_fn] * 3
@@ -121,8 +216,8 @@ def run_auction(seed, bid_fn, gp=None):
     hands = [list(sol12[:10]), list(d1), list(d2)]
     talon = list(sol12[10:])
 
-    op = fns[0](hands[0] + talon, None, (hands[1], hands[2]))
-    if op is None or op[0] <= -PASS_PENALTY:
+    op = fns[0](hands[0], talon, None, -PASS_PENALTY, (hands[1], hands[2]))
+    if op is None:
         return {"seed": seed, "winner": None, "contract": "PASS",
                 "trump": None, "ev": -PASS_PENALTY, "bid_seq": [],
                 "n_bids": 0}
@@ -140,8 +235,8 @@ def run_auction(seed, bid_fn, gp=None):
         else:
             defender_value = -current["ev"]
             others = tuple(hands[s] for s in range(3) if s != nxt)
-            pick = fns[nxt](hands[nxt] + talon, current["rung"], others)
-            if pick is None or pick[0] <= defender_value:
+            pick = fns[nxt](hands[nxt], talon, current["rung"], defender_value, others)
+            if pick is None:
                 passes += 1
             else:
                 ev2, rung2, trump2, disc2, hand10b = pick

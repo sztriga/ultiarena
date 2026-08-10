@@ -54,7 +54,7 @@ def _multi_weights(bid, sol10, trump):
 def _play_and_score(bid, contract, weights, sol, d1, d2, trump, talon, restrict):
     from ulti.solvers import pis
     from ulti.scoring.oracle import score as score_oracle
-    from trickster._solver_core import set_multi_weights
+    from ultisolver._solver_core import set_multi_weights
     if weights is not None:
         set_multi_weights(**weights)
     bkw = dict(hands=[list(sol), list(d1), list(d2)], soloist=0, leader=0,
@@ -113,7 +113,7 @@ def _component_combo(bid, rung, trump, sol, d1, d2, talon):
     """Trick contracts + riders via god_says makeability (no replay)."""
     from ulti.solvers import pis
     from ulti.eval.pimc_matchup import god_says_soloist_wins
-    from trickster._solver_core import set_multi_weights
+    from ultisolver._solver_core import set_multi_weights
 
     def g(contract, t, restrict=None, multi=False):
         if multi:
@@ -227,7 +227,7 @@ def pimc_outcome(rung, trump, sol, d1, d2, talon, seed=0, pimc_n=None):
     from ulti.solvers import pis, determinize as _det
     from ulti.eval.pimc_matchup import pimc_pick
     from ulti.scoring.oracle import score as score_oracle
-    from trickster._solver_core import set_multi_weights
+    from ultisolver._solver_core import set_multi_weights
 
     if pimc_n is None:
         pimc_n = env_int("PIMC_N", 16)
@@ -315,7 +315,7 @@ def kontra_pimc_outcome(rung, trump, sol, d1, d2, talon, seed=0):
     import random
     from ulti.solvers import pis, determinize as _det
     from ulti.eval.pimc_matchup import pimc_pick
-    from trickster._solver_core import set_multi_weights
+    from ultisolver._solver_core import set_multi_weights
     pimc_n = env_int("PIMC_N", 16)
     set_multi_weights(**_play_weights(bid, sol, trump))
     bkw = dict(hands=[list(sol), list(d1), list(d2)], soloist=0, leader=0,

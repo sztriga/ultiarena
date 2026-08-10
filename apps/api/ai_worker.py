@@ -138,19 +138,25 @@ def _safe_exploit_pick(pos, solve_c, bid, voids, seed: int):
 def op_ai_pick(job: dict) -> Optional[int]:
     """One AI card decision. mode: 'exploit' (soloist) | 'pimc_pinned' (terített
     defender, soloist hand pinned) | 'pimc'. Returns a card id (None = caller falls
-    back to a random legal card, as before)."""
+    back to a random legal card, as before).
+
+    `pimc_n` may override the deployed search width for THIS decision. It exists so a
+    research harness can seat two play configurations at one table — the deployed value
+    is a module global read at import, which makes a per-seat comparison impossible
+    otherwise. Absent (the serving path), the global applies exactly as before."""
     _apply_weights(job.get("weights"))
     pos = _rebuild(job)
     solve_c, seed, voids = job["solve_c"], job["seed"], job.get("voids")
+    n = int(job.get("pimc_n") or _PIMC_N)
     ch = None
     if job["mode"] == "exploit":
         ch = _safe_exploit_pick(pos, solve_c, job["bid"], voids, seed)
     elif job["mode"] == "pimc_pinned":
-        ch = pimc_pick(pos=pos, contract=solve_c, n_samples=_PIMC_N, seed=seed,
+        ch = pimc_pick(pos=pos, contract=solve_c, n_samples=n, seed=seed,
                        voids_dict=voids,
                        must_hold={0: list(pis_bridge.hands_by_player(pos)[0])})
     if ch is None:
-        ch = pimc_pick(pos=pos, contract=solve_c, n_samples=_PIMC_N, seed=seed,
+        ch = pimc_pick(pos=pos, contract=solve_c, n_samples=n, seed=seed,
                        voids_dict=voids)
     return ch.id if ch is not None else None
 
