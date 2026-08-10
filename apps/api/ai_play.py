@@ -113,14 +113,14 @@ def _advance_play(sess: Session) -> None:
         offer = _next_kontra_offer(sess)
         if offer is not None:
             role, pidx, avail = offer
-            if pidx == sess.human_play_index:
+            if pidx in sess.human_pis:
                 sess.k_next = {"role": role, "play_index": pidx, "units": avail}
                 sess.phase = "kontra"
-                return                       # human decides (sidebar box)
+                return                       # that human decides (popup at their end)
             _apply_kontra_ai(sess, role, pidx, avail)
             continue                          # re-check for further offers
         p = pis_bridge.current_player(sess.p_pos)
-        if p == sess.human_play_index:
+        if p in sess.human_pis:
             return
         ch = _ai_play_pick(sess, p)
         sess.voids.observe(sess.p_pos, p, ch)
@@ -198,12 +198,14 @@ def _finish(sess: Session) -> None:
             "soloist_seat": w, "human_seat": sess.seat, "kontra_level": sess.k_level,
             "winner": "soloist" if soloist_won else "defenders", "made": made,
             "seat_gp": seat_gp,
-            "players": [                          # seat → identity (user_id once logged in)
-                {"seat": s, "kind": "human" if s == sess.seat else "ai",
-                 "user_id": getattr(sess, "user_id", None) if s == sess.seat else None,
-                 "ip": origin if s == sess.seat else None,
-                 "device": getattr(sess, "device_id", None) if s == sess.seat else None,
-                 "agent": None if s == sess.seat else "frontier"}
+            "players": [                          # seat → identity; ONE shape for solo AND live
+                {"seat": s, "kind": "human" if s in sess.humans else "ai",
+                 "user_id": (sess.players.get(s) or {}).get("user_id") if s in sess.humans else None,
+                 # ip/device describe the session CREATOR's browser — meaningful for the
+                 # solo game only; a live table has three browsers, identified by user_id.
+                 "ip": origin if (s == sess.seat and not sess.live) else None,
+                 "device": getattr(sess, "device_id", None) if (s == sess.seat and not sess.live) else None,
+                 "agent": None if s in sess.humans else "frontier"}
                 for s in range(3)
             ],
             "transcript": {                        # play-index space (0 = soloist); auction is real-seat

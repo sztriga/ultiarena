@@ -83,6 +83,7 @@ def _table_view(t: dict, viewer_id: str) -> dict:
         "full": all(s is not None for s in t["seats"]),
         "invited_me": viewer_id in t["invited"],
         "state": t["state"],
+        "game_id": t["game_id"],
     }
 
 
@@ -218,7 +219,53 @@ def table_invite(req: InviteRequest, request: Request = None) -> dict:
 
 @router.post("/live/table/start")
 def table_start(req: TableRequest, request: Request = None) -> dict:
-    """Stage 2 — the 3-human game engine (docs/MULTIPLAYER.md). Honest 501 until
-    it lands so the UI can label the button 'hamarosan'."""
-    require_user(request)
-    raise HTTPException(status_code=501, detail="A játszma indítás hamarosan érkezik.")
+    """Deal a live game for this table. Occupied seats are humans; EMPTY CHAIRS STAY
+    AI — the same frontier AI the solo game runs, because it is the solo game's
+    engine with `humans` = the occupied seats (milan: reuse, never reinvent). Works
+    with 1, 2 or 3 people at the table. The forehand rotates every round.
+
+    Host-only, like the other table controls. Restarting is allowed once the
+    current deal finished (that's the Következő button)."""
+    import random as _random
+
+    from .auction_flow import _advance_auction
+    from .engine import Session, _sessions, _sessions_lock
+
+    user = require_user(request)
+    with _lock:
+        t = _tables.get(req.table_id)
+        if t is None:
+            raise HTTPException(status_code=404, detail="Nincs ilyen asztal.")
+        if t["host_id"] != user["user_id"]:
+            raise HTTPException(status_code=403, detail="Csak a házigazda indíthat.")
+        occupants = [(i, uid) for i, uid in enumerate(t["seats"]) if uid is not None]
+        if not occupants:
+            raise HTTPException(status_code=400, detail="Üres az asztal.")
+        if t["game_id"] is not None:
+            with _sessions_lock:
+                prev = _sessions.get(t["game_id"])
+            if prev is not None and prev.phase not in ("done", "passed"):
+                raise HTTPException(status_code=409, detail="Még tart a játszma.")
+
+        # The forehand (real seat 0, the 12-holder) rotates: table seat i sits at
+        # real seat (i + round) % 3 — with empty chairs the AI takes its real seat.
+        rnd = t.get("round", 0)
+        real_of = {i: (i + rnd) % 3 for i in range(3)}
+        humans = {real_of[i] for i, _uid in occupants}
+        players = {real_of[i]: {"user_id": uid,
+                                "username": _members.get(uid, {}).get("username", "?")}
+                   for i, uid in occupants}
+
+        sess = Session(seat=min(humans), seed=_random.randint(1, 2**31 - 1), humans=humans)
+        sess.live = True
+        sess.players = players
+        sess.players_by_user = {p["user_id"]: seat for seat, p in players.items()}
+        sess.owner_ip = f"live:{t['id']}"     # passes the recording gate; not an IP
+        with _sessions_lock:
+            _sessions[sess.id] = sess
+        t["game_id"] = sess.id
+        t["state"] = "playing"
+        t["round"] = rnd + 1
+    _advance_auction(sess)                    # AI chairs may open the bidding at once
+    sess.rev += 1
+    return {"game_id": sess.id}

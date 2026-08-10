@@ -14,13 +14,16 @@ import { deviceId } from "./device";
 
 const POLL_MS = 2000;
 
-export function Live({ onExit }: { onExit: () => void }) {
+export function Live({ onExit, onEnterGame }: {
+  onExit: () => void;
+  onEnterGame: (gameId: string, tableId: string, isHost: boolean) => void;
+}) {
   const [auth, setAuthState] = useState<Auth | null>(getAuth());
   if (!auth) {
     return <AuthPanel onExit={onExit}
                       onAuthed={(a) => { setAuth(a); setAuthState(a); }} />;
   }
-  return <Lobby auth={auth} onExit={onExit}
+  return <Lobby auth={auth} onExit={onExit} onEnterGame={onEnterGame}
                 onLogout={() => { api.authLogout().catch(() => {}); setAuth(null); setAuthState(null); }} />;
 }
 
@@ -82,8 +85,9 @@ function AuthPanel({ onAuthed, onExit }: { onAuthed: (a: Auth) => void; onExit: 
 
 // ── Lobby ───────────────────────────────────────────────────────────────────────
 
-function Lobby({ auth, onExit, onLogout }: {
+function Lobby({ auth, onExit, onLogout, onEnterGame }: {
   auth: Auth; onExit: () => void; onLogout: () => void;
+  onEnterGame: (gameId: string, tableId: string, isHost: boolean) => void;
 }) {
   const [state, setState] = useState<LivePoll | null>(null);
   const [chat, setChat] = useState<LiveChatMsg[]>([]);
@@ -91,6 +95,18 @@ function Lobby({ auth, onExit, onLogout }: {
   const [error, setError] = useState<string | null>(null);
   const cursor = useRef(0);
   const chatEnd = useRef<HTMLDivElement | null>(null);
+  const enteredGame = useRef<string | null>(null);
+
+  // The host pressed Indítás → MY table is playing → everyone at it enters the
+  // game automatically (once per game_id; coming back to the lobby mid-deal and
+  // rejoining is the "Játékhoz" button on the table card).
+  useEffect(() => {
+    const mine = state?.tables.find((t) => t.table_id === state.my_table);
+    if (mine?.state === "playing" && mine.game_id && enteredGame.current !== mine.game_id) {
+      enteredGame.current = mine.game_id;
+      onEnterGame(mine.game_id, mine.table_id, mine.is_host);
+    }
+  }, [state, onEnterGame]);
 
   const poll = useCallback(async () => {
     try {
@@ -160,7 +176,8 @@ function Lobby({ auth, onExit, onLogout }: {
           ) : (
             state.tables.map((t) => (
               <TableCard key={t.table_id} t={t} mine={t.table_id === state.my_table}
-                         seated={myTable !== null} act={act} />
+                         seated={myTable !== null} act={act}
+                         onRejoin={onEnterGame} />
             ))
           )}
         </section>
@@ -203,9 +220,10 @@ function Lobby({ auth, onExit, onLogout }: {
   );
 }
 
-function TableCard({ t, mine, seated, act }: {
+function TableCard({ t, mine, seated, act, onRejoin }: {
   t: LiveTable; mine: boolean; seated: boolean;
   act: (fn: () => Promise<unknown>) => void;
+  onRejoin: (gameId: string, tableId: string, isHost: boolean) => void;
 }) {
   return (
     <div className={`live-table ${mine ? "is-mine" : ""} ${t.invited_me ? "is-invited" : ""}`}>
@@ -233,16 +251,23 @@ function TableCard({ t, mine, seated, act }: {
       <div className="live-table-actions">
         {mine ? (
           <>
-            {t.is_host && (
-              <button className="betli-hu-deal-btn betli-hu-deal-btn--sm" disabled
-                      title="A játszma indítás a következő lépés — hamarosan">
-                Indítás {t.full ? "(hamarosan)" : ""}
+            {t.is_host && t.state !== "playing" && (
+              <button className="betli-hu-deal-btn betli-hu-deal-btn--sm"
+                      title="Üres székeken a gép játszik"
+                      onClick={() => act(() => api.tableStart(t.table_id))}>
+                Indítás
+              </button>
+            )}
+            {t.state === "playing" && t.game_id && (
+              <button className="betli-hu-deal-btn betli-hu-deal-btn--sm"
+                      onClick={() => onRejoin(t.game_id!, t.table_id, t.is_host)}>
+                Játékhoz
               </button>
             )}
             <button className="btn" onClick={() => act(() => api.tableLeave(t.table_id))}>Felállok</button>
           </>
         ) : (
-          !t.full && !seated && (
+          !t.full && !seated && t.state !== "playing" && (
             <button className="btn" onClick={() => act(() => api.tableJoin(t.table_id))}>Leülök</button>
           )
         )}

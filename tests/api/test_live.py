@@ -161,7 +161,8 @@ def test_one_table_per_player(client):
     assert client.post("/api/live/table/create", headers=a).status_code == 400
 
 
-def test_start_is_honest_about_stage_2(client):
-    (a, _b, _c), tid = _三(client)
+def test_start_is_host_only(client):
+    (a, b, _c), tid = _三(client)
+    client.post("/api/live/table/join", json={"table_id": tid}, headers=b)
     assert client.post("/api/live/table/start",
-                       json={"table_id": tid}, headers=a).status_code == 501
+                       json={"table_id": tid}, headers=b).status_code == 403

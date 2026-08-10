@@ -20,3 +20,6 @@ fast = ["cython"]   # build the extensions: python setup_cython.py build_ext --i
 [tool.setuptools.packages.find]
 where = ["."]
 exclude = ["research*", "tests*", "snapszer*", "build*", "assets*", "models*", "apps.web*"]
+
+[tool.pytest.ini_options]
+markers = ["slow: real AI decisions (net + PIMC) — excluded with -m 'not slow'"]

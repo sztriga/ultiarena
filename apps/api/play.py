@@ -42,7 +42,8 @@ from .serialize import card_to_dict
 from .limits import guard_new_session
 from .users import user_from_request
 from .engine import (
-    Session, _hold, _reap_idle_sessions, _recipe, _sessions, _sessions_lock,
+    Session, _hold, _play_index, _reap_idle_sessions, _recipe, _sessions,
+    _sessions_lock, _viewer_seat,
 )
 from .auction_flow import (
     _advance_auction, _apply_bid, _human_bundle, _resolve_auction, _setup_play,
@@ -72,7 +73,8 @@ def play_new(req: NewRequest, request: Request = None) -> dict:
     sess = Session(seat=req.seat, seed=seed)      # just the deal — no AI work yet
     sess.device_id = req.device_id
     user = user_from_request(request)             # logged in → the recording carries it
-    sess.user_id = user["user_id"] if user else None
+    sess.players = {req.seat: {"user_id": user["user_id"] if user else None,
+                               "username": user["username"] if user else None}}
     with _sessions_lock:
         _reap_idle_sessions()           # cheap O(n) sweep on the rare new-game call
         # guard + insert under ONE lock hold — the cap check and the insert must be
@@ -95,12 +97,13 @@ class BidRequest(BaseModel):
 
 
 @router.post("/play/bid")
-def play_bid(req: BidRequest) -> dict:
+def play_bid(req: BidRequest, request: Request = None) -> dict:
     t0 = time.perf_counter()
     with _hold(req.game_id) as sess:
+        viewer = _viewer_seat(sess, request)
         if sess.phase != "bid" or sess.a_done:
             raise HTTPException(status_code=400, detail="not in the bidding phase")
-        if sess.a_turn != sess.seat:
+        if sess.a_turn != viewer:
             raise HTTPException(status_code=400, detail="not your turn to bid")
         if not sess.a_awaiting_bid:
             raise HTTPException(status_code=400, detail="pick the talon up before bidding")
@@ -127,7 +130,7 @@ def play_bid(req: BidRequest) -> dict:
         else:
             trump = None                    # deferred → chosen in trump_select
 
-        bundle = _human_bundle(sess, rung, trump, req.discard_ids)
+        bundle = _human_bundle(sess, rung, trump, req.discard_ids, seat=viewer)
         # A 100-game needs the marriage in hand. With a known trump (piros) check it
         # exactly; with a deferred trump, require the marriage exists in SOME suit you
         # could pick (else the contract is impossible whatever you choose).
@@ -143,12 +146,13 @@ def play_bid(req: BidRequest) -> dict:
                 raise HTTPException(status_code=400, detail="you don't hold a 40 (trump K+Q) for a 40-100 game")
             if chosen.twenty_hundred and not has20:
                 raise HTTPException(status_code=400, detail="you don't hold a 20 (K+Q pair) for a 20-100 game")
-        _apply_bid(sess, sess.seat, bundle, bid_override=chosen)
+        _apply_bid(sess, viewer, bundle, bid_override=chosen)
         sess.a_awaiting_bid = False
         sess.a_passes = 0
-        sess.a_turn = (sess.seat + 1) % 3
+        sess.a_turn = (viewer + 1) % 3
         _advance_auction(sess)
-        snap = _snapshot(sess)
+        sess.rev += 1
+        snap = _snapshot(sess, viewer)
     snap["step_ms"] = (time.perf_counter() - t0) * 1000.0
     return snap
 
@@ -158,14 +162,15 @@ class PickupRequest(BaseModel):
 
 
 @router.post("/play/pickup")
-def play_pickup(req: PickupRequest) -> dict:
+def play_pickup(req: PickupRequest, request: Request = None) -> dict:
     """Auction step: take the talon up (→ 12 cards) so you can discard 2 and bid.
     This is also the holder's RE-RAISE entry point."""
     t0 = time.perf_counter()
     with _hold(req.game_id) as sess:
+        viewer = _viewer_seat(sess, request)
         if sess.phase != "bid" or sess.a_done:
             raise HTTPException(status_code=400, detail="not in the bidding phase")
-        if sess.a_turn != sess.seat:
+        if sess.a_turn != viewer:
             raise HTTPException(status_code=400, detail="not your turn")
         if sess.a_awaiting_bid:
             raise HTTPException(status_code=400, detail="you already hold the talon")
@@ -174,7 +179,8 @@ def play_pickup(req: PickupRequest) -> dict:
             raise HTTPException(status_code=400, detail="no higher bid available — accept or pass")
         sess.a_awaiting_bid = True        # → bid step; turn stays with you
         sess.a_picked_up = True           # ring the 2 cards you just took up
-        snap = _snapshot(sess)
+        sess.rev += 1
+        snap = _snapshot(sess, viewer)
     snap["step_ms"] = (time.perf_counter() - t0) * 1000.0
     return snap
 
@@ -185,14 +191,15 @@ class PassRequest(BaseModel):
 
 
 @router.post("/play/pass")
-def play_pass(req: PassRequest) -> dict:
+def play_pass(req: PassRequest, request: Request = None) -> dict:
     t0 = time.perf_counter()
     with _hold(req.game_id) as sess:
+        viewer = _viewer_seat(sess, request)
         if sess.phase != "bid" or sess.a_done:
             raise HTTPException(status_code=400, detail="not in the bidding phase")
-        if sess.a_turn != sess.seat:
+        if sess.a_turn != viewer:
             raise HTTPException(status_code=400, detail="not your turn to bid")
-        holder = sess.a_current is not None and sess.a_current["pid"] == sess.seat
+        holder = sess.a_current is not None and sess.a_current["pid"] == viewer
         if holder:
             # Kezdés / Elfogadom — accept your winning bid, start play. No new discard.
             _resolve_auction(sess)
@@ -202,24 +209,25 @@ def play_pass(req: PassRequest) -> dict:
         elif sess.a_awaiting_bid:
             # Bid step (forehand opening / picked-up): passz buries 2 → the talon the
             # next player picks up.
-            cards12 = list(sess.a_hands[sess.seat]) + list(sess.a_talon)
+            cards12 = list(sess.a_hands[viewer]) + list(sess.a_talon)
             discard = [c for c in cards12 if c.id in req.discard_ids]
             if len(discard) != 2:
                 raise HTTPException(status_code=400, detail="select 2 cards to bury as the talon before passing")
-            sess.a_hands[sess.seat] = [c for c in cards12 if c.id not in req.discard_ids]
+            sess.a_hands[viewer] = [c for c in cards12 if c.id not in req.discard_ids]
             sess.a_talon = discard
             sess.a_awaiting_bid = False
-            sess.a_history.append({"pid": sess.seat, "kind": "pass"})
+            sess.a_history.append({"pid": viewer, "kind": "pass"})
             sess.a_passes += 1
-            sess.a_turn = (sess.seat + 1) % 3
+            sess.a_turn = (viewer + 1) % 3
             _advance_auction(sess)
         else:
             # Auction step: decline WITHOUT picking up — the talon is untouched.
-            sess.a_history.append({"pid": sess.seat, "kind": "pass"})
+            sess.a_history.append({"pid": viewer, "kind": "pass"})
             sess.a_passes += 1
-            sess.a_turn = (sess.seat + 1) % 3
+            sess.a_turn = (viewer + 1) % 3
             _advance_auction(sess)
-        snap = _snapshot(sess)
+        sess.rev += 1
+        snap = _snapshot(sess, viewer)
     snap["step_ms"] = (time.perf_counter() - t0) * 1000.0
     return snap
 
@@ -230,18 +238,22 @@ class TrumpRequest(BaseModel):
 
 
 @router.post("/play/trump")
-def play_trump(req: TrumpRequest) -> dict:
+def play_trump(req: TrumpRequest, request: Request = None) -> dict:
     """Declare the trump color for the plain colored game you just won, then play."""
     t0 = time.perf_counter()
     with _hold(req.game_id) as sess:
+        viewer = _viewer_seat(sess, request)
         if sess.phase != "trump_select":
             raise HTTPException(status_code=400, detail="not choosing a trump")
+        if viewer != sess.a_winner:
+            raise HTTPException(status_code=400, detail="a győztes választ adut")
         if req.trump not in ("acorns", "leaves", "bells"):
             raise HTTPException(status_code=400, detail="pick makk / zöld / tök")
         sess.a_current["trump"] = req.trump
         _setup_play(sess)
         _advance_play(sess)
-        snap = _snapshot(sess)
+        sess.rev += 1
+        snap = _snapshot(sess, viewer)
     snap["step_ms"] = (time.perf_counter() - t0) * 1000.0
     return snap
 
@@ -255,11 +267,14 @@ class KontraRequest(BaseModel):
 
 
 @router.post("/play/kontra")
-def play_kontra(req: KontraRequest) -> dict:
+def play_kontra(req: KontraRequest, request: Request = None) -> dict:
     t0 = time.perf_counter()
     with _hold(req.game_id) as sess:
+        viewer = _viewer_seat(sess, request)
         if sess.phase != "kontra" or sess.k_next is None:
             raise HTTPException(status_code=400, detail="no kontra decision pending")
+        if sess.k_next["play_index"] != _play_index(sess, viewer):
+            raise HTTPException(status_code=400, detail="nem a te kontra döntésed")
         role = sess.k_next["role"]
         pidx = sess.k_next["play_index"]
         avail = sess.k_next.get("units", [])
@@ -289,7 +304,8 @@ def play_kontra(req: KontraRequest) -> dict:
         sess.k_next = None
         sess.phase = "play"
         _advance_play(sess)                  # resume play (may offer the next kontra)
-        snap = _snapshot(sess)
+        sess.rev += 1
+        snap = _snapshot(sess, viewer)
     snap["step_ms"] = (time.perf_counter() - t0) * 1000.0
     return snap
 
@@ -300,15 +316,16 @@ class MoveRequest(BaseModel):
 
 
 @router.post("/play/move")
-def play_move(req: MoveRequest) -> dict:
+def play_move(req: MoveRequest, request: Request = None) -> dict:
     t0 = time.perf_counter()
     with _hold(req.game_id) as sess:
+        viewer = _viewer_seat(sess, request)
         if sess.phase != "play":
             raise HTTPException(status_code=400, detail="not in the play phase")
         if pis_bridge.is_terminal(sess.p_pos):
             raise HTTPException(status_code=400, detail="game already over")
         cur = pis_bridge.current_player(sess.p_pos)
-        if cur != sess.human_play_index:
+        if cur != _play_index(sess, viewer):
             raise HTTPException(status_code=400, detail=f"not your turn (current player {cur})")
 
         card = card_from_id(req.card_id)
@@ -320,7 +337,8 @@ def play_move(req: MoveRequest) -> dict:
         pis_bridge.apply_move(sess.p_pos, card)
         _record_play(sess, cur, card, by_ai=False)
         _advance_play(sess)
-        snap = _snapshot(sess)
+        sess.rev += 1
+        snap = _snapshot(sess, viewer)
     snap["step_ms"] = (time.perf_counter() - t0) * 1000.0
     return snap
 
@@ -330,13 +348,14 @@ class AnalysisRequest(BaseModel):
 
 
 @router.post("/play/analysis")
-def play_analysis(req: AnalysisRequest) -> dict:
+def play_analysis(req: AnalysisRequest, request: Request = None) -> dict:
     """God-solver analysis of the hand: rate every played ply (chosen vs god-best
     value + a blunder flag) and hand back everything the client needs to fork
     alternative lines via /pis/explore (the same generalized branch engine the betli
     board uses). Works for any contract — trump, marriages, the weighted multi objective."""
     t0 = time.perf_counter()
     with _hold(req.game_id) as sess:
+        _viewer_seat(sess, request)          # live game → members only (403 otherwise)
         if not sess.play_hands0:
             raise HTTPException(status_code=400, detail="no played hand to analyze yet")
         sol, d1, d2 = sess.play_hands0
@@ -383,9 +402,9 @@ class StateRequest(BaseModel):
 
 
 @router.post("/play/state")
-def play_state(req: StateRequest) -> dict:
+def play_state(req: StateRequest, request: Request = None) -> dict:
     with _hold(req.game_id) as sess:
-        return _snapshot(sess)
+        return _snapshot(sess, _viewer_seat(sess, request))
 
 
 class MineRequest(BaseModel):

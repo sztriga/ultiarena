@@ -42,6 +42,10 @@ function auctionTable(meSeat: Seat, own: Card[]) {
 export function PlayVsAI() {
   const [showPuzzle, setShowPuzzle] = useState(false);   // Villámtalon mini-game overlay
   const [showLive, setShowLive] = useState(false);       // Játék élőben — lobby (Live.tsx)
+  // A running lobby-table game. The ENTIRE game UI below is shared with the solo
+  // game — live mode only adds a 1s poll (opponents' moves arrive by poll instead
+  // of inside my own request's response) and table-aware result buttons.
+  const [liveCtx, setLiveCtx] = useState<{ gameId: string; tableId: string; isHost: boolean } | null>(null);
 
   const [state,   setState]   = useState<PlayState | null>(null);
   const [pending, setPending] = useState<PlayState | null>(null);   // animation target
@@ -197,23 +201,53 @@ export function PlayVsAI() {
     api.playDelete(gid).catch(() => {});
   }, []);
 
+  // ── Live (lobby-table) game plumbing ──────────────────────────────────────
+  const onEnterLiveGame = useCallback(async (gameId: string, tableId: string, isHost: boolean) => {
+    setLiveCtx({ gameId, tableId, isHost });
+    setShowLive(false);
+    setRounds([]); recordedGame.current = null;
+    await onResume(gameId);
+  }, [onResume]);
+
+  const onExitLive = useCallback(() => {
+    setLiveCtx(null); setState(null); setPending(null); setError(null);
+    resetBubbles(); setRounds([]); recordedGame.current = null;
+    setShowLive(true);                                   // back to the lobby, still seated
+  }, [resetBubbles]);
+
+
   // Next round rotates who holds the 12 (the opener) — after an all-pass too
   // (milan 2026-08-02).
   const onPlayAgain = useCallback(async (rotate = true) => {
     if (!state) return;
+    if (liveCtx) {
+      // Következő at a live table: the HOST deals the next round (the server
+      // rotates the forehand); everyone else's poll adopts the new game_id.
+      if (!liveCtx.isHost) return;
+      setLoading(true); setError(null); setPending(null); resetBubbles();
+      try {
+        const r = await api.tableStart(liveCtx.tableId);
+        setLiveCtx({ ...liveCtx, gameId: r.game_id });
+        recordedGame.current = null;
+        setState(await api.playState(r.game_id));
+      } catch (e) { setError(String(e)); }
+      finally { setLoading(false); }
+      return;
+    }
     const next = (rotate ? (state.seat + 1) % 3 : state.seat) as Seat;
     const old = state.game_id;
     setLoading(true); setError(null); setPending(null); resetBubbles();
     try { setState(await api.playNew({ seat: next, device_id: deviceId() })); api.playDelete(old).catch(() => {}); }
     catch (e) { setError(String(e)); }
     finally { setLoading(false); }
-  }, [state, resetBubbles]);
+  }, [state, resetBubbles, liveCtx]);
 
   const onAbandon = useCallback(async () => {
+    if (liveCtx) { onExitLive(); return; }                // shared game — never delete it
     if (state) await api.playDelete(state.game_id).catch(() => {});
     setState(null); setError(null); setPending(null); resetBubbles();
     setRounds([]); recordedGame.current = null;
-  }, [state, resetBubbles]);
+  }, [state, resetBubbles, liveCtx, onExitLive]);
 
   // When an auction action resolves straight into play, the server may have
   // already played the AI's opening card(s) before your turn. Animate those in
@@ -321,6 +355,35 @@ export function PlayVsAI() {
   // ── Post-game analysis board (god solver + branch exploration) ─────────────
   const [analysis, setAnalysis] = useState<PlayAnalysis | null>(null);
   const [analysisOpen, setAnalysisOpen] = useState(false);
+
+  // Poll the shared game: adopt when the server's rev moved (someone else acted).
+  // New plays run through the SAME animation machine that solo AI responses feed;
+  // at a finished deal we watch the lobby instead, so a non-host learns the next
+  // deal's game_id the moment the host starts it.
+  useEffect(() => {
+    if (!liveCtx || !state || pending !== null || analysisOpen) return;
+    const t = window.setInterval(async () => {
+      try {
+        if (state.phase === "done" || state.phase === "passed") {
+          const lobby = await api.livePoll(1e9);
+          const mine = lobby.tables.find((tb) => tb.table_id === liveCtx.tableId);
+          if (mine?.game_id && mine.game_id !== liveCtx.gameId) {
+            setLiveCtx({ ...liveCtx, gameId: mine.game_id });
+            setPending(null); resetBubbles(); recordedGame.current = null;
+            setState(await api.playState(mine.game_id));
+          }
+          return;
+        }
+        const r = await api.playState(liveCtx.gameId);
+        if (r.rev !== state.rev) {
+          if ((r.history?.length ?? 0) > (state.history?.length ?? 0)) setPending(r);
+          else setState(r);
+        }
+      } catch { /* transient — next tick retries */ }
+    }, 1000);
+    return () => window.clearInterval(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [liveCtx, state?.rev, state?.phase, pending, analysisOpen]);
   const [scrubPly, setScrubPly] = useState(0);
   const [analysisLoading, setAnalysisLoading] = useState(false);
   // Branch: the FULL alternative line (unchanged prefix + god-PV of the chosen fork), held as a
@@ -436,7 +499,7 @@ export function PlayVsAI() {
     return <PuzzleRush onExit={() => setShowPuzzle(false)} />;
   }
   if (showLive) {
-    return <Live onExit={() => setShowLive(false)} />;
+    return <Live onExit={() => setShowLive(false)} onEnterGame={onEnterLiveGame} />;
   }
 
   if (!state) {
@@ -467,7 +530,10 @@ export function PlayVsAI() {
     const { hands: tHands, hidden: tHidden } = auctionTable(meSeat, handCards);
     const tChrome = (pid: Seat): SeatChrome => ({ label: <>P{pid}{pid === meSeat ? " (te)" : ""}</> });
     const tSeats = { 0: tChrome(0), 1: tChrome(1), 2: tChrome(2) };
-    const trumpPanel = (
+    // live game, someone ELSE won: they pick the suit; we watch (is_chooser is
+    // always true in the solo game — trump_select only surfaces for the winner).
+    const chooser = state.is_chooser !== false;
+    const trumpPanel = chooser ? (
       <div className="ulti-auction-overlay">
         <div className="ulti-auction-title">Adu választás</div>
         <div className="ulti-auction-current">
@@ -480,6 +546,11 @@ export function PlayVsAI() {
             </button>
           ))}
         </div>
+      </div>
+    ) : (
+      <div className="ulti-auction-overlay">
+        <div className="ulti-auction-title">Adu választás</div>
+        <div className="ulti-auction-current"><b>{state.contract}</b> — a győztes választ adut…</div>
       </div>
     );
     return (
@@ -519,18 +590,23 @@ export function PlayVsAI() {
     const bidChrome = (pid: Seat): SeatChrome => ({
       label: (
         <>
-          P{pid}{pid === meSeat ? " (te)" : ""}
+          {state.usernames?.[pid] ?? `P${pid}`}{pid === meSeat ? " (te)" : ""}
           {auction.current?.pid === pid && <span className="ulti-role-tag ulti-role-soloist"> licitál</span>}
         </>
       ),
     });
     const bidSeats = { 0: bidChrome(0), 1: bidChrome(1), 2: bidChrome(2) };
 
+    // Live game, someone else's turn → the panel shows who we're waiting for
+    // (solo never waits here: AI turns resolve inside our own requests).
+    const waitingName = !auction.is_human_turn && auction.turn != null
+      ? (state.usernames?.[auction.turn] ?? `P${auction.turn}`) : null;
     const auctionPanel = (
       <AuctionPanel auction={auction} seat={state.seat} selPos={selPos}
                     setSelPos={setSelPos} setSelTrump={setSelTrump} selBid={selBid}
                     discards={discards} canConfirm={canConfirm} loading={loading}
-                    onConfirm={onConfirm} onAuctionPass={onAuctionPass} onPickup={onPickup} />
+                    onConfirm={onConfirm} onAuctionPass={onAuctionPass} onPickup={onPickup}
+                    waitingName={waitingName} />
     );
 
     return (
@@ -588,11 +664,14 @@ export function PlayVsAI() {
   }
   const hiddenSeats = passedTable?.hidden ?? new Set<0 | 1 | 2>(
     ([0, 1, 2] as Seat[]).filter((s) => s !== hpi && !(revealSol && s === 0)));
+  // live: play index → the real seat's username ("Gép" for an AI chair)
+  const nameOfPi = (pid: Seat): string | null =>
+    state.live ? (state.usernames?.[(pid + state.seat - hpi + 3) % 3] ?? null) : null;
   const roleTag = (pid: Seat): SeatChrome => ({
     label: passed ? (
       // a passed deal has no soloist/defender roles — neutral seat labels
       <>
-        P{pid}
+        {state.usernames?.[pid] ?? `P${pid}`}
         {pid === hpi && <span className="ulti-role-tag" style={{ background: "#3a6", color: "#fff" }}>te</span>}
       </>
     ) : (
@@ -600,6 +679,7 @@ export function PlayVsAI() {
         <span className={`ulti-role-tag ${pid === 0 ? "ulti-role-soloist" : "ulti-role-defender"}`}>
           {pid === 0 ? "Játékos" : "Védő"}
         </span>
+        {nameOfPi(pid) && <span className="ulti-role-name">{nameOfPi(pid)}</span>}
         {pid === hpi && <span className="ulti-role-tag" style={{ background: "#3a6", color: "#fff" }}>te</span>}
       </>
     ),
@@ -632,10 +712,13 @@ export function PlayVsAI() {
         renderResult(result, !passed)
       ) : (
         <div className="play-side-idle">
-          {inKontra
+          {state.phase === "kontra"
             ? "Kontra döntés…"
             : state.phase === "play" && !terminal
-              ? (animating || loading ? "A gép lép…" : isMyTurn ? "Te jössz" : "A gép lép…")
+              ? (animating || loading ? (state.live ? "…" : "A gép lép…")
+                 : isMyTurn ? "Te jössz"
+                 : state.live ? `${state.usernames?.[((state.current_player ?? 0) + state.seat - (state.human_play_index ?? 0) + 3) % 3] ?? "…"} jön`
+                 : "A gép lép…")
               : "Ulti vs AI"}
         </div>
       )}

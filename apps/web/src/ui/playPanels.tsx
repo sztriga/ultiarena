@@ -316,7 +316,7 @@ export function AnalysisBoard({ analysis, analysisView, effectivePlies, branch,
 // selection state stays in the parent.
 export function AuctionPanel({ auction, seat, selPos, setSelPos, setSelTrump, selBid,
                                discards, canConfirm, loading,
-                               onConfirm, onAuctionPass, onPickup }: {
+                               onConfirm, onAuctionPass, onPickup, waitingName = null }: {
   auction: NonNullable<PlayState["auction"]>;
   seat: number;
   selPos: number | null;
@@ -329,6 +329,7 @@ export function AuctionPanel({ auction, seat, selPos, setSelPos, setSelTrump, se
   onConfirm: () => void;
   onAuctionPass: () => void;
   onPickup: () => void;
+  waitingName?: string | null;     // live game, someone else's turn: "X gondolkodik…"
 }) {
   const kind = selBid?.kind ?? "bid";
   const isHolder = !!auction.is_holder;          // you own the standing bid
@@ -340,6 +341,9 @@ export function AuctionPanel({ auction, seat, selPos, setSelPos, setSelTrump, se
   return (
       <div className="ulti-auction-overlay">
         <div className="ulti-auction-title">Licitálás</div>
+        {waitingName && (
+          <div className="ulti-auction-waiting">{waitingName} gondolkodik…</div>
+        )}
         {auction.current && (
           <div className="ulti-auction-current">
             <span className="ulti-auction-label">Aktuális licit:</span>{" "}

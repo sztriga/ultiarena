@@ -56,8 +56,10 @@ def _apply_bid(sess: Session, pid: int, bundle: tuple, bid_override=None) -> Non
     })
 
 
-def _human_bundle(sess: Session, rung, trump: Optional[str], discard_ids: List[int]) -> tuple:
-    cards12 = list(sess.a_hands[sess.seat]) + list(sess.a_talon)
+def _human_bundle(sess: Session, rung, trump: Optional[str], discard_ids: List[int],
+                  seat: Optional[int] = None) -> tuple:
+    seat = sess.seat if seat is None else seat
+    cards12 = list(sess.a_hands[seat]) + list(sess.a_talon)
     discard = [c for c in cards12 if c.id in discard_ids]
     if len(discard) != 2:
         raise HTTPException(status_code=400, detail="must discard exactly 2 of your 12 cards")
@@ -86,9 +88,9 @@ def _advance_auction(sess: Session) -> None:
         if sess.a_passes >= 3:
             # Everyone passed with no bid → the forehand (the 12-holder, seat 0) gets
             # ONE last look: pick the talon back up and play, or passz for good and
-            # pay the penalty. Only offered interactively when the human is forehand;
-            # an AI forehand already declined, so it just pays.
-            if sess.a_current is None and not sess.a_reclaim_offered and sess.seat == 0:
+            # pay the penalty. Only offered interactively when the forehand is a
+            # HUMAN seat; an AI forehand already declined, so it just pays.
+            if sess.a_current is None and not sess.a_reclaim_offered and 0 in sess.humans:
                 sess.a_reclaim_offered = True
                 sess.a_turn = 0
                 sess.a_awaiting_bid = False    # auction step: Felveszem (play) or Passz (pay)
@@ -99,15 +101,15 @@ def _advance_auction(sess: Session) -> None:
         if sess.a_current is not None and turn == sess.a_current["pid"]:
             # Everyone else has passed and it is back to the holder. The holder may
             # take the talon back up and RAISE their own bid — the bluff: win cheap,
-            # then climb to your real contract. The human decides (pause here); an
+            # then climb to your real contract. A human decides (pause here); an
             # AI holder declines (it always bids its true best, nothing to raise to).
-            if turn == sess.seat:
+            if turn in sess.humans:
                 return
             sess.a_passes += 1
             sess.a_turn = (turn + 1) % 3
             continue
-        if turn == sess.seat:
-            return  # user decides (open or overcall)
+        if turn in sess.humans:
+            return  # a human decides (open or overcall)
         # AI seat
         if sess.a_current is None:
             pick = _bid_ai(sess, turn, None, -PASS_PENALTY)
@@ -141,7 +143,7 @@ def _resolve_auction(sess: Session) -> None:
     # before play (Ulti: the color is hidden until the game begins). AI winners and
     # piros/colorless games already carry their trump.
     rung = sess.a_current["rung"]
-    if sess.a_winner == sess.seat and sess.a_current["trump"] is None and not rung.colorless:
+    if sess.a_winner in sess.humans and sess.a_current["trump"] is None and not rung.colorless:
         sess.phase = "trump_select"
         return
     _setup_play(sess)
@@ -191,6 +193,7 @@ def _setup_play(sess: Session) -> None:
     sess.rung = rung
     sess.trump = trump
     sess.human_play_index = (sess.seat - w) % 3
+    sess.human_pis = {(s - w) % 3 for s in sess.humans}   # human PLAY indices (== {hpi} solo)
 
     bid = sess.a_current["bid"]
     sess.bid = bid

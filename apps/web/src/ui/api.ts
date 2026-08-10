@@ -152,6 +152,10 @@ export interface PlayScore {
 }
 
 export interface PlayState {
+  rev?: number;                       // server mutation counter — poll adoption key
+  live?: boolean;                     // a lobby-table game (multiplayer)
+  usernames?: Record<number, string>; // live: real seat → username ("Gép" for AI chairs)
+  is_chooser?: boolean;               // trump_select: is it THIS viewer who declares?
   game_id: string;
   seat:    0 | 1 | 2;
   seed:    number;
@@ -241,6 +245,7 @@ export interface LiveTable {
   full: boolean;
   invited_me: boolean;
   state: string;
+  game_id: string | null;
 }
 export interface LiveChatMsg { seq: number; user: string; text: string; ts: number; }
 export interface LivePoll {
@@ -322,7 +327,7 @@ export const api = {
   tableLeave:   (table_id: string)   => http<{ ok: boolean }>("POST", "/live/table/leave", { table_id }),
   tableKick:    (table_id: string, user_id: string) => http<{ ok: boolean }>("POST", "/live/table/kick", { table_id, user_id }),
   tableInvite:  (table_id: string, username: string) => http<{ ok: boolean }>("POST", "/live/table/invite", { table_id, username }),
-  tableStart:   (table_id: string)   => http<{ ok: boolean }>("POST", "/live/table/start", { table_id }),
+  tableStart:   (table_id: string)   => http<{ game_id: string }>("POST", "/live/table/start", { table_id }),
   puzzleNew:   ()                                            => http<PuzzleState>("POST", "/puzzle/new"),
   puzzleSolve: (req: { game_id: string; discard_ids: number[] }) => http<PuzzleState>("POST", "/puzzle/solve", req),
   puzzleState: (game_id: string)                            => http<PuzzleState>("GET",  `/puzzle/state/${game_id}`),

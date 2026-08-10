@@ -117,19 +117,31 @@ def _provider():
 # ── Session ─────────────────────────────────────────────────────────────────────
 
 class Session:
-    """One in-flight game: auction state machine → kontra → pis play position."""
+    """One in-flight game: auction state machine → kontra → pis play position.
 
-    def __init__(self, *, seat: int, seed: int) -> None:
+    ONE engine for every mix of players (docs/MULTIPLAYER.md): `humans` is the set
+    of REAL seats driven by people; every other seat is the AI — the same frontier
+    AI the solo game runs, because it IS the solo game's code path. The solo game
+    is simply `humans={seat}`; a live table passes 1..3 human seats and empty
+    chairs stay AI without a single new line of AI code."""
+
+    def __init__(self, *, seat: int, seed: int, humans: Optional[set] = None) -> None:
         self.id = uuid.uuid4().hex[:12]
         self.lock = RLock()             # serializes ALL actions on this one game (see _hold)
         self.last_touch = time.time()   # idle-expiry clock (see _reap)
+        self.humans: set = set(humans) if humans is not None else {seat}
+        self.players: Dict[int, dict] = {}       # real seat -> {user_id, username} (live tables)
+        self.players_by_user: Dict[str, int] = {}
+        self.live = False                        # True = a lobby-table game (apps/api/live.py)
+        self.human_pis: set = set()              # human PLAY indices, filled at _setup_play
+        self.rev = 0                             # bumped on every mutation → poll adoption
+        self.bubbles_seen: Dict[int, int] = {}   # per-viewer bubble cursor (real seat)
         # Identity vs abuse-control are SEPARATE axes: device_id is a client-generated
         # uuid (localStorage) = "whose game is this" — it lists/resumes games; user_id
         # is the logged-in account (apps/api/users.py), set by the route when a bearer
         # token is present. owner_ip (set by the route) is what the caps key on,
         # because a client can mint device ids and tokens at will.
         self.device_id: Optional[str] = None
-        self.user_id: Optional[str] = None
         self.seat = seat            # the user's real auction seat (0/1/2)
         self.seed = seed
         self.redeals = 0            # dead-deal (all-pass) re-deals in this session
@@ -151,7 +163,7 @@ class Session:
         # starts in the AUCTION step (holds 10 → Felveszem to pick the talon up and
         # then bid, or Passz to decline without touching it). `a_awaiting_bid` is the
         # bid step; it flips True on pickup / the forehand's reclaim.
-        self.a_awaiting_bid = (seat == 0)
+        self.a_awaiting_bid = (0 in self.humans)   # forehand holds the 12; == (seat==0) solo
         # True once you REACHED the bid step via a pickup (Felveszem / reclaim) rather
         # than being dealt the 12 — used to ring the 2 talon cards you just took up.
         self.a_picked_up = False
@@ -228,6 +240,26 @@ def _recipe(sess: "Session") -> dict:
         "history": [(h["player_id"], h["card"]["id"]) for h in sess.p_history],
         "voids": sess.voids.as_dict() if sess.voids is not None else None,
     }
+
+
+def _play_index(sess: "Session", seat: int) -> int:
+    """Real seat → play index (soloist = 0). Valid once the auction resolved."""
+    w = sess.a_winner if sess.a_winner is not None else 0
+    return (seat - w) % 3
+
+
+def _viewer_seat(sess: "Session", request) -> int:
+    """Whose eyes render this request. Solo game → the one human, exactly as before
+    (in-process callers pass no request). Live table game → the authenticated
+    member's seat; strangers are refused even with a valid game_id."""
+    if not sess.live:
+        return sess.seat
+    from .users import user_from_request
+    user = user_from_request(request)
+    seat = sess.players_by_user.get(user["user_id"]) if user else None
+    if seat is None:
+        raise HTTPException(status_code=403, detail="Nem ülsz ennél az asztalnál.")
+    return seat
 
 
 def _get(game_id: str) -> Session:
