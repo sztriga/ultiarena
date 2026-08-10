@@ -60,12 +60,12 @@ describe("PlayVsAI golden (recorded game seat0/seed14)", () => {
     const click = async (el: Element) => act(async () => { fireEvent.click(el); });
 
     // ── splash ──
-    expect(screen.getByText("Új játék")).toBeInTheDocument();
+    expect(screen.getByText("Játék a gép ellen")).toBeInTheDocument();
     expect(screen.getByText("Villámtalon")).toBeInTheDocument();
     expect(container.innerHTML).toMatchSnapshot("01-splash");
 
     // ── new game → bid step (holding 12) ──
-    await click(screen.getByText("Új játék"));
+    await click(screen.getByText("Játék a gép ellen"));
     await settle();
     expect(container.innerHTML).toMatchSnapshot("02-bid-step");
 

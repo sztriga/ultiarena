@@ -23,8 +23,6 @@ from ulti.config import apply_deploy_defaults, env_bool, env_float, env_int
 apply_deploy_defaults()
 
 from ulti.bidding.ladder import GPTable, contract_name  # noqa: E402
-from ulti.bidding.auction import net_bid_fn  # noqa: E402
-from ulti.bidding.provider import NetProvider  # noqa: E402
 from ulti.bidding.deal import deal_12_10_10  # noqa: E402
 try:
     from ulti.betli import defense as _exp36  # noqa: E402  (exp36 betli-defense net; models/ulti/betli/betli_defense.pt)
@@ -101,11 +99,13 @@ def _bid_fn():
     global _provider_obj, _bid_fn_obj
     with _provider_lock:
         if _bid_fn_obj is None:
-            # Load the exp37 realistic-betli head; net_bid_fn(betli_real=...) gates whether it's used.
-            _provider_obj = NetProvider(
-                calibrate=True, betli_real_dir=str(_REPO / "models/ulti/betli"))
-            _bid_fn_obj = net_bid_fn(_provider_obj, betli_real=_BETLI_REAL_BID,
-                                     rebetli_real=_REBETLI_REAL_BID)
+            # ulti.bidding.frontier owns the deployed configuration (calibration on, exp37
+            # betli head loaded, exp37/39 gates) so research harnesses build the SAME
+            # bidder instead of an accidental uncalibrated one. milan 2026-08-02.
+            from ulti.bidding.frontier import frontier_bid_fn, frontier_provider
+            _provider_obj = frontier_provider()
+            _bid_fn_obj = frontier_bid_fn(_provider_obj, betli_real=_BETLI_REAL_BID,
+                                          rebetli_real=_REBETLI_REAL_BID)
         return _bid_fn_obj
 
 
@@ -124,10 +124,12 @@ class Session:
         self.lock = RLock()             # serializes ALL actions on this one game (see _hold)
         self.last_touch = time.time()   # idle-expiry clock (see _reap)
         # Identity vs abuse-control are SEPARATE axes: device_id is a client-generated
-        # uuid (localStorage) = "whose game is this" — it lists/resumes games and will
-        # map onto a real user account when auth lands. owner_ip (set by the route) is
-        # what the caps key on, because a client can mint device ids at will.
+        # uuid (localStorage) = "whose game is this" — it lists/resumes games; user_id
+        # is the logged-in account (apps/api/users.py), set by the route when a bearer
+        # token is present. owner_ip (set by the route) is what the caps key on,
+        # because a client can mint device ids and tokens at will.
         self.device_id: Optional[str] = None
+        self.user_id: Optional[str] = None
         self.seat = seat            # the user's real auction seat (0/1/2)
         self.seed = seed
         self.redeals = 0            # dead-deal (all-pass) re-deals in this session

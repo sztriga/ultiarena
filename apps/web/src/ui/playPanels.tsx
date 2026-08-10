@@ -61,10 +61,11 @@ function agoLabel(idleS: number): string {
   return `${Math.round(idleS / 3600)}ó`;
 }
 
-export function Splash({ loading, error, onNew, onPuzzle, ongoing = [], onResume, onDiscard }: {
+export function Splash({ loading, error, onNew, onLive, onPuzzle, ongoing = [], onResume, onDiscard }: {
   loading: boolean;
   error: string | null;
   onNew: () => void;
+  onLive?: () => void;
   onPuzzle: () => void;
   ongoing?: PlayOngoing[];
   onResume?: (gameId: string) => void;
@@ -77,8 +78,13 @@ export function Splash({ loading, error, onNew, onPuzzle, ongoing = [], onResume
           <h1 className="betli-hu-title">Ulti</h1>
           <div className="splash-actions">
             <button className="betli-hu-deal-btn" onClick={onNew} disabled={loading}>
-              {loading ? "…" : "Új játék"}
+              {loading ? "…" : "Játék a gép ellen"}
             </button>
+            {onLive && (
+              <button className="betli-hu-deal-btn betli-hu-deal-btn--live" onClick={onLive}>
+                Játék élőben
+              </button>
+            )}
             <button className="betli-hu-deal-btn betli-hu-deal-btn--ghost"
                     onClick={onPuzzle}>
               Villámtalon

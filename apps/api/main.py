@@ -16,8 +16,10 @@ from fastapi.staticfiles import StaticFiles
 
 from .pis import router as pis_router
 from .limits import limit_middleware
+from .live import router as live_router
 from .play import router as play_router
 from .puzzle import router as puzzle_router
+from .users import router as users_router
 
 app = FastAPI(title="Ulti", version="0.3.0")
 
@@ -50,6 +52,8 @@ app.middleware("http")(limit_middleware)
 app.include_router(pis_router,    prefix="/api")   # /pis/explore — post-game analysis branches
 app.include_router(play_router,   prefix="/api")   # /play/* — the full Ulti game
 app.include_router(puzzle_router, prefix="/api")   # /puzzle/* — Villámtalon rush
+app.include_router(users_router,  prefix="/api")   # /auth/* — accounts (docs/MULTIPLAYER.md)
+app.include_router(live_router,   prefix="/api")   # /live/* — lobby, chat, Asztal
 
 # Hungarian Tell-deck card images at /cards (card_piece_<S><R>.jpg + card_back.png).
 _CARDS_DIR = Path(__file__).resolve().parents[2] / "assets" / "cards"

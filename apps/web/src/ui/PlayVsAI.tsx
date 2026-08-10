@@ -17,6 +17,7 @@ import { CardBack, CardView } from "./CardView";
 import { UltiTable, type SeatChrome } from "./UltiTable";
 import { useStepScrubber } from "./useStepScrubber";
 import { PuzzleRush } from "./PuzzleRush";
+import { Live } from "./Live";
 import { AnalysisBoard, AuctionPanel, KontraBox, ResultPanel, Splash } from "./playPanels";
 
 type Seat = 0 | 1 | 2;
@@ -40,6 +41,7 @@ function auctionTable(meSeat: Seat, own: Card[]) {
 
 export function PlayVsAI() {
   const [showPuzzle, setShowPuzzle] = useState(false);   // Villámtalon mini-game overlay
+  const [showLive, setShowLive] = useState(false);       // Játék élőben — lobby (Live.tsx)
 
   const [state,   setState]   = useState<PlayState | null>(null);
   const [pending, setPending] = useState<PlayState | null>(null);   // animation target
@@ -433,10 +435,14 @@ export function PlayVsAI() {
   if (showPuzzle) {
     return <PuzzleRush onExit={() => setShowPuzzle(false)} />;
   }
+  if (showLive) {
+    return <Live onExit={() => setShowLive(false)} />;
+  }
 
   if (!state) {
     return <Splash loading={loading} error={error}
-                   onNew={onNew} onPuzzle={() => setShowPuzzle(true)}
+                   onNew={onNew} onLive={() => setShowLive(true)}
+                   onPuzzle={() => setShowPuzzle(true)}
                    ongoing={ongoing} onResume={onResume} onDiscard={onDiscardGame} />;
   }
 

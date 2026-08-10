@@ -40,6 +40,7 @@ from pydantic import BaseModel, Field
 
 from .serialize import card_to_dict
 from .limits import guard_new_session
+from .users import user_from_request
 from .engine import (
     Session, _hold, _reap_idle_sessions, _recipe, _sessions, _sessions_lock,
 )
@@ -70,6 +71,8 @@ def play_new(req: NewRequest, request: Request = None) -> dict:
     seed = req.seed if req.seed is not None else rng.randint(1, 2**31 - 1)
     sess = Session(seat=req.seat, seed=seed)      # just the deal — no AI work yet
     sess.device_id = req.device_id
+    user = user_from_request(request)             # logged in → the recording carries it
+    sess.user_id = user["user_id"] if user else None
     with _sessions_lock:
         _reap_idle_sessions()           # cheap O(n) sweep on the rare new-game call
         # guard + insert under ONE lock hold — the cap check and the insert must be

@@ -1,11 +1,16 @@
 // Typed client for the apps/api FastAPI server.
 
 import type { Card, Suit } from "./cards";
+import { getAuth } from "./auth";
 
 async function http<T>(method: string, path: string, body?: unknown): Promise<T> {
+  const headers: Record<string, string> = {};
+  if (body) headers["Content-Type"] = "application/json";
+  const auth = getAuth();                      // logged in → every call carries identity
+  if (auth) headers["Authorization"] = `Bearer ${auth.token}`;
   const resp = await fetch(`/api${path}`, {
     method,
-    headers: body ? { "Content-Type": "application/json" } : undefined,
+    headers: Object.keys(headers).length ? headers : undefined,
     body: body ? JSON.stringify(body) : undefined,
   });
   if (!resp.ok) {
@@ -223,6 +228,29 @@ export interface PlayBidRequest {
   game_id: string; rung_index: number; bid_index: number; trump: string | null; discard_ids: number[];
 }
 
+// ── Accounts + the live lobby (docs/MULTIPLAYER.md) ─────────────────────────
+
+export interface LiveSeat {
+  username: string; user_id: string; is_host: boolean; is_me: boolean;
+}
+export interface LiveTable {
+  table_id: string;
+  host: string;
+  is_host: boolean;
+  seats: (LiveSeat | null)[];
+  full: boolean;
+  invited_me: boolean;
+  state: string;
+}
+export interface LiveChatMsg { seq: number; user: string; text: string; ts: number; }
+export interface LivePoll {
+  me: string;
+  members: string[];
+  chat: LiveChatMsg[];
+  tables: LiveTable[];
+  my_table: string | null;
+}
+
 /** One live game of this browser, as listed on the splash (resume). */
 export interface PlayOngoing {
   game_id: string;
@@ -282,6 +310,19 @@ export const api = {
   playState:  (game_id: string)                            => http<PlayState>("POST", "/play/state", { game_id }),
   playMine:   (device_id: string)                          => http<{ games: PlayOngoing[] }>("POST", "/play/mine", { device_id }),
   playDelete: (game_id: string)                            => http<{ deleted: boolean }>("DELETE", `/play/session/${game_id}`),
+  authRegister: (req: { username: string; password: string; device_id?: string }) =>
+    http<{ token: string; username: string }>("POST", "/auth/register", req),
+  authLogin:    (req: { username: string; password: string; device_id?: string }) =>
+    http<{ token: string; username: string }>("POST", "/auth/login", req),
+  authLogout:   () => http<{ ok: boolean }>("POST", "/auth/logout", {}),
+  livePoll:     (chat_after: number) => http<LivePoll>("POST", "/live/poll", { chat_after }),
+  liveChat:     (text: string)       => http<{ ok: boolean }>("POST", "/live/chat", { text }),
+  tableCreate:  ()                   => http<{ table_id: string }>("POST", "/live/table/create", {}),
+  tableJoin:    (table_id: string)   => http<{ table_id: string; seat: number }>("POST", "/live/table/join", { table_id }),
+  tableLeave:   (table_id: string)   => http<{ ok: boolean }>("POST", "/live/table/leave", { table_id }),
+  tableKick:    (table_id: string, user_id: string) => http<{ ok: boolean }>("POST", "/live/table/kick", { table_id, user_id }),
+  tableInvite:  (table_id: string, username: string) => http<{ ok: boolean }>("POST", "/live/table/invite", { table_id, username }),
+  tableStart:   (table_id: string)   => http<{ ok: boolean }>("POST", "/live/table/start", { table_id }),
   puzzleNew:   ()                                            => http<PuzzleState>("POST", "/puzzle/new"),
   puzzleSolve: (req: { game_id: string; discard_ids: number[] }) => http<PuzzleState>("POST", "/puzzle/solve", req),
   puzzleState: (game_id: string)                            => http<PuzzleState>("GET",  `/puzzle/state/${game_id}`),

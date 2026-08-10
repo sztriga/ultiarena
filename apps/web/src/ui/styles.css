@@ -533,6 +533,99 @@ html, body, #root {
   border: 1px solid #3f5a7d;
   font-weight: 600;
 }
+/* live entry — distinct from the AI primary but equally weighted */
+.betli-hu-deal-btn--live {
+  background: #7d5934;
+}
+
+/* ── Játék élőben: auth + lobby (Live.tsx) ─────────────────────────────── */
+.auth-panel {
+  width: 280px; margin: 28px auto 0; display: flex; flex-direction: column; gap: 10px;
+}
+.auth-tabs { display: flex; gap: 6px; margin-bottom: 4px; }
+.auth-tab {
+  flex: 1; padding: 8px 0; font: inherit; font-size: 13px; font-weight: 700;
+  background: transparent; border: 1px solid #33475f; border-radius: 8px;
+  color: #7d92a8; cursor: pointer;
+}
+.auth-tab.is-active { color: #dfe7f0; border-color: #3f5a7d; background: #1d2a3a; }
+.auth-input {
+  padding: 10px 12px; font: inherit; font-size: 14px; border-radius: 8px;
+  background: #10161e; border: 1px solid #33475f; color: #dfe7f0;
+}
+.auth-input:focus { outline: none; border-color: #3f5a7d; }
+.auth-submit { width: 100%; }
+.auth-error { color: #f87171; font-size: 13px; }
+.auth-back { margin-top: 6px; }
+
+.live-lobby { height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+.live-head {
+  display: flex; align-items: center; gap: 10px; padding: 12px 18px;
+  border-bottom: 1px solid var(--border, #262a30);
+}
+.live-title { font-size: 16px; font-weight: 800; letter-spacing: 0.02em; margin-right: auto; }
+.live-me { color: #fbbf24; font-weight: 700; font-size: 14px; }
+.live-error { margin: 8px 18px 0; }
+.live-main {
+  flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr 320px;
+  gap: 16px; padding: 16px 18px;
+}
+.live-section-title {
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 12px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.06em; color: #7d92a8; margin-bottom: 10px;
+}
+.live-tables { min-height: 0; overflow-y: auto; }
+.live-empty { color: var(--muted, #5b636e); font-size: 14px; padding: 24px 0; }
+.live-table {
+  border: 1px solid #33475f; border-radius: 12px; padding: 12px 14px;
+  margin-bottom: 12px; background: var(--panel-2, #15181c);
+}
+.live-table.is-mine { border-color: #3f5a7d; }
+.live-table.is-invited { border-color: #7d5934; box-shadow: 0 0 0 3px rgba(125, 89, 52, 0.18); }
+.live-table-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 10px; }
+.live-table-host { font-weight: 700; font-size: 14px; }
+.live-invited-tag { color: #e0a960; font-size: 12px; font-weight: 700; }
+.live-seats { display: flex; gap: 8px; margin-bottom: 10px; }
+.live-seat {
+  flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px;
+  height: 34px; border-radius: 8px; border: 1px dashed #33475f; font-size: 13px;
+}
+.live-seat.is-taken { border-style: solid; background: #1d2a3a; }
+.live-seat.is-me { border-color: #3f5a7d; }
+.live-seat-name { font-weight: 600; color: #c8d6e5; }
+.live-seat-free { color: var(--muted, #5b636e); }
+.live-kick {
+  padding: 0 5px; font: inherit; font-size: 13px; line-height: 1; cursor: pointer;
+  background: transparent; border: none; color: #7d92a8;
+}
+.live-kick:hover { color: #ff8fa3; }
+.live-table-actions { display: flex; gap: 8px; }
+.live-side { min-height: 0; display: flex; flex-direction: column; }
+.live-members { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+.live-member {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 10px; border-radius: 999px; border: 1px solid #33475f;
+  font-size: 12px; font-weight: 600; color: #c8d6e5;
+}
+.live-member.is-me { color: #fbbf24; border-color: #7d5934; }
+.live-invite {
+  padding: 0 3px; font: inherit; font-size: 12px; line-height: 1; cursor: pointer;
+  background: transparent; border: none; color: #7d92a8;
+}
+.live-invite:hover { color: #86e8c5; }
+.live-chat {
+  flex: 1; min-height: 0; overflow-y: auto; border: 1px solid var(--border, #262a30);
+  border-radius: 10px; padding: 10px 12px; background: #10161e;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.live-chat-msg { font-size: 13px; line-height: 1.45; }
+.live-chat-user { font-weight: 700; color: #7d92a8; margin-right: 7px; }
+.live-chat-user.is-me { color: #fbbf24; }
+.live-chat-text { color: #dfe7f0; overflow-wrap: anywhere; }
+.live-chat-row { display: flex; gap: 8px; margin-top: 10px; }
+.live-chat-input { flex: 1; }
+
 /* splash: this browser's live games, resumable (device-id listed) */
 .splash-ongoing {
   width: 260px; margin: 26px auto 0;
