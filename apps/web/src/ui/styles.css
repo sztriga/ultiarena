@@ -1253,3 +1253,8 @@ html, body, #root {
 .profile-scroll--table .profile-table th {
   position: sticky; top: 0; background: var(--panel-2, #15181c);
 }
+
+/* The profile page scrolls INSIDE the viewport — the fixed boxes were pushing
+   the page taller than the screen (milan 2026-08-11). */
+.app.profile { height: 100vh; overflow: hidden; }
+.app.profile .profile-main { flex: 1; min-height: 0; }

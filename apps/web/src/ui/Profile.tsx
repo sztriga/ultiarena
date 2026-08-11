@@ -125,7 +125,16 @@ export function Profile({ onExit }: { onExit: () => void }) {
 
         {stats && stats.games > 0 && (
           <section className="profile-stats">
-            <div className="profile-stat"><b>{stats.games}</b><span>játszma</span></div>
+            <div className="profile-stat">
+              <b>{winRate}%</b>
+              <span>győzelem ({stats.wins}/{stats.games})</span>
+            </div>
+            {stats.as_soloist && stats.as_soloist.n > 0 && (
+              <div className="profile-stat">
+                <b>{Math.round(100 * stats.as_soloist.made / stats.as_soloist.n)}%</b>
+                <span>győzelem bemondóként ({stats.as_soloist.made}/{stats.as_soloist.n})</span>
+              </div>
+            )}
             <div className="profile-stat">
               <b className={gpCls(stats.gp_total ?? 0)}>{gpTxt(stats.gp_total ?? 0)}</b>
               <span>össz pont</span>
@@ -134,17 +143,10 @@ export function Profile({ onExit }: { onExit: () => void }) {
               <b className={gpCls(stats.gp_per_game ?? 0)}>{gpTxt(stats.gp_per_game ?? 0)}</b>
               <span>pont / játszma</span>
             </div>
-            <div className="profile-stat"><b>{winRate}%</b><span>győzelem</span></div>
             {stats.as_soloist && (
               <div className="profile-stat">
                 <b>{Math.round(100 * stats.as_soloist.n / stats.games)}%</b>
-                <span>bemondóként ({stats.as_soloist.n})</span>
-              </div>
-            )}
-            {stats.as_soloist && stats.as_soloist.n > 0 && (
-              <div className="profile-stat">
-                <b>{Math.round(100 * stats.as_soloist.made / stats.as_soloist.n)}%</b>
-                <span>győzelem bemondóként</span>
+                <span>bemondóként</span>
               </div>
             )}
           </section>
@@ -177,16 +179,18 @@ export function Profile({ onExit }: { onExit: () => void }) {
           ) : (
             <div className="profile-games profile-scroll profile-scroll--games">
               {games.map((g) => (
-                <button key={g.id} className="profile-game" disabled={openingId !== null}
-                        title="Elemzés megnyitása" onClick={() => openGame(g)}>
+                <button key={g.id} className="profile-game"
+                        disabled={openingId !== null || g.contract === "passz"}
+                        title={g.contract === "passz" ? "Mindenki passzolt" : "Elemzés megnyitása"}
+                        onClick={() => g.contract !== "passz" && openGame(g)}>
                   <span className="profile-game-date">{fmtDate(g.created_at)}</span>
                   <span className="profile-game-contract">{g.contract}</span>
                   <span className="profile-game-role">
-                    {g.i_was_soloist ? "játékos" : "védő"}
+                    {g.contract === "passz" ? "—" : g.i_was_soloist ? "játékos" : "védő"}
                   </span>
                   <span className={`profile-game-gp ${gpCls(g.my_gp)}`}>{gpTxt(g.my_gp)}</span>
                   <span className="profile-game-open">
-                    {openingId === g.id ? "elemzés…" : "→"}
+                    {g.contract === "passz" ? "" : openingId === g.id ? "elemzés…" : "→"}
                   </span>
                 </button>
               ))}

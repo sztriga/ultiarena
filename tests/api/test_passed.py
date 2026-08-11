@@ -71,3 +71,36 @@ def test_all_pass_reaches_the_scoring_window_through_the_real_routes():
     r = found["result"]
     assert r["contract"] == "passz"
     assert r["human_gp"] == -2.0 * PASS_PENALTY                 # forehand pays
+
+
+def test_passz_rounds_are_recorded(tmp_path, monkeypatch):
+    """A passz round is a round: it lands in games.db with contract 'passz', the
+    forehand's penalty in seat_gp, and the auction transcript (no plays)."""
+    import json
+    import sqlite3
+
+    from apps.api import recording
+
+    monkeypatch.setattr(recording, "_DB_PATH", str(tmp_path / "games.db"))
+    monkeypatch.setattr(recording, "_conn", None)
+    sess = Session(seat=0, seed=11)
+    sess.owner_ip = "188.36.1.2"            # a real client → passes the gate
+    sess.players = {0: {"user_id": "u1", "username": "milan"}}
+    sess.device_id = "abcd1234-0000-1111-2222-333333333333"
+    _resolve_auction(sess)                  # dead deal → _finish_passed → recorded
+    assert sess.phase == "passed"
+
+    con = sqlite3.connect(str(tmp_path / "games.db"))
+    row = con.execute("SELECT contract, made, seat_gp, transcript, players "
+                      "FROM games WHERE id = ?", (sess.id,)).fetchone()
+    con.close()
+    if recording._conn is not None:
+        recording._conn.close()
+        recording._conn = None
+    assert row is not None, "passz round was not recorded"
+    assert row[0] == "passz" and row[1] == 0
+    assert json.loads(row[2]) == [-2.0 * PASS_PENALTY, PASS_PENALTY, PASS_PENALTY]
+    t = json.loads(row[3])
+    assert t["plays"] == [] and len(t["deal"]["hands"]) == 3
+    me = json.loads(row[4])[0]
+    assert me["kind"] == "human" and me["user_id"] == "u1"

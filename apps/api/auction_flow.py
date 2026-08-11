@@ -14,7 +14,7 @@ from ulti.card import TRUMP_CHOICES
 from fastapi import HTTPException
 
 from .engine import Session, _GP, _SUIT_HU, _bid_fn, _bid_label, _provider
-from .ai_play import _advance_play
+from .ai_play import _advance_play, _record_session
 
 
 # ── Auction (any seat may open) ─────────────────────────────────────────────────
@@ -174,6 +174,7 @@ def _finish_passed(sess: Session) -> None:
         "soloist_seat": 0,                    # the payer — the forehand
         "silents": [],
     }
+    _record_session(sess)                     # passz rounds belong in the database too
 
 
 # ── Auction -> Play setup ───────────────────────────────────────────────────────

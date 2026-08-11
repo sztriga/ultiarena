@@ -110,14 +110,14 @@ def my_stats(request: Request = None, device: Optional[str] = None) -> dict:
     if n == 0:
         return {"games": 0}
     gp = sum(r["my_gp"] for r in rows)
-    sol = [r for r in rows if r["i_was_soloist"]]
+    sol = [r for r in rows if r["i_was_soloist"] and r["contract"] != "passz"]
     per: dict = {}
     for r in rows:
         c = per.setdefault(r["contract"], {"contract": r["contract"], "n": 0,
                                            "gp": 0.0, "sol_n": 0, "sol_made": 0})
         c["n"] += 1
         c["gp"] += r["my_gp"]
-        if r["i_was_soloist"]:
+        if r["i_was_soloist"] and r["contract"] != "passz":
             c["sol_n"] += 1
             c["sol_made"] += int(r["made"])
     contracts = sorted(per.values(), key=lambda c: -c["n"])

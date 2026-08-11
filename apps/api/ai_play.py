@@ -2,6 +2,7 @@
 
 
 import random
+import sys
 import time
 from typing import List
 
@@ -183,44 +184,56 @@ def _finish(sess: Session) -> None:
         "silents": _silent_breakdown(pvec),
     }
 
-    # ── record the finished game for later AI analysis (best-effort; never breaks a game) ──
-    # ONLY games with a real client behind them: in-process drivers (golden harness,
-    # pytest, tournaments) create sessions without an HTTP request → owner "local" →
-    # skipped. Before this gate, test runs buried the real games 121 rows to 14.
+    _record_session(sess)
+
+
+def _record_session(sess: Session) -> None:
+    """Record ANY finished round — played (phase done) or all-pass (phase passed) —
+    best-effort, never breaking a game. The ONE recording path (milan 2026-08-11:
+    passz rounds belong in the database too; they are rounds, not non-events)."""
     origin = getattr(sess, "owner_ip", None)
     try:
         from .recording import record_game, should_record
         if not should_record(origin):
             return
+        passed = sess.phase == "passed"
+        if passed:
+            # no play phase: the deal is recorded in REAL-seat space as it stood
+            # at the third pass (after any burials); soloist_seat 0 = the payer
+            deal = {"hands": [[c.id for c in h] for h in sess.a_hands],
+                    "talon": [c.id for c in sess.a_talon]}
+            plays, kontra, marriages = [], {}, []
+        else:
+            # play-index space (0 = soloist); auction stays real-seat
+            deal = {"hands": [[c.id for c in h] for h in sess.play_hands0],
+                    "talon": [c.id for c in sess.play_talon]}
+            plays = [[h["player_id"], h["card"]["id"], h["trick_index"]] for h in sess.p_history]
+            kontra = _kontra_dict(sess)
+            marriages = [[p, su, pts] for (p, su, pts) in getattr(sess.p_pos, "marriages", [])]
+        r = sess.result
         record_game({
             "id": sess.id, "created_at": time.time(), "seed": sess.seed,
-            "contract": sess.bid_name, "trump": sess.trump,
-            "soloist_seat": w, "human_seat": sess.seat, "kontra_level": sess.k_level,
-            "winner": "soloist" if soloist_won else "defenders", "made": made,
-            "seat_gp": seat_gp,
+            "contract": r["contract"], "trump": None if passed else sess.trump,
+            "soloist_seat": r.get("soloist_seat", 0), "human_seat": sess.seat,
+            "kontra_level": r.get("kontra_level", 0),
+            "winner": r["winner"], "made": r["made"],
+            "seat_gp": r["seat_gp"],
             "players": [                          # seat → identity; ONE shape for solo, live AND api
                 {"seat": s,
                  # an API-driven seat is a BOT: a program owned by a user (docs/PUBLIC_API.md D4)
                  "kind": (("bot" if getattr(sess, "api_agent", None) else "human")
                           if s in sess.humans else "ai"),
                  "user_id": (sess.players.get(s) or {}).get("user_id") if s in sess.humans else None,
-                 # ip/device describe the session CREATOR's browser — meaningful for the
-                 # solo game only; a live table has three browsers, identified by user_id.
                  "ip": origin if (s == sess.seat and not sess.live) else None,
                  "device": getattr(sess, "device_id", None) if (s == sess.seat and not sess.live) else None,
                  "agent": (getattr(sess, "api_agent", None) if s in sess.humans else "frontier")}
                 for s in range(3)
             ],
-            "transcript": {                        # play-index space (0 = soloist); auction is real-seat
-                "deal": {"hands": [[c.id for c in h] for h in sess.play_hands0],
-                         "talon": [c.id for c in sess.play_talon]},
-                "auction": sess.a_history,
-                "plays": [[h["player_id"], h["card"]["id"], h["trick_index"]] for h in sess.p_history],
-                "kontra": _kontra_dict(sess),
-                "marriages": [[p, su, pts] for (p, su, pts) in getattr(sess.p_pos, "marriages", [])],
-            },
+            "transcript": {"deal": deal, "auction": sess.a_history,
+                           "plays": plays, "kontra": kontra, "marriages": marriages},
         })
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"[recording] game {sess.id} NOT recorded: {e!r}",
+              file=sys.stderr, flush=True)
 
 
