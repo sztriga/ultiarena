@@ -25,13 +25,14 @@ const gp = (x?: number | null) => (x === null || x === undefined ? "—" : `${x 
 // GP column colour, driven by what the move COST its mover (always >= 0). Best move ->
 // green; deepening red with the loss. Bands match _SEVERITY on the server so the colour
 // and the word never disagree.
-const gpColor = (loss?: number | null) => {
-  const l = loss ?? 0;
-  if (l <= 0.001) return "#7fd48a";        // played the best move
-  if (l < 1) return "#cfd6dd";             // negligible
-  if (l < 3) return "#ffd479";             // pontatlanság
-  if (l < 8) return "#ff8a8a";             // hiba
-  return "#ff5252";                        // baklövés
+// The GP column is an evaluation bar read from the VIEWER's seat, so the number itself
+// is neutral (white) and only the SWING is coloured: green when the position improved
+// for you, red when it got worse. Deeper shades for bigger swings.
+const swingColor = (d: number) => {
+  const a = Math.abs(d);
+  if (a < 0.05) return "#8b949e";
+  if (d > 0) return a >= 8 ? "#4ade80" : a >= 3 ? "#7fd48a" : "#a7dfb0";
+  return a >= 8 ? "#ff5252" : a >= 3 ? "#ff8a8a" : "#ffb3b3";
 };
 
 export function ResultPanel({ r, withAnalysis, loading, analysisLoading, hasRounds,
@@ -205,6 +206,21 @@ export function AnalysisBoard({ analysis, analysisView, effectivePlies, branch,
     const v = a.thisPly;
     const maxPly = effectivePlies.length;
     const anaHpi = (analysis.human_play_index ?? 0) as Seat;
+    // The GP column is one continuous evaluation read from YOUR seat: take the soloist's
+    // position value and flip it once if you are defending, rather than flipping per row
+    // by whoever moved. Then the swing between consecutive plies is signed the way a
+    // player expects — up is good for you, whoever caused it.
+    const evalSeries: Record<number, { val: number | null; delta: number }> = {};
+    {
+      const vSign = anaHpi === 0 ? 1 : -1;
+      let prev: number | null = null;
+      for (const p of effectivePlies) {
+        const raw = p.verdict?.gp_sol_after;
+        const val = raw === null || raw === undefined ? null : raw * vSign;
+        evalSeries[p.ply_index] = { val, delta: val === null || prev === null ? 0 : val - prev };
+        if (val !== null) prev = val;
+      }
+    }
     const anaSeat = (pid: Seat): SeatChrome => ({   // same chrome as the game phase (roleTag)
       label: (
         <>
@@ -270,33 +286,65 @@ export function AnalysisBoard({ analysis, analysisView, effectivePlies, branch,
               <div className="panel" style={{ marginTop: 10 }}>
                 {v?.verdict ? (
                   <>
-                    <div className="panel-title">Ítélet — {v.ply_index + 1}. lépés</div>
-                    <div className="row" style={{ gap: 16, flexWrap: "wrap", fontSize: 13 }}>
-                      <div>
-                        <div className="muted" style={{ fontSize: 11 }}>{v.verdict.player_id === 0 ? "Játékos" : "Védő"} lépett</div>
-                        <div><CardChip card={v.verdict.chosen_card} /> · {gp(v.verdict.gp_chosen)} GP</div>
+                    <div className="ana-verdict">
+                      <div className="ana-verdict-head">
+                        <span className="ana-verdict-ply">{v.ply_index + 1}. lépés</span>
+                        <span className="ana-verdict-who">
+                          {v.verdict.player_id === 0 ? "Játékos" : `Védő ${v.verdict.player_id}`}
+                        </span>
+                        {v.verdict.severity && v.verdict.severity !== "ok" ? (
+                          <span className="ana-pill" style={{ background: sevColor(v.verdict.severity) }}>
+                            {v.verdict.severity}
+                          </span>
+                        ) : (
+                          <span className="ana-pill ana-pill--ok">pontos</span>
+                        )}
                       </div>
-                      <div>
-                        <div className="muted" style={{ fontSize: 11 }}>Legjobb lépés</div>
-                        <div><CardChip card={v.verdict.gp_best_card ?? v.verdict.god_best_card} /> · {gp(v.verdict.gp_best)} GP</div>
-                      </div>
-                      <div>
-                        <div className="muted" style={{ fontSize: 11 }}>Ítélet</div>
-                        <div style={{ color: sevColor(v.verdict.severity), fontWeight: 600 }}>
-                          {v.verdict.severity ?? "ok"}
-                          {(v.verdict.gp_loss ?? 0) > 0 && <> · −{(v.verdict.gp_loss ?? 0).toFixed(1)} GP</>}
+
+                      <div className="ana-verdict-cards">
+                        <div className="ana-card-slot">
+                          <div className="ana-card-cap">lépett</div>
+                          <CardChip card={v.verdict.chosen_card} />
+                          <div className="ana-card-gp">{gp(v.verdict.gp_chosen)}</div>
                         </div>
+                        {(v.verdict.gp_loss ?? 0) > 0.001 && (
+                          <>
+                            <div className="ana-arrow">→</div>
+                            <div className="ana-card-slot">
+                              <div className="ana-card-cap">legjobb</div>
+                              <CardChip card={v.verdict.gp_best_card ?? v.verdict.god_best_card} />
+                              <div className="ana-card-gp">{gp(v.verdict.gp_best)}</div>
+                            </div>
+                          </>
+                        )}
                       </div>
-                      {v.verdict.gp_loss_knowable !== null && v.verdict.gp_loss_knowable !== undefined && (
-                        <div>
-                          <div className="muted" style={{ fontSize: 11 }}>Ebből látható volt</div>
-                          <div style={{ fontWeight: 600 }}>
-                            −{v.verdict.gp_loss_knowable.toFixed(1)} GP
-                            <span className="muted" style={{ fontSize: 11 }}>
-                              {" "}· a többi pech
-                            </span>
+
+                      {(v.verdict.gp_loss ?? 0) > 0.001 ? (
+                        <div className="ana-cost">
+                          <div className="ana-cost-main" style={{ color: sevColor(v.verdict.severity) }}>
+                            −{(v.verdict.gp_loss ?? 0).toFixed(1)} <span className="ana-cost-unit">GP</span>
                           </div>
+                          {v.verdict.gp_loss_knowable !== null && v.verdict.gp_loss_knowable !== undefined && (() => {
+                            const loss = v.verdict.gp_loss ?? 0;
+                            const known = v.verdict.gp_loss_knowable ?? 0;
+                            const pct = loss > 0 ? Math.max(0, Math.min(100, (known / loss) * 100)) : 0;
+                            return (
+                              <div className="ana-known">
+                                <div className="ana-known-bar">
+                                  <div className="ana-known-fill" style={{ width: `${pct}%` }} />
+                                </div>
+                                <div className="ana-known-text">
+                                  ebből <b>{known.toFixed(1)} GP</b> volt látható a helyedből
+                                  {loss - known > 0.05 && (
+                                    <> · <span className="muted">{(loss - known).toFixed(1)} GP pech</span></>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })()}
                         </div>
+                      ) : (
+                        <div className="ana-cost"><div className="ana-cost-main ana-cost-main--ok">nem került semmibe</div></div>
                       )}
                     </div>
                   </>
@@ -314,7 +362,7 @@ export function AnalysisBoard({ analysis, analysisView, effectivePlies, branch,
           <section>
             <div className="panel betli-hu-log-panel">
               <div className="panel-title">
-                Lépések · GP a lépő szemszögéből
+                Lépések · GP a te szemszögedből
                 <span className="muted" style={{ fontWeight: 400, fontSize: 11 }}>
                   {" "}· a te sorod kiemelve
                 </span>
@@ -322,7 +370,7 @@ export function AnalysisBoard({ analysis, analysisView, effectivePlies, branch,
               <div className="betli-hu-log-scroll">
                 <table className="play-sc-table" style={{ fontSize: 12, width: "100%" }}>
                   <thead>
-                    <tr><th>#</th><th>P</th><th>Lépett</th><th>Legjobb</th><th>GP</th><th>Ítélet</th></tr>
+                    <tr><th>#</th><th>P</th><th>Lépett</th><th>Legjobb</th><th style={{ textAlign: "right" }}>GP</th><th style={{ textAlign: "right" }}>Δ</th></tr>
                   </thead>
                   <tbody>
                     {effectivePlies.map((p) => {
@@ -332,6 +380,9 @@ export function AnalysisBoard({ analysis, analysisView, effectivePlies, branch,
                       // The human's own rows get a slightly lighter background, so you can
                       // find your moves at a glance without an ·AI tag on every AI row.
                       const isHuman = !p.by_ai && p.player_id === anaHpi;
+                      const ev = evalSeries[p.ply_index] ?? { val: null, delta: 0 };
+                      const myVal = ev.val;
+                      const myDelta = ev.delta;
                       return (
                         <tr key={`${p.ply_index}-${p.is_branch ? "b" : "o"}`}
                             onClick={() => setScrubPly(p.ply_index + 1)}
@@ -344,13 +395,10 @@ export function AnalysisBoard({ analysis, analysisView, effectivePlies, branch,
                           </td>
                           <td><CardChip card={p.chosen_card} /></td>
                           <td>{p.verdict ? <CardChip card={p.verdict.gp_best_card ?? p.verdict.god_best_card} /> : "—"}</td>
-                          <td style={{ color: gpColor(p.verdict?.gp_loss), fontWeight: 600, textAlign: "right" }}>
-                            {p.verdict ? gp(p.verdict.gp_chosen) : ""}
-                            {p.verdict && (p.verdict.gp_loss ?? 0) > 0.001 && (
-                              <span style={{ fontWeight: 400, fontSize: 11 }}> ({`−${(p.verdict.gp_loss ?? 0).toFixed(1)}`})</span>
-                            )}
+                          <td style={{ textAlign: "right", fontWeight: 600 }}>{myVal === null ? "" : gp(myVal)}</td>
+                          <td style={{ textAlign: "right", color: swingColor(myDelta), fontWeight: 600 }}>
+                            {myVal === null || Math.abs(myDelta) < 0.05 ? "" : gp(myDelta)}
                           </td>
-                          <td>{p.verdict ? sev : "(ág)"}</td>
                         </tr>
                       );
                     })}

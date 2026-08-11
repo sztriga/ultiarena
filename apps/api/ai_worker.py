@@ -351,6 +351,12 @@ def op_analysis(job: dict) -> List[dict]:
             gp_loss = max(0.0, gp_best - gp_chosen)
             gp_best_card = max(gp, key=lambda c: gp[c])
             row.update({
+                # Soloist-perspective value AFTER this move. The client flips it once for
+                # whoever is watching, so the board reads as one continuous evaluation
+                # from your own seat rather than a number whose sign hops per row.
+                # gp_chosen is already sign-flipped for the mover, so multiplying by the
+                # same sign recovers the soloist's view (sign*sign == 1 either way).
+                "gp_sol_after": round(sign * gp_chosen, 2),
                 "gp_chosen": round(sign * gp_chosen, 2),
                 "gp_best": round(sign * gp_best, 2),
                 "gp_loss": round(gp_loss, 2),

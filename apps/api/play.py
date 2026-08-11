@@ -389,6 +389,7 @@ def play_analysis(req: AnalysisRequest, request: Request = None) -> dict:
             "by_ai": bool(step.get("by_ai", False)),
             # GP verdict — what the move actually cost, and how much of that was findable
             "gp_chosen": row.get("gp_chosen"), "gp_best": row.get("gp_best"),
+            "gp_sol_after": row.get("gp_sol_after"),
             "gp_loss": row.get("gp_loss"), "gp_swing": row.get("gp_swing"),
             "gp_loss_knowable": row.get("gp_loss_knowable"),
             "severity": row.get("severity"),

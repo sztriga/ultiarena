@@ -1133,3 +1133,35 @@ html, body, #root {
 .kontra-go:hover:not(:disabled) { filter: brightness(1.12); }
 .kontra-go:disabled { opacity: 0.35; cursor: default; }
 .kontra-actions .kontra-skip { flex: 0 0 auto; padding: 12px 20px; height: auto; }
+
+/* ── Analysis verdict card ────────────────────────────────────────────────
+   Replaces a row of "label: value" pairs. The point of the panel is one
+   number — what the move cost — plus how much of that cost was findable from
+   the player's own seat; everything else is supporting detail. */
+.ana-verdict { display: flex; flex-direction: column; gap: 12px; }
+.ana-verdict-head { display: flex; align-items: center; gap: 8px; }
+.ana-verdict-ply  { font-weight: 700; font-size: 13px; }
+.ana-verdict-who  { color: var(--muted); font-size: 12px; flex: 1; }
+.ana-pill {
+  font-size: 10px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase;
+  color: #14181d; padding: 3px 9px; border-radius: 999px; white-space: nowrap;
+}
+.ana-pill--ok { background: transparent; color: #7fd48a; border: 1px solid #2f6b3c; }
+
+.ana-verdict-cards { display: flex; align-items: flex-end; gap: 14px; }
+.ana-card-slot { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.ana-card-cap  { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+.ana-card-gp   { font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.ana-arrow     { color: var(--muted); font-size: 16px; padding-bottom: 14px; }
+
+.ana-cost { border-top: 1px solid rgba(255,255,255,.08); padding-top: 10px; }
+.ana-cost-main { font-size: 26px; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
+.ana-cost-main--ok { font-size: 15px; font-weight: 600; color: #7fd48a; }
+.ana-cost-unit { font-size: 13px; font-weight: 600; opacity: .7; }
+
+.ana-known { margin-top: 8px; }
+.ana-known-bar {
+  height: 5px; border-radius: 3px; background: rgba(255,255,255,.10); overflow: hidden;
+}
+.ana-known-fill { height: 100%; background: #ffd479; border-radius: 3px; }
+.ana-known-text { margin-top: 5px; font-size: 11px; color: #cfd6dd; }
