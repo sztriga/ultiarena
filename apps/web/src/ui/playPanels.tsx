@@ -9,7 +9,19 @@ import type { Card } from "./cards";
 type Seat = 0 | 1 | 2;
 import { UltiTable, TalonStrip, type SeatChrome } from "./UltiTable";
 import { CardChip, KONTRA_WORD, PLAYER_LABEL, TRUMP_LABEL,
+
          type AnalysisView, type EffectivePly } from "./playChrome";
+
+// GP severity → colour. The verdict shown to the player is the GP the move COST, not the
+// solver's internal value: the solver optimises binary indicators (parti ±1, ulti 0/1)
+// and 81% of mid-game positions tie in those units, so a mark built on them fires on
+// things that cost nothing. `knowable` is the share of that cost that was findable from
+// the mover's own seat — a big cost with a small knowable is bad luck, not a blunder.
+const SEV_COLOR: Record<string, string> = {
+  "baklövés": "#ff6b6b", "hiba": "#ff8a8a", "pontatlanság": "#ffd479", ok: "#9fe3a5",
+};
+const sevColor = (sv?: string | null) => SEV_COLOR[sv ?? "ok"] ?? "#9fe3a5";
+const gp = (x?: number | null) => (x === null || x === undefined ? "—" : `${x > 0 ? "+" : ""}${x.toFixed(1)}`);
 
 export function ResultPanel({ r, withAnalysis, loading, analysisLoading, hasRounds,
                               onPlayAgain, onOpenAnalysis, onShowCard, onAbandon }: {
@@ -205,7 +217,9 @@ export function AnalysisBoard({ analysis, analysisView, effectivePlies, branch,
             </div>
             <div className="subtitle">
               {a.currentPly}. / {maxPly}. lépés · <span className="kbd">←</span> <span className="kbd">→</span> a léptetéshez · kattints egy lapra egy ág kipróbálásához
-              {v?.verdict?.is_blunder && <> · <b style={{ color: "#ff8a8a" }}>HIBA</b></>}
+              {v?.verdict?.severity && v.verdict.severity !== "ok" && (
+                <> · <b style={{ color: sevColor(v.verdict.severity) }}>{v.verdict.severity.toUpperCase()}</b> <span className="muted">(−{(v.verdict.gp_loss ?? 0).toFixed(1)} GP)</span></>
+              )}
               {branching && <> · <i>számolás…</i></>}
             </div>
           </div>
@@ -245,22 +259,34 @@ export function AnalysisBoard({ analysis, analysisView, effectivePlies, branch,
               <div className="panel" style={{ marginTop: 10 }}>
                 {v?.verdict ? (
                   <>
-                    <div className="panel-title">Isteni ítélet — {v.ply_index + 1}. lépés</div>
+                    <div className="panel-title">Ítélet — {v.ply_index + 1}. lépés</div>
                     <div className="row" style={{ gap: 16, flexWrap: "wrap", fontSize: 13 }}>
                       <div>
                         <div className="muted" style={{ fontSize: 11 }}>{v.verdict.player_id === 0 ? "Játékos" : "Védő"} lépett</div>
-                        <div><CardChip card={v.verdict.chosen_card} /> · érték {fmt(v.verdict.god_chosen_value)}</div>
+                        <div><CardChip card={v.verdict.chosen_card} /> · {gp(v.verdict.gp_chosen)} GP</div>
                       </div>
                       <div>
-                        <div className="muted" style={{ fontSize: 11 }}>Isteni választás</div>
-                        <div><CardChip card={v.verdict.god_best_card} /> · érték {fmt(v.verdict.god_best_value)}</div>
+                        <div className="muted" style={{ fontSize: 11 }}>Legjobb lépés</div>
+                        <div><CardChip card={v.verdict.gp_best_card ?? v.verdict.god_best_card} /> · {gp(v.verdict.gp_best)} GP</div>
                       </div>
                       <div>
                         <div className="muted" style={{ fontSize: 11 }}>Ítélet</div>
-                        <div style={{ color: v.verdict.is_blunder ? "#ff8a8a" : "#9fe3a5", fontWeight: 600 }}>
-                          {v.verdict.is_blunder ? "Hiba" : "OK"}
+                        <div style={{ color: sevColor(v.verdict.severity), fontWeight: 600 }}>
+                          {v.verdict.severity ?? "ok"}
+                          {(v.verdict.gp_loss ?? 0) > 0 && <> · −{(v.verdict.gp_loss ?? 0).toFixed(1)} GP</>}
                         </div>
                       </div>
+                      {v.verdict.gp_loss_knowable !== null && v.verdict.gp_loss_knowable !== undefined && (
+                        <div>
+                          <div className="muted" style={{ fontSize: 11 }}>Ebből látható volt</div>
+                          <div style={{ fontWeight: 600 }}>
+                            −{v.verdict.gp_loss_knowable.toFixed(1)} GP
+                            <span className="muted" style={{ fontSize: 11 }}>
+                              {" "}· a többi pech
+                            </span>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </>
                 ) : (
@@ -276,27 +302,29 @@ export function AnalysisBoard({ analysis, analysisView, effectivePlies, branch,
           </section>
           <section>
             <div className="panel betli-hu-log-panel">
-              <div className="panel-title">Lépések · isteni ítélet</div>
+              <div className="panel-title">Lépések · mibe került (GP)</div>
               <div className="betli-hu-log-scroll">
                 <table className="play-sc-table" style={{ fontSize: 12, width: "100%" }}>
                   <thead>
-                    <tr><th>#</th><th>P</th><th>Lépett</th><th>Isteni</th><th>Ítélet</th></tr>
+                    <tr><th>#</th><th>P</th><th>Lépett</th><th>Legjobb</th><th>GP</th><th>Ítélet</th></tr>
                   </thead>
                   <tbody>
                     {effectivePlies.map((p) => {
                       const selected = scrubPly - 1 === p.ply_index;
-                      const blunder = p.verdict?.is_blunder ?? false;
+                      const sev = p.verdict?.severity ?? "ok";
+                      const blunder = sev !== "ok";
                       return (
                         <tr key={`${p.ply_index}-${p.is_branch ? "b" : "o"}`}
                             onClick={() => setScrubPly(p.ply_index + 1)}
                             style={{ cursor: "pointer",
                               background: selected ? "rgba(99,200,255,0.16)" : p.is_branch ? "rgba(162,62,209,0.10)" : undefined,
-                              color: blunder ? "#ff8a8a" : undefined, fontWeight: blunder ? 600 : undefined }}>
+                              color: blunder ? sevColor(sev) : undefined, fontWeight: blunder ? 600 : undefined }}>
                           <td className="muted">{p.ply_index + 1}</td>
                           <td>{p.player_id === 0 ? "J" : `V${p.player_id}`}{p.by_ai ? "·AI" : ""}{p.is_branch ? "·alt" : ""}</td>
                           <td><CardChip card={p.chosen_card} /></td>
-                          <td>{p.verdict ? <CardChip card={p.verdict.god_best_card} /> : "—"}</td>
-                          <td>{p.verdict ? (blunder ? "hiba" : "ok") : "(ág)"}</td>
+                          <td>{p.verdict ? <CardChip card={p.verdict.gp_best_card ?? p.verdict.god_best_card} /> : "—"}</td>
+                          <td className="muted">{p.verdict && (p.verdict.gp_loss ?? 0) > 0 ? `−${(p.verdict.gp_loss ?? 0).toFixed(1)}` : ""}</td>
+                          <td>{p.verdict ? sev : "(ág)"}</td>
                         </tr>
                       );
                     })}

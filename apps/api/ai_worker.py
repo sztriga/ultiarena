@@ -149,7 +149,11 @@ def op_ai_pick(job: dict) -> Optional[int]:
     solve_c, seed, voids = job["solve_c"], job["seed"], job.get("voids")
     n = int(job.get("pimc_n") or _PIMC_N)
     ch = None
-    if job["mode"] == "exploit":
+    if job["mode"] == "god":
+        # CHEATS: perfect information, plays the double-dummy best move. Never served —
+        # research only, as the ceiling on what any play improvement could ever be worth.
+        ch = _god_move(pos, solve_c)
+    elif job["mode"] == "exploit":
         ch = _safe_exploit_pick(pos, solve_c, job["bid"], voids, seed)
     elif job["mode"] == "pimc_pinned":
         ch = pimc_pick(pos=pos, contract=solve_c, n_samples=n, seed=seed,
@@ -227,9 +231,78 @@ def op_unit_makeability_post1(job: dict) -> float:
     return w / float(valid)
 
 
+# Severity bands, in GP LOST BY THE MOVER. PROVISIONAL — set from judgement, not data,
+# because we have no corpus of human decisions yet. They live here as one table so that
+# recalibrating them later (to, say, the worst 1% of real human decisions) is a one-line
+# change rather than a hunt through the frontend.
+_SEVERITY = ((8.0, "baklövés"), (3.0, "hiba"), (1.0, "pontatlanság"))
+
+
+def _severity(gp_loss: float) -> str:
+    for threshold, label in _SEVERITY:
+        if gp_loss >= threshold:
+            return label
+    return "ok"
+
+
+def _gp_if_played(pos, card, solve_c, bid):
+    """Soloist GP if `card` is played here and BOTH sides then play double-dummy.
+
+    This is the number the analysis board should show, and it is not what the solver
+    optimises. The solver maximises a weighted sum of BINARY indicators (parti +-1,
+    ulti 0/1, reaches-100 0/1); card points only reach it through the parti flag, which
+    is usually settled early. Measured on 6,936 deals: 81% of mid-game positions have
+    EVERY legal move tied in solver units, so a blunder detector built on them is silent
+    four times in five and then fires on things that cost nothing. Scoring the terminal
+    with the oracle instead gives GP — including the parti, the silent riders and the
+    kontra multipliers — which is what the player actually pays.
+    """
+    child = pos.clone()
+    pis_bridge.apply_move(child, card)
+    while not pis_bridge.is_terminal(child):
+        mv, _ = pis_bridge.solve_best(child, contract=solve_c)
+        if mv is None:
+            mv = pis_bridge.legal_actions(child)[0]
+        pis_bridge.apply_move(child, mv)
+    return float(score_oracle(final_pos=child, bid=bid).total_sol)
+
+
+def _gp_if_played_blind(pos, card, viewer, solve_c, bid, n_worlds, seed):
+    """The same, but from the MOVER's information set: sample worlds consistent with what
+    they could see, play each out double-dummy, average the GP.
+
+    The difference between this and `_gp_if_played` is the point. A move can be a
+    disaster in hindsight and completely reasonable at the time — milan's piros ulti
+    (game 2d26851c23a2) died on its opening card, yet from his seat almost every lead
+    looked identical. Showing only the hindsight number would call that a blunder, which
+    is both false and useless for learning. Showing both separates "you played badly"
+    from "you got unlucky".
+    """
+    rng = random.Random(seed)
+    iset = _det.build_info_set(pos, viewer, solve_c, voids=None)
+    total = 0.0
+    n = 0
+    for _ in range(n_worlds):
+        try:
+            hands, talon = _det.sample_world(iset, rng)
+        except Exception:
+            continue
+        world = (pis_bridge.clone_with_hands_and_talon(pos, hands, talon)
+                 if iset.talon_known is None else pis_bridge.clone_with_hands(pos, hands))
+        total += _gp_if_played(world, card, solve_c, bid)
+        n += 1
+    return (total / n) if n else None
+
+
 def op_analysis(job: dict) -> List[dict]:
-    """God-rate every played ply (chosen vs best value + blunder flag). Body from the
-    /play/analysis route; returns primitives (card IDS) for the pool boundary."""
+    """Rate every played ply. Body from the /play/analysis route; returns primitives
+    (card IDS) for the pool boundary.
+
+    Two verdicts per ply:
+      * gp_loss          — GP the move cost against double-dummy hindsight
+      * gp_loss_knowable — GP it cost given only what the mover could see
+    plus the legacy solver-unit values, which the explore board still uses.
+    """
     _apply_weights(job.get("weights"))
     solve_c, weights = job["solve_c"], job.get("weights")
     pos = _rebuild({**job, "history": ()})                     # root only; we replay below
@@ -252,9 +325,12 @@ def op_analysis(job: dict) -> List[dict]:
             best_card = next(c for c, v in vals.items() if v <= best_val + 1e-6)
         chosen_val = float(vals.get(chosen, 0.0))
         loss = (best_val - chosen_val) if is_solo else (chosen_val - best_val)
-        # Blunder = gave up at least half the swing available at this decision.
+        # Legacy flag: gave up at least half the swing available in SOLVER units. Kept so
+        # the explore board keeps working, but it is not what the player is shown — see
+        # _gp_if_played for why solver units mislead here.
         is_blunder = loss > 1e-6 and loss >= 0.5 * max(1e-9, vmax - vmin)
-        per_ply.append({
+
+        row = {
             "ply_index": i, "player_id": pid,
             "chosen_card_id": chosen.id,
             "god_best_card_id": best_card.id,
@@ -262,7 +338,36 @@ def op_analysis(job: dict) -> List[dict]:
             "god_chosen_value": chosen_val,
             "is_blunder": bool(is_blunder),
             "legal_card_ids": [c.id for c in legal_now],
-        })
+        }
+
+        bid = job.get("bid")
+        if bid is not None:
+            # GP, from the mover's point of view: the soloist wants total_sol UP, a
+            # defender wants it DOWN, so the sign flips for seats 1 and 2.
+            sign = 1.0 if is_solo else -1.0
+            gp = {c: sign * _gp_if_played(pos, c, solve_c, bid) for c in legal_now}
+            gp_best = max(gp.values())
+            gp_chosen = gp[chosen]
+            gp_loss = max(0.0, gp_best - gp_chosen)
+            gp_best_card = max(gp, key=lambda c: gp[c])
+            row.update({
+                "gp_chosen": round(sign * gp_chosen, 2),
+                "gp_best": round(sign * gp_best, 2),
+                "gp_loss": round(gp_loss, 2),
+                "gp_best_card_id": gp_best_card.id,
+                "severity": _severity(gp_loss),
+                "gp_swing": round(gp_best - min(gp.values()), 2),
+            })
+            nw = int(job.get("analysis_worlds") or 0)
+            if nw > 0 and gp_loss > 0:
+                # Only worth sampling where something was actually lost.
+                blind = {c: _gp_if_played_blind(pos, c, pid, solve_c, bid, nw,
+                                                job.get("seed", 0) + i * 7919 + c.id)
+                         for c in legal_now}
+                if all(v is not None for v in blind.values()):
+                    b = {c: sign * v for c, v in blind.items()}
+                    row["gp_loss_knowable"] = round(max(0.0, max(b.values()) - b[chosen]), 2)
+        per_ply.append(row)
         pis_bridge.apply_move(pos, chosen)
     return per_ply
 

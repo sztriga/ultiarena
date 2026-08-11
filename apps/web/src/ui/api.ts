@@ -204,9 +204,21 @@ export interface PlayAnalysisPly {
   god_best_card:    Card;
   god_best_value:   number;
   god_chosen_value: number;
-  is_blunder:       boolean;
+  is_blunder:       boolean;          // legacy, solver-unit; the UI shows `severity`
   legal_card_ids:   number[];
   by_ai:            boolean;
+  // GP verdict. `gp_loss` is what the move cost in real game points, which is NOT the
+  // solver's objective — that is a sum of binary indicators (parti ±1, ulti 0/1) in
+  // which 81% of mid-game positions tie. `gp_loss_knowable` is the share of that cost
+  // findable from the mover's own seat; a large loss with a small knowable share is bad
+  // luck rather than a mistake. Null when the server ran with ANALYSIS_WORLDS=0.
+  gp_chosen?:        number | null;
+  gp_best?:          number | null;
+  gp_loss?:          number | null;
+  gp_swing?:         number | null;
+  gp_loss_knowable?: number | null;
+  gp_best_card?:     Card | null;
+  severity?:         "ok" | "pontatlanság" | "hiba" | "baklövés" | null;
 }
 
 export interface PlayAnalysis {

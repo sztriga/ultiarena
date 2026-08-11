@@ -35,6 +35,7 @@ from ulti.bidding.recipe import sol_marriages
 from ulti.solvers import pis as pis_bridge
 from ulti.scoring.units import kontra_units as _kontra_units  # noqa: F401  (re-export: tests/ulti/test_kontra_units.py)
 from ulti.card import card_from_id, sort_hand
+from ulti.config import env_int
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 
@@ -363,7 +364,13 @@ def play_analysis(req: AnalysisRequest, request: Request = None) -> dict:
                                             sess.p_weights, sess.trump)
         # The whole god-solve loop runs in a WORKER (ids in, ids out); here we only
         # decorate the result with card dicts + the by_ai flags from the history.
-        raw = ai_pool.run("analysis", _recipe(sess))
+        # `bid` and the world count are what turn the analysis from solver units into
+        # GP (see ai_worker._gp_if_played). ANALYSIS_WORLDS=0 disables the slower
+        # "how much of this was knowable" pass.
+        job = _recipe(sess)
+        job.update(bid=sess.bid, seed=sess.seed,
+                   analysis_worlds=env_int("ANALYSIS_WORLDS", 8))
+        raw = ai_pool.run("analysis", job)
         history = list(sess.p_history)
         game_id, bid_name = sess.id, sess.bid_name
         restrict, human_pi = sess.p_restrict, sess.human_play_index
@@ -380,6 +387,13 @@ def play_analysis(req: AnalysisRequest, request: Request = None) -> dict:
             "is_blunder": row["is_blunder"],
             "legal_card_ids": row["legal_card_ids"],
             "by_ai": bool(step.get("by_ai", False)),
+            # GP verdict — what the move actually cost, and how much of that was findable
+            "gp_chosen": row.get("gp_chosen"), "gp_best": row.get("gp_best"),
+            "gp_loss": row.get("gp_loss"), "gp_swing": row.get("gp_swing"),
+            "gp_loss_knowable": row.get("gp_loss_knowable"),
+            "severity": row.get("severity"),
+            "gp_best_card": (card_to_dict(card_from_id(row["gp_best_card_id"]))
+                             if row.get("gp_best_card_id") is not None else None),
         })
     return {
         "game_id": game_id,
