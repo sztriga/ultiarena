@@ -119,6 +119,10 @@ def user_from_request(request: Optional[Request]) -> Optional[dict]:
     token = auth[7:].strip()
     if not token:
         return None
+    if token.startswith("ua_"):        # an API key IS an identity (docs/PUBLIC_API.md)
+        from .apikeys import resolve_key
+        ident = resolve_key(token)
+        return {"user_id": ident["user_id"], "username": ident["username"]} if ident else None
     with _lock:
         hit = _token_cache.get(token)
         if hit is None:

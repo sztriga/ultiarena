@@ -198,14 +198,17 @@ def _finish(sess: Session) -> None:
             "soloist_seat": w, "human_seat": sess.seat, "kontra_level": sess.k_level,
             "winner": "soloist" if soloist_won else "defenders", "made": made,
             "seat_gp": seat_gp,
-            "players": [                          # seat → identity; ONE shape for solo AND live
-                {"seat": s, "kind": "human" if s in sess.humans else "ai",
+            "players": [                          # seat → identity; ONE shape for solo, live AND api
+                {"seat": s,
+                 # an API-driven seat is a BOT: a program owned by a user (docs/PUBLIC_API.md D4)
+                 "kind": (("bot" if getattr(sess, "api_agent", None) else "human")
+                          if s in sess.humans else "ai"),
                  "user_id": (sess.players.get(s) or {}).get("user_id") if s in sess.humans else None,
                  # ip/device describe the session CREATOR's browser — meaningful for the
                  # solo game only; a live table has three browsers, identified by user_id.
                  "ip": origin if (s == sess.seat and not sess.live) else None,
                  "device": getattr(sess, "device_id", None) if (s == sess.seat and not sess.live) else None,
-                 "agent": None if s in sess.humans else "frontier"}
+                 "agent": (getattr(sess, "api_agent", None) if s in sess.humans else "frontier")}
                 for s in range(3)
             ],
             "transcript": {                        # play-index space (0 = soloist); auction is real-seat

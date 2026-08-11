@@ -55,6 +55,11 @@ app.include_router(puzzle_router, prefix="/api")   # /puzzle/* — Villámtalon 
 app.include_router(users_router,  prefix="/api")   # /auth/* — accounts (docs/MULTIPLAYER.md)
 app.include_router(live_router,   prefix="/api")   # /live/* — lobby, chat, Asztal
 
+# The PUBLIC, versioned research API (docs/PUBLIC_API.md) — its own sub-application
+# with its own OpenAPI docs at /api/v1/docs. Everything above stays internal.
+from .public import v1 as public_v1  # noqa: E402
+app.mount("/api/v1", public_v1)
+
 # Hungarian Tell-deck card images at /cards (card_piece_<S><R>.jpg + card_back.png).
 _CARDS_DIR = Path(__file__).resolve().parents[2] / "assets" / "cards"
 app.mount("/cards", StaticFiles(directory=str(_CARDS_DIR)), name="cards")
