@@ -1140,33 +1140,34 @@ html, body, #root {
    the card is one number — what the move cost — and how much of that cost was
    findable from the player's own seat. */
 .ana-verdict { display: flex; flex-direction: column; gap: 8px; }
-.ana-verdict-head { display: flex; align-items: center; gap: 8px; }
+.ana-verdict-head { display: flex; align-items: center; justify-content: center; gap: 8px; }
 .ana-verdict-ply  { font-weight: 700; font-size: 12px; }
-.ana-verdict-who  { color: var(--muted); font-size: 11px; flex: 1; }
+.ana-verdict-who  { color: var(--muted); font-size: 11px; }
 .ana-pill {
   font-size: 9px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase;
   color: #14181d; padding: 2px 8px; border-radius: 999px; white-space: nowrap;
 }
 .ana-pill--ok { background: transparent; color: #7fd48a; border: 1px solid #2f6b3c; }
 
-/* Cards sit left at their natural width; the cost block takes the rest and the
-   knowable bar STRETCHES to fill it. An earlier version pushed the cost right with
-   margin-left:auto, which left a dead gap down the middle of a wide panel. */
-.ana-verdict-row { display: flex; align-items: center; gap: 14px; }
+/* Everything sits together in the MIDDLE of the panel. Two earlier tries pushed the
+   halves apart -- first with margin-left:auto, then by stretching the bar -- and both
+   read as two disconnected things with a hole between them. Centring one compact
+   group is what the box wants. */
+.ana-verdict-row { display: flex; align-items: center; justify-content: center; gap: 16px; }
 .ana-cards { display: flex; align-items: center; gap: 7px; flex: 0 0 auto; }
 .ana-card-slot { display: flex; align-items: center; gap: 5px; }
 .ana-card-gp { font-size: 11px; font-weight: 600; font-variant-numeric: tabular-nums; color: #9aa4af; }
 .ana-arrow { color: #566270; font-size: 13px; }
 
 .ana-cost {
-  display: flex; align-items: center; gap: 12px; flex: 1 1 auto; min-width: 0;
-  border-left: 1px solid rgba(255,255,255,.09); padding-left: 14px;
+  display: flex; align-items: center; gap: 12px; flex: 0 0 auto;
+  border-left: 1px solid rgba(255,255,255,.09); padding-left: 16px;
 }
 .ana-cost-main { font-size: 21px; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; white-space: nowrap; flex: 0 0 auto; }
 .ana-cost-main--ok { font-size: 13px; font-weight: 600; color: #7fd48a; }
 .ana-cost-unit { font-size: 11px; font-weight: 600; opacity: .65; }
 
-.ana-known { flex: 1 1 auto; min-width: 80px; }
+.ana-known { flex: 0 0 auto; width: 132px; }
 .ana-known-bar { height: 5px; border-radius: 3px; background: rgba(255,255,255,.09); overflow: hidden; }
 .ana-known-fill { height: 100%; background: #ffd479; border-radius: 3px; }
 .ana-known-text { margin-top: 4px; font-size: 10px; color: #9aa4af; white-space: nowrap; }
