@@ -364,9 +364,9 @@ html, body, #root {
 
 .trump-symbol  { font-size: 18px; font-weight: 800; }
 .trump-hearts  { color: #e74c3c; }
-.trump-bells   { color: #e8a838; }
+.trump-bells   { color: #a9743f; }   /* tök = BROWN (milan 2026-08-11) */
 .trump-leaves  { color: #27ae60; }
-.trump-acorns  { color: #b58a4f; }
+.trump-acorns  { color: #e8c020; }   /* makk = YELLOW (milan 2026-08-11) */
 
 .ulti-role-tag {
   font-size: 10px;
@@ -994,9 +994,9 @@ html, body, #root {
 }
 .ulti-trump-btn:hover:not(:disabled) { background: #1e2228; border-color: var(--accent); }
 .ulti-trump-symbol { font-size: 20px; }
-.ulti-trump-btn.trump-bells .ulti-trump-symbol { color: #ffd54f; }
+.ulti-trump-btn.trump-bells .ulti-trump-symbol { color: #c08850; }   /* brown */
 .ulti-trump-btn.trump-leaves .ulti-trump-symbol { color: #66bb6a; }
-.ulti-trump-btn.trump-acorns .ulti-trump-symbol { color: #a1887f; }
+.ulti-trump-btn.trump-acorns .ulti-trump-symbol { color: #ffd84a; }  /* yellow */
 
 /* ── Villámtalon (puzzle rush) ─────────────────────────────────────────── */
 .puzzle-rush .puzzle-main {
