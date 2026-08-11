@@ -128,17 +128,23 @@ export function Profile({ onExit }: { onExit: () => void }) {
             <div className="profile-stat"><b>{stats.games}</b><span>játszma</span></div>
             <div className="profile-stat">
               <b className={gpCls(stats.gp_total ?? 0)}>{gpTxt(stats.gp_total ?? 0)}</b>
-              <span>össz GP</span>
+              <span>össz pont</span>
             </div>
             <div className="profile-stat">
               <b className={gpCls(stats.gp_per_game ?? 0)}>{gpTxt(stats.gp_per_game ?? 0)}</b>
-              <span>GP / játszma</span>
+              <span>pont / játszma</span>
             </div>
             <div className="profile-stat"><b>{winRate}%</b><span>győzelem</span></div>
+            {stats.as_soloist && (
+              <div className="profile-stat">
+                <b>{Math.round(100 * stats.as_soloist.n / stats.games)}%</b>
+                <span>bemondóként ({stats.as_soloist.n})</span>
+              </div>
+            )}
             {stats.as_soloist && stats.as_soloist.n > 0 && (
               <div className="profile-stat">
                 <b>{Math.round(100 * stats.as_soloist.made / stats.as_soloist.n)}%</b>
-                <span>megcsinált ({stats.as_soloist.n} felvétel)</span>
+                <span>győzelem bemondóként</span>
               </div>
             )}
           </section>
@@ -147,8 +153,9 @@ export function Profile({ onExit }: { onExit: () => void }) {
         {stats?.contracts && stats.contracts.length > 0 && (
           <section>
             <div className="live-section-title">Játékonként</div>
+            <div className="profile-scroll profile-scroll--table">
             <table className="profile-table">
-              <thead><tr><th>játék</th><th>n</th><th>GP</th><th>GP/db</th></tr></thead>
+              <thead><tr><th>játék</th><th>n</th><th>pont</th><th>pont/db</th></tr></thead>
               <tbody>
                 {stats.contracts.map((c) => (
                   <tr key={c.contract}>
@@ -159,6 +166,7 @@ export function Profile({ onExit }: { onExit: () => void }) {
                 ))}
               </tbody>
             </table>
+            </div>
           </section>
         )}
 
@@ -167,7 +175,7 @@ export function Profile({ onExit }: { onExit: () => void }) {
           {games.length === 0 ? (
             <div className="live-empty">Még nincs rögzített játszma.</div>
           ) : (
-            <div className="profile-games">
+            <div className="profile-games profile-scroll profile-scroll--games">
               {games.map((g) => (
                 <button key={g.id} className="profile-game" disabled={openingId !== null}
                         title="Elemzés megnyitása" onClick={() => openGame(g)}>

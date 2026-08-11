@@ -1242,3 +1242,14 @@ html, body, #root {
 .profile-game-open { color: #7d92a8; font-size: 12.5px; text-align: right; }
 .profile-pager { display: flex; align-items: center; gap: 14px; margin-top: 12px;
   justify-content: center; }
+
+/* Fixed-size scrollable boxes for the profile tables (milan 2026-08-11). */
+.profile-scroll {
+  border: 1px solid var(--border, #262a30); border-radius: 10px;
+  overflow-y: auto; background: var(--panel-2, #15181c);
+}
+.profile-scroll--table { height: 220px; }
+.profile-scroll--games { height: 420px; padding: 8px; }
+.profile-scroll--table .profile-table th {
+  position: sticky; top: 0; background: var(--panel-2, #15181c);
+}
