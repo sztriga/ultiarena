@@ -10,6 +10,7 @@ from ulti.bidding.scorers import resolve_bidset, _play_weights
 from ulti.solvers import pis as pis_bridge
 from ulti.solvers import determinize as _det
 from ulti.scoring.units import kontra_units as _kontra_units
+from ulti.card import TRUMP_CHOICES
 from fastapi import HTTPException
 
 from .engine import Session, _GP, _SUIT_HU, _bid_fn, _bid_label, _provider
@@ -278,7 +279,7 @@ def _legal_bids(sess: Session) -> List[dict]:
         elif r.piros:
             trumps = ["hearts"]
         else:
-            trumps = ["bells", "leaves", "acorns"]   # tök · zöld · makk (milan's order);
+            trumps = list(TRUMP_CHOICES)   # tök · zöld · makk — derived in ulti.card;
             # display-only for deferred-trump bids: play_bid recomputes the trump
         # One option per interchangeable contract on the rung, so the user picks
         # the specific game (40-100-duri vs ulti-duri) rather than us guessing.

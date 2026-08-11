@@ -148,3 +148,16 @@ def test_suit_names_are_not_redefined_in_the_api_layer():
     desc = v1.description
     generated = ", ".join(f"{i} = {SUIT_HU[s]}/{s}" for i, s in enumerate(SUITS))
     assert generated in desc, "public docs no longer generated from ulti.card"
+
+
+def test_trump_choice_order_is_derived_not_hand_listed():
+    """tök·zöld·makk comes from DISPLAY_SUIT_ORDER via ulti.card.TRUMP_CHOICES;
+    the api layer must not spell the list out (it did, three times)."""
+    from ulti.card import DISPLAY_SUIT_ORDER, TRUMP_CHOICES
+
+    assert TRUMP_CHOICES == ['bells', 'leaves', 'acorns']
+    assert [DISPLAY_SUIT_ORDER[s] for s in TRUMP_CHOICES] == sorted(
+        DISPLAY_SUIT_ORDER[s] for s in TRUMP_CHOICES)
+    for fname in ("snapshots.py", "auction_flow.py"):
+        src = (_ROOT / "apps" / "api" / fname).read_text()
+        assert '"bells", "leaves", "acorns"' not in src, f"{fname} hand-lists the trump order"

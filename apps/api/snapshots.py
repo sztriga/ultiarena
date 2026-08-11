@@ -12,7 +12,7 @@ from typing import List, Optional
 
 from ulti.bidding.ladder import overcalls
 from ulti.solvers import pis as pis_bridge
-from ulti.card import sort_hand
+from ulti.card import TRUMP_CHOICES, sort_hand
 
 from .serialize import card_to_dict
 from .engine import Session, _bid_label, _play_index
@@ -184,7 +184,7 @@ def _trump_snapshot(sess: Session, viewer: int) -> dict:
     hand = sort_hand(sess.a_hands[viewer])
     return {
         "contract": _bid_label(sess.a_current["bid"]),
-        "trump_options": ["bells", "leaves", "acorns"],   # tök · zöld · makk (milan's order)
+        "trump_options": list(TRUMP_CHOICES),     # tök · zöld · makk — derived in ulti.card
         "own_hand": [card_to_dict(c) for c in hand],
         "is_chooser": viewer == sess.a_winner,
     }

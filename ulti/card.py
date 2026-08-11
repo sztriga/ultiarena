@@ -82,6 +82,11 @@ DISPLAY_SUIT_ORDER = {'hearts': 0, 'bells': 1, 'leaves': 2, 'acorns': 3}
 # The Hungarian names — defined HERE, next to the canonical orders, so no other
 # module ever spells a suit/rank listing by hand (docs generate from these).
 SUIT_HU = {'hearts': 'piros', 'bells': 'tök', 'leaves': 'zöld', 'acorns': 'makk'}
+
+# The non-piros trump choices, DERIVED from the display order (tök, zöld, makk) —
+# never hand-listed again (milan 2026-08-11).
+TRUMP_CHOICES = [s for s in sorted(DISPLAY_SUIT_ORDER, key=DISPLAY_SUIT_ORDER.get)
+                 if s != 'hearts']
 RANK_HU = {'7': '7', '8': '8', '9': '9', 'lower': 'alsó', 'upper': 'felső',
            'king': 'király', '10': '10', 'ace': 'ász'}
 
