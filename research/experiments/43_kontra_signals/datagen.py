@@ -143,7 +143,9 @@ def _play_deployed(bid, build_c, solve_c, t, restrict, weights,
                 and not is_terit and _exp36 is not None and _exp36.available()):
             ch = _exp36.betli_defense_pick(pos, p)
         if ch is None:
-            if _cfg(p, "exploit", _EXPLOIT) and p == 0 and not is_terit:
+            if _cfg(p, "god", False):
+                mode = "god"              # research ceiling only — sees every hand
+            elif _cfg(p, "exploit", _EXPLOIT) and p == 0 and not is_terit:
                 mode = "exploit"
             elif p != 0 and is_terit and len(hist) >= 3:
                 # terített reveal: the soloist's hand is face-up once trick 1 and the
