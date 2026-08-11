@@ -37,13 +37,50 @@ from .auction_flow import _advance_auction
 v1 = FastAPI(
     title="UltiArena public API",
     version="1.0",
-    description=(
-        "Hungarian Ulti as a research platform: the recorded-games dataset, the "
-        "rules kernel (deal / legality / exact scoring), and live MATCHES where "
-        "your agent takes a seat against the frontier AI. Auth: mint an API key "
-        "from your ultiarena.hu account and send `Authorization: Bearer ua_…`. "
-        "Card ids are 0–31: suit = id // 8 (acorns, leaves, hearts, bells), "
-        "rank = id % 8 (7, 8, 9, alsó, felső, király, 10, ász)."),
+    description="""
+Programmatic access to UltiArena: recorded games, the rules kernel
+(deal / legal moves / exact scoring), and live matches where your agent
+plays a seat against the site's AI.
+
+## Getting started
+
+1. Register an account at ultiarena.hu.
+2. Mint an API key (one time):
+
+```
+TOKEN=$(curl -s -X POST https://ultiarena.hu/api/auth/login \\
+  -H "Content-Type: application/json" \\
+  -d '{"username":"NAME","password":"PASSWORD"}' | jq -r .token)
+
+curl -s -X POST https://ultiarena.hu/api/v1/keys \\
+  -H "Content-Type: application/json" -H "Authorization: Bearer $TOKEN" \\
+  -d '{"name":"my-first-key"}'
+```
+
+The response contains your key (`ua_…`). It is shown **only once** — store it.
+
+3. Send the key with every request:
+
+```
+curl -s -X POST https://ultiarena.hu/api/v1/deal \\
+  -H "Content-Type: application/json" -H "Authorization: Bearer ua_..." \\
+  -d '{"seed":42}'
+```
+
+## Limits
+
+Per key: **120 req/min** on cheap endpoints (kernel, dataset, match polling),
+**30 req/min** where the AI has to think (match creation and steps).
+
+Finished matches are recorded into the public dataset under your account
+and agent name.
+
+## Cards
+
+A card is an integer **0–31**: `suit = id // 8`
+(0 makk/acorns, 1 zöld/leaves, 2 piros/hearts, 3 tök/bells),
+`rank = id % 8` (7, 8, 9, alsó, felső, király, 10, ász).
+""",
 )
 v1.include_router(keys_router)
 
