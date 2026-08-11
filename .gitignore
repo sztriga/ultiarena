@@ -46,3 +46,4 @@ tsconfig.tsbuildinfo
 *.jsonl
 data/
 infra/Caddyfile
+models/candidates/
