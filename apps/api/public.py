@@ -37,10 +37,6 @@ from .auction_flow import _advance_auction
 v1 = FastAPI(
     title="UltiArena public API",
     version="1.0",
-    # /api/v1/docs = our own PLAIN page (milan: Swagger too purple, ReDoc too
-    # fancy — keep it simple stupid). /api/v1/console = Swagger UI's try-it-out.
-    redoc_url=None,
-    docs_url="/console",
     description="""
 Programmatic access to UltiArena: recorded games, the rules kernel
 (deal / legal moves / exact scoring), and live matches where your agent
@@ -345,91 +341,3 @@ def match_act(match_id: str, req: ActRequest, request: Request = None) -> dict:
         return P.play_move(P.MoveRequest(game_id=match_id, card_id=req.card_id), request)
     raise HTTPException(status_code=400, detail=f"ismeretlen akció: {req.type!r}")
 
-
-# ── The docs page — plain on purpose ────────────────────────────────────────────
-# milan (2026-08-11): Swagger's default skin is ugly, ReDoc is "fancy but not
-# readable" — so the reference is a single hand-styled HTML page in the site's own
-# dark look: the getting-started text, then one block per endpoint (method, path,
-# what it does, body fields). Generated from the live OpenAPI spec so it cannot
-# drift from the code; /openapi.json stays the machine-readable source.
-
-from fastapi.responses import HTMLResponse  # noqa: E402
-
-
-def _md_to_html(md: str) -> str:
-    """The three markdown constructs the description uses: ##, ``` fences, **bold**."""
-    import html as _html
-    import re as _re
-    out, in_code = [], False
-    for line in md.splitlines():
-        if line.strip().startswith("```"):
-            out.append("</pre>" if in_code else "<pre>")
-            in_code = not in_code
-            continue
-        if in_code:
-            out.append(_html.escape(line))
-            continue
-        e = _html.escape(line)
-        e = _re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", e)
-        e = _re.sub(r"`([^`]+)`", r"<code>\1</code>", e)
-        if e.startswith("## "):
-            out.append(f"<h2>{e[3:]}</h2>")
-        elif e.strip():
-            out.append(f"<p>{e}</p>")
-    return "\n".join(out)
-
-
-@v1.get("/docs", include_in_schema=False)
-def plain_docs() -> HTMLResponse:
-    import html as _html
-    spec = v1.openapi()
-    parts = [
-        "<!doctype html><meta charset='utf-8'>",
-        "<meta name='viewport' content='width=device-width, initial-scale=1'>",
-        "<title>UltiArena API</title>",
-        """<style>
-        body { background:#0b0d10; color:#e5e7eb; font:15px/1.55 ui-sans-serif,system-ui;
-               max-width:760px; margin:0 auto; padding:32px 20px 80px; }
-        h1 { font-size:26px; margin:0 0 4px; } h2 { font-size:17px; margin:28px 0 8px; }
-        p { margin:6px 0; color:#c7cdd6; }
-        pre { background:#111315; border:1px solid #262a30; border-radius:8px;
-              padding:12px 14px; overflow-x:auto; font-size:13px; line-height:1.5; }
-        code { background:#15181c; border-radius:4px; padding:1px 5px; font-size:13px; }
-        .ep { border:1px solid #262a30; border-radius:10px; padding:12px 16px; margin:10px 0; }
-        .sig { font-family:ui-monospace,monospace; font-size:14px; }
-        .m { font-weight:700; color:#7fb8ff; margin-right:8px; }
-        .ep p { font-size:13.5px; }
-        .f { color:#9ca3af; font-size:13px; font-family:ui-monospace,monospace; }
-        a { color:#7fb8ff; } .muted { color:#9ca3af; font-size:13px; }
-        </style>""",
-        "<h1>UltiArena API</h1>",
-        f"<p class='muted'>v{spec['info']['version']} · "
-        "<a href='/api/v1/openapi.json'>openapi.json</a> · "
-        "<a href='/api/v1/console'>try it out</a></p>",
-        _md_to_html(spec["info"]["description"]),
-        "<h2>Endpoints</h2>",
-    ]
-    for path, methods in spec["paths"].items():
-        for method, op in methods.items():
-            doc = (op.get("description") or op.get("summary") or "").strip()
-            parts.append("<div class='ep'>")
-            parts.append(f"<div class='sig'><span class='m'>{method.upper()}</span>"
-                         f"/api/v1{_html.escape(path)}</div>")
-            if doc:
-                first = doc.split("\n\n")[0].replace("\n", " ")
-                parts.append(f"<p>{_html.escape(first)}</p>")
-            body = (op.get("requestBody", {}).get("content", {})
-                    .get("application/json", {}).get("schema", {}))
-            ref = body.get("$ref", "")
-            if ref:
-                schema = spec["components"]["schemas"].get(ref.split("/")[-1], {})
-                req = set(schema.get("required", []))
-                fields = []
-                for fname, f in schema.get("properties", {}).items():
-                    t = f.get("type") or "/".join(
-                        x.get("type", "?") for x in f.get("anyOf", [])) or "obj"
-                    fields.append(f"{fname}{'' if fname in req else '?'}: {t}")
-                if fields:
-                    parts.append(f"<div class='f'>{_html.escape(' · '.join(fields))}</div>")
-            parts.append("</div>")
-    return HTMLResponse("".join(parts))
