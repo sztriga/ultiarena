@@ -232,7 +232,6 @@ export function AnalysisBoard({ analysis, analysisView, effectivePlies, branch,
       ),
     });
     const anaSeats = { 0: anaSeat(0), 1: anaSeat(1), 2: anaSeat(2) };
-    const fmt = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(1));
     return (
       <div className="app betli-hu-game play-vs-ai">
         <header className="topbar">
@@ -347,12 +346,11 @@ export function AnalysisBoard({ analysis, analysisView, effectivePlies, branch,
                     </div>
                   </>
                 ) : (
-                  <>
-                    <div className="panel-title">Alternatív ág · isteni folytatás</div>
-                    <div className="muted" style={{ fontSize: 12 }}>
-                      Elágazás a(z) {(branch?.forkPly ?? 0) + 1}. lépésnél — innentől minden lépés isteni-optimális. Ág végérték: {fmt(branch?.value ?? 0)}.
-                    </div>
-                  </>
+                  <div className="ana-verdict-head">
+                    <span className="ana-verdict-ply">{(branch?.forkPly ?? 0) + 1}. lépéstől</span>
+                    <span className="ana-verdict-who">tökéletes játék</span>
+                    <span className="ana-pill" style={{ background: "#a23ed1", color: "#fff" }}>ág</span>
+                  </div>
                 )}
               </div>
             )}
