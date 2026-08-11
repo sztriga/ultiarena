@@ -221,7 +221,7 @@ def _reap_idle_sessions() -> None:
         _sessions.pop(gid, None)
 
 
-_SUIT_HU = {"hearts": "piros", "acorns": "makk", "leaves": "zöld", "bells": "tök"}
+from ulti.card import SUIT_HU as _SUIT_HU  # noqa: E402  (one source for suit names)
 
 
 

@@ -134,3 +134,17 @@ def test_translation_covers_the_whole_deck():
 
     assert len({c.id for c in DECK}) == 32
     assert len({(_to_t(c).suit, _to_t(c).rank) for c in DECK}) == 32
+
+
+def test_suit_names_are_not_redefined_in_the_api_layer():
+    """milan 2026-08-11 (the API docs hand-typed a suit listing): Hungarian card
+    names live in ulti.card next to the canonical orders — the api layer must
+    IMPORT them, and the public docs must be GENERATED from them."""
+    from ulti.card import SUIT_HU, SUITS
+    from apps.api import engine
+    from apps.api.public import v1
+
+    assert engine._SUIT_HU is SUIT_HU
+    desc = v1.description
+    generated = ", ".join(f"{i} = {SUIT_HU[s]}/{s}" for i, s in enumerate(SUITS))
+    assert generated in desc, "public docs no longer generated from ulti.card"

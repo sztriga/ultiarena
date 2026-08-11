@@ -22,7 +22,7 @@ from pydantic import BaseModel, Field
 
 from ulti.bidding.deal import deal_12_10_10
 from ulti.bidding.ladder import overcalls, contract_name
-from ulti.card import card_from_id
+from ulti.card import RANK_HU, RANKS, SUIT_HU, SUITS, card_from_id
 from ulti.scoring.oracle import score as oracle_score
 from ulti.scoring.units import kontra_units
 from ulti.solvers import pis as pis_bridge
@@ -77,10 +77,12 @@ and agent name.
 
 ## Cards
 
-A card is an integer **0–31**: `suit = id // 8`
-(0 makk/acorns, 1 zöld/leaves, 2 piros/hearts, 3 tök/bells),
-`rank = id % 8` (7, 8, 9, alsó, felső, király, 10, ász).
-""",
+A card is an integer **0–31**: `suit = id // 8`, `rank = id % 8`.
+This is the WIRE ENCODING (fixed protocol, also how games are stored) — not a
+display order.
+
+""" + "suits: " + ", ".join(f"{i} = {SUIT_HU[s]}/{s}" for i, s in enumerate(SUITS))
+    + "  \nranks: " + ", ".join(f"{i} = {RANK_HU[r]}" for i, r in enumerate(RANKS)) + "\n",
 )
 v1.include_router(keys_router)
 

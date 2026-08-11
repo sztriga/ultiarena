@@ -79,6 +79,12 @@ def fresh_deck() -> List[Card]:
 # is independent of suit_index, which is only the id encoding.
 DISPLAY_SUIT_ORDER = {'hearts': 0, 'bells': 1, 'leaves': 2, 'acorns': 3}
 
+# The Hungarian names — defined HERE, next to the canonical orders, so no other
+# module ever spells a suit/rank listing by hand (docs generate from these).
+SUIT_HU = {'hearts': 'piros', 'bells': 'tök', 'leaves': 'zöld', 'acorns': 'makk'}
+RANK_HU = {'7': '7', '8': '8', '9': '9', 'lower': 'alsó', 'upper': 'felső',
+           'king': 'király', '10': '10', 'ace': 'ász'}
+
 # Colourless games (betli / színtelen duri) demote the Ten under the alsó, so a suit runs
 # 7 8 9 10 J Q K A instead of 7 8 9 J Q K 10 A. Same ordering the solver uses for those
 # contracts (see ulti.solvers.blocks.strength) — a hand must be read the way it plays.
