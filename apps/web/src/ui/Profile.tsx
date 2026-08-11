@@ -146,7 +146,7 @@ export function Profile({ onExit }: { onExit: () => void }) {
         )}
 
         {stats?.contracts && stats.contracts.length > 0 && (
-          <section>
+          <section className="profile-table-section">
             <div className="live-section-title">Játékonként</div>
             <div className="profile-scroll profile-scroll--table">
             <table className="profile-table">

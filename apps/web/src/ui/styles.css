@@ -1250,8 +1250,7 @@ html, body, #root {
   border: 1px solid var(--border, #262a30); border-radius: 10px;
   overflow-y: auto; background: var(--panel-2, #15181c);
 }
-.profile-scroll--table { height: 220px; }
-.profile-scroll--games { height: 420px; padding: 8px; }
+.profile-scroll--games { padding: 8px; }
 .profile-scroll--table .profile-table th {
   position: sticky; top: 0; background: var(--panel-2, #15181c);
 }
@@ -1261,5 +1260,11 @@ html, body, #root {
    pager stays visible below it (milan 2026-08-11, second pass). */
 .app.profile { height: 100vh; overflow: hidden; }
 .app.profile .profile-main { flex: 1; min-height: 0; overflow: hidden; }
-.profile-games-section { flex: 1; min-height: 0; display: flex; flex-direction: column; }
-.profile-games-section .profile-scroll--games { flex: 1; min-height: 100px; height: auto; }
+/* The two tables SPLIT the remaining viewport height equally — always about
+   the same size, whatever the window (milan 2026-08-11). */
+.profile-table-section, .profile-games-section {
+  flex: 1 1 0; min-height: 120px; display: flex; flex-direction: column;
+}
+.profile-table-section .profile-scroll, .profile-games-section .profile-scroll {
+  flex: 1; min-height: 0;
+}
