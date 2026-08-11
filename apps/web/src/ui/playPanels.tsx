@@ -285,8 +285,9 @@ export function AnalysisBoard({ analysis, analysisView, effectivePlies, branch,
                 </>
               }
             />
-            {(v?.verdict || branch) && (
-              <div className="panel" style={{ marginTop: 10 }}>
+            {/* Always rendered, empty before the first ply — otherwise the board jumps
+                by the panel's height the moment a verdict first appears. */}
+            <div className="panel ana-panel">
                 {v?.verdict ? (
                   <>
                     <div className="ana-verdict">
@@ -345,15 +346,16 @@ export function AnalysisBoard({ analysis, analysisView, effectivePlies, branch,
                       </div>
                     </div>
                   </>
-                ) : (
+                ) : branch ? (
                   <div className="ana-verdict-head">
                     <span className="ana-verdict-ply">{(branch?.forkPly ?? 0) + 1}. lépéstől</span>
                     <span className="ana-verdict-who">tökéletes játék</span>
                     <span className="ana-pill" style={{ background: "#a23ed1", color: "#fff" }}>ág</span>
                   </div>
+                ) : (
+                  <div className="ana-empty">—</div>
                 )}
-              </div>
-            )}
+            </div>
           </section>
           <section>
             <div className="panel betli-hu-log-panel">

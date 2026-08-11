@@ -897,7 +897,10 @@ html, body, #root {
 .play-vs-ai .ulti-bottom-seat { margin-top: auto; }
 /* Bidding overlay: fills the same middle band as the trick area, centered; the history
    scrolls internally so the overlay never changes the layout. */
-.play-vs-ai .ulti-auction-overlay { padding: 12px 18px; margin: 0 auto; max-width: 560px;
+/* FIXED width, not max-width: with `margin:0 auto` a max-width box shrinks to its
+   content, so the whole panel shifted every time a contract name changed length
+   ("ulti" vs "piros ulti-40-100-duri"). */
+.play-vs-ai .ulti-auction-overlay { padding: 12px 18px; margin: 0 auto; width: min(560px, 100%);
   flex: 1 1 auto; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; }
 .play-vs-ai .ulti-auction-title   { font-size: 16px; margin-bottom: 8px; }
 .play-vs-ai .ulti-auction-current { margin-bottom: 8px; }
@@ -906,8 +909,8 @@ html, body, #root {
 
 /* End-of-hand action buttons — Következő full width, secondary buttons share the next row.
    Kept small so the box doesn't feel crowded. */
-.play-side-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
-.play-side-actions .betli-hu-deal-btn { flex: 1 1 100%; margin-bottom: 4px; }
+.play-side-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.play-side-actions .betli-hu-deal-btn { flex: 1 1 100%; margin-bottom: 0; }
 .play-side-actions .btn { flex: 1 1 0; white-space: nowrap; font-size: 13px; padding: 9px 12px; height: auto; }
 
 /* Sidebar box above the Játékmenet log — hosts the kontra decision and the
@@ -915,22 +918,39 @@ html, body, #root {
 .play-side-box {
   min-height: 96px; margin-bottom: 14px; border-radius: 12px;
   border: 1px solid rgba(255,255,255,0.08); background: var(--panel-2, #15181c);
-  display: flex; align-items: center; justify-content: center; padding: 22px 20px 24px;
+  display: flex; align-items: center; justify-content: center;
+  /* Symmetric padding — the result block is centred, and the old 22/24 split left
+     the big GP number sitting low enough to clip against the rounded corner. */
+  padding: 16px 18px;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+/* The kontra decision now lives in this slot instead of over the table, where it is
+   easy to miss — so the box announces itself: red border, red glow, one attention
+   pulse, then it settles. */
+.play-side-box--kontra {
+  border-color: rgba(210, 53, 82, 0.75);
+  box-shadow: 0 0 0 3px rgba(210, 53, 82, 0.10), 0 10px 34px rgba(210, 53, 82, 0.16);
+  animation: kontra-attn 620ms ease-out 2;
+}
+@keyframes kontra-attn {
+  0%   { box-shadow: 0 0 0 0 rgba(210,53,82,0.55), 0 10px 34px rgba(210,53,82,0.16); }
+  70%  { box-shadow: 0 0 0 12px rgba(210,53,82,0.00), 0 10px 34px rgba(210,53,82,0.16); }
+  100% { box-shadow: 0 0 0 3px rgba(210,53,82,0.10), 0 10px 34px rgba(210,53,82,0.16); }
 }
 .play-side-inner { width: 100%; }
-.play-side-result { padding: 6px 2px; text-align: center; }
+.play-side-result { padding: 0; text-align: center; }
 .play-side-idle { color: var(--muted, #5b636e); font-size: 12px; font-weight: 700;
   letter-spacing: 1px; opacity: 0.5; }
 
 /* End-of-hand result — the signed number IS the message; details are chips.
    No sentences (milan 2026-08-02: "simple and informative"). */
-.res-gp { font-size: 42px; font-weight: 800; line-height: 1; letter-spacing: -0.02em; }
+.res-gp { font-size: 36px; font-weight: 800; line-height: 1.05; letter-spacing: -0.02em; }
 .is-win  .res-gp { color: #34d399; }
 .is-loss .res-gp { color: #f87171; }
 .res-gp-unit { font-size: 13px; font-weight: 600; color: var(--muted, #9ca3af);
   margin-left: 7px; letter-spacing: 0.04em; }
 .res-tags { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center;
-  margin-top: 12px; }
+  margin-top: 8px; }
 .res-tag {
   padding: 3px 11px; border-radius: 999px; border: 1px solid var(--border, #33475f);
   font-size: 12px; font-weight: 600; color: #c8d6e5; white-space: nowrap;
@@ -958,6 +978,10 @@ html, body, #root {
   max-height: 150px; overflow-y: auto;
 }
 .ulti-auction-history-entry { display: flex; gap: 8px; align-items: center; font-size: 13px; }
+/* Fixed label column so the action text starts at the same x on every row, whatever
+   the seat is called. */
+.ulti-auction-player { flex: 0 0 92px; }
+.ulti-auction-action { flex: 1 1 auto; min-width: 0; }
 .ulti-auction-player { font-weight: 600; min-width: 50px; }
 .ulti-auction-action { padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; }
 .ulti-auction-action.pass { color: var(--muted); }
@@ -1081,26 +1105,9 @@ html, body, #root {
 .puzzle-final-stats { display: flex; gap: 22px; color: var(--muted); font-size: 14px; margin-top: 6px; }
 .puzzle-final-stats b { color: var(--text); }
 
-/* Kontra decision — a popup centered over the PLAYING FIELD, not the screen
-   (milan 2026-08-02). The backdrop is absolute inside .play-col-main and dims
-   only the table; deliberately NOT dismissable by clicking outside — the decision
-   is mandatory, "Tovább" is the way past it. No prose inside: one big toggle per
-   kontra-able unit, then Kontra / Tovább. */
-.play-kontra-backdrop {
-  position: absolute; inset: 0; z-index: 60; border-radius: 16px;
-  background: rgba(6, 8, 12, 0.62); backdrop-filter: blur(1.5px);
-  display: flex; align-items: center; justify-content: center;
-}
-.play-kontra-modal {
-  background: var(--panel-2, #15181c); border: 1px solid rgba(210, 53, 82, 0.5);
-  border-radius: 16px; padding: 24px 30px 26px; width: min(400px, 88%);
-  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.6), 0 0 0 4px rgba(210, 53, 82, 0.07);
-  animation: kontra-pop-in 160ms ease-out;
-}
-@keyframes kontra-pop-in {
-  from { transform: scale(0.94); opacity: 0; }
-  to   { transform: scale(1);    opacity: 1; }
-}
+/* The kontra decision used to be a modal over the table. It now lives in the sidebar
+   box (.play-side-box--kontra) — same slot as the end-of-hand result — so there is one
+   place to look. The modal styles went with it. */
 .kontra-panel { text-align: center; }
 .kontra-kicker {
   font-size: 12px; font-weight: 800; text-transform: uppercase;
@@ -1171,3 +1178,9 @@ html, body, #root {
 .ana-known-bar { height: 5px; border-radius: 3px; background: rgba(255,255,255,.09); overflow: hidden; }
 .ana-known-fill { height: 100%; background: #ffd479; border-radius: 3px; }
 .ana-known-text { margin-top: 4px; font-size: 10px; color: #9aa4af; white-space: nowrap; }
+
+/* The verdict panel is always in the DOM so the board cannot jump by its height the
+   first time a verdict appears. min-height matches a filled card. */
+.ana-panel { margin-top: 10px; min-height: 84px; display: flex; align-items: center; }
+.ana-panel > * { width: 100%; }
+.ana-empty { text-align: center; color: #3d454f; font-size: 18px; width: 100%; }

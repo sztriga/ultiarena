@@ -706,9 +706,14 @@ export function PlayVsAI() {
   // a mid-field panel blocks the FINAL trick, which the animation deliberately keeps
   // on screen). ONE slot for every ending, played or passed; idle text otherwise so
   // the box never pops in and out.
+  const kontraPending = inKontra && kontra?.pending;
   const sideBox = (
-    <div className="play-side-box">
-      {terminal && result ? (
+    <div className={`play-side-box${kontraPending ? " play-side-box--kontra" : ""}`}>
+      {kontraPending ? (
+        <KontraBox kontra={kontra} contract={state.contract} trump={state.trump}
+                   loading={loading} kontraSel={kontraSel}
+                   onKontra={onKontra} toggleKontraUnit={toggleKontraUnit} />
+      ) : terminal && result ? (
         renderResult(result, !passed)
       ) : (
         <div className="play-side-idle">
@@ -725,18 +730,10 @@ export function PlayVsAI() {
     </div>
   );
 
-  // The kontra decision pops up centered over the PLAYING FIELD (not the whole
-  // screen) — the backdrop is absolute inside play-col-main. Not dismissable by
-  // clicking it: the decision is mandatory ("Tovább" passes it).
-  const kontraModal = inKontra && kontra?.pending ? (
-    <div className="play-kontra-backdrop">
-      <div className="play-kontra-modal">
-        <KontraBox kontra={kontra} contract={state.contract} trump={state.trump}
-                   loading={loading} kontraSel={kontraSel}
-                   onKontra={onKontra} toggleKontraUnit={toggleKontraUnit} />
-      </div>
-    </div>
-  ) : null;
+  // The kontra decision lives in the SIDEBAR box — the same slot that later shows the
+  // result — rather than over the table (milan 2026-08-11: reverted from the mid-field
+  // modal). It is easy to miss there, so the box flashes and glows red when it appears.
+  const kontraModal = null;
 
   return (
     <div className="app betli-hu-game play-vs-ai">
