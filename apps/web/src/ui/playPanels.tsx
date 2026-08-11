@@ -238,12 +238,16 @@ export function AnalysisBoard({ analysis, analysisView, effectivePlies, branch,
         <header className="topbar">
           <div className="brand">
             <div className="title">
-              Elemzés — {analysis.contract}
-              {analysis.trump && <span className="muted"> · {TRUMP_LABEL(analysis.trump)}</span>}
+              Elemzés · {analysis.contract}
+              {analysis.trump && (
+                <span className={`trump-symbol trump-${analysis.trump}`} style={{ marginLeft: 6 }}>
+                  {TRUMP_LABEL(analysis.trump).split(" ")[0]}
+                </span>
+              )}
               {branch && <span className="ulti-role-tag" style={{ background: "#a23ed1", color: "#fff", marginLeft: 8 }}>alt ág</span>}
             </div>
             <div className="subtitle">
-              {a.currentPly}. / {maxPly}. lépés · <span className="kbd">←</span> <span className="kbd">→</span> a léptetéshez · kattints egy lapra egy ág kipróbálásához
+              {a.currentPly} / {maxPly} <span className="kbd">←</span><span className="kbd">→</span>
               {v?.verdict?.severity && v.verdict.severity !== "ok" && (
                 <> · <b style={{ color: sevColor(v.verdict.severity) }}>{v.verdict.severity.toUpperCase()}</b> <span className="muted">(−{(v.verdict.gp_loss ?? 0).toFixed(1)} GP)</span></>
               )}
@@ -338,9 +342,7 @@ export function AnalysisBoard({ analysis, analysisView, effectivePlies, branch,
                               );
                             })()}
                           </div>
-                        ) : (
-                          <div className="ana-cost"><div className="ana-cost-main ana-cost-main--ok">nem került semmibe</div></div>
-                        )}
+                        ) : null}
                       </div>
                     </div>
                   </>
@@ -357,12 +359,7 @@ export function AnalysisBoard({ analysis, analysisView, effectivePlies, branch,
           </section>
           <section>
             <div className="panel betli-hu-log-panel">
-              <div className="panel-title">
-                Lépések · GP a te szemszögedből
-                <span className="muted" style={{ fontWeight: 400, fontSize: 11 }}>
-                  {" "}· a te sorod kiemelve
-                </span>
-              </div>
+              <div className="panel-title">Lépések</div>
               <div className="betli-hu-log-scroll">
                 <table className="play-sc-table" style={{ fontSize: 12, width: "100%" }}>
                   <thead>
