@@ -13,7 +13,9 @@ export interface Card {
   id: number;
 }
 
-export const SUITS: Suit[] = ["acorns", "leaves", "hearts", "bells"];
+// piros, tök, zöld, makk — mirrors ulti/card.py SUITS (the 2026-08-11 re-encode:
+// wire == display == solver order, one order everywhere).
+export const SUITS: Suit[] = ["hearts", "bells", "leaves", "acorns"];
 export const RANKS: Rank[] = ["7", "8", "9", "lower", "upper", "king", "10", "ace"];
 
 /** The backend's card-id encoding (ulti.card): id = suit_index*8 + rank_index. */

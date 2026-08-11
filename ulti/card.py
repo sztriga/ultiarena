@@ -1,7 +1,12 @@
 """
 Hungarian card deck for Ulti.
 
-Suits  (suit_index): acorns=0, leaves=1, hearts=2, bells=3
+Suits  (suit_index): hearts=0, bells=1, leaves=2, acorns=3
+    — piros, tök, zöld, makk: THE order (milan). Since 2026-08-11 the wire
+    encoding, the display order and ultisolver's own Suit enum all agree; the
+    old alphabetical-English order (acorns first) is history — see
+    migrations/suit_reencode_2026_08_11.py for how ids, models and the game
+    database moved.
 Ranks  (rank_index in ascending power order):
     7=0, 8=1, 9=2, lower=3, upper=4, king=5, 10=6, ace=7
 
@@ -10,7 +15,7 @@ card_id = suit_index * 8 + rank_index  →  0..31
 from __future__ import annotations
 from typing import List
 
-SUITS: List[str] = ['acorns', 'leaves', 'hearts', 'bells']
+SUITS: List[str] = ['hearts', 'bells', 'leaves', 'acorns']
 RANKS: List[str] = ['7', '8', '9', 'lower', 'upper', 'king', '10', 'ace']
 
 # Aces and 10s score 10 points when won in a trick.
@@ -75,9 +80,11 @@ def fresh_deck() -> List[Card]:
 # sends and does no sorting of its own, so changing the order here changes it
 # everywhere — there is deliberately nowhere else to change.
 #
-# Suit order is a DISPLAY choice (piros first, as Hungarian players lay a hand out) and
-# is independent of suit_index, which is only the id encoding.
-DISPLAY_SUIT_ORDER = {'hearts': 0, 'bells': 1, 'leaves': 2, 'acorns': 3}
+# Display order == wire order since the 2026-08-11 re-encode — DERIVED from SUITS
+# so they can never diverge again. (Kept as a named mapping because "how a hand is
+# laid out" and "how a card is numbered" are different questions, even when the
+# answer is the same.)
+DISPLAY_SUIT_ORDER = {s: i for i, s in enumerate(SUITS)}
 
 # The Hungarian names — defined HERE, next to the canonical orders, so no other
 # module ever spells a suit/rank listing by hand (docs generate from these).

@@ -30,7 +30,8 @@ _MODEL_PATH = env_str("BETLI_DEF_MODEL") or (
                              os.path.join(_ROOT, "models/ulti/betli/betli_defense.pt"))
 FEAT_DIM = 139
 _NET = None
-_SUIT_IX = {"acorns": 0, "leaves": 1, "hearts": 2, "bells": 3}
+from ulti.card import SUITS as _SUITS
+_SUIT_IX = {s: i for i, s in enumerate(_SUITS)}   # derived — never hand-listed
 
 
 def encode(pos, viewer: int) -> np.ndarray:

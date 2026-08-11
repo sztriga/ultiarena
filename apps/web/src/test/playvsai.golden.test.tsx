@@ -90,8 +90,8 @@ describe("PlayVsAI golden (recorded game seat0/seed14)", () => {
     await settle();
     expect(container.innerHTML).toMatchSnapshot("03-after-bid");
 
-    // ── the two recorded passes (AI overcalled; we let the contract go) ──
-    for (let p = 0; p < 2; p++) {
+    // ── the recorded passes (Passz / Elfogadom — fixture-led count) ──
+    while (fixture().peek()?.endpoint === "/play/pass") {
       const passBtn = container.querySelector(".ulti-bid-accept") as Element;
       expect(passBtn).toBeTruthy();
       await click(passBtn);
