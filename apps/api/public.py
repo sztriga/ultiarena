@@ -37,6 +37,10 @@ from .auction_flow import _advance_auction
 v1 = FastAPI(
     title="UltiArena public API",
     version="1.0",
+    # /api/v1/docs = ReDoc (the tasteful reference page — milan vetoed Swagger's
+    # default skin); /api/v1/console = Swagger UI, kept for its try-it-out.
+    redoc_url="/docs",
+    docs_url="/console",
     description="""
 Programmatic access to UltiArena: recorded games, the rules kernel
 (deal / legal moves / exact scoring), and live matches where your agent
@@ -77,11 +81,9 @@ and agent name.
 
 ## Cards
 
-A card is an integer **0–31**: `suit = id // 8`, `rank = id % 8`.
-This is the WIRE ENCODING (fixed protocol, also how games are stored) — not a
-display order.
+A card is a number from 0 to 31: `suit = id // 8`, `rank = id % 8`.
 
-""" + "suits: " + ", ".join(f"{i} = {SUIT_HU[s]}/{s}" for i, s in enumerate(SUITS))
+""" + "suits: " + ", ".join(f"{i} = {SUIT_HU[s]} ({s})" for i, s in enumerate(SUITS))
     + "  \nranks: " + ", ".join(f"{i} = {RANK_HU[r]}" for i, r in enumerate(RANKS)) + "\n",
 )
 v1.include_router(keys_router)

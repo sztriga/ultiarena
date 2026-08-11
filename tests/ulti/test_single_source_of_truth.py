@@ -146,7 +146,7 @@ def test_suit_names_are_not_redefined_in_the_api_layer():
 
     assert engine._SUIT_HU is SUIT_HU
     desc = v1.description
-    generated = ", ".join(f"{i} = {SUIT_HU[s]}/{s}" for i, s in enumerate(SUITS))
+    generated = ", ".join(f"{i} = {SUIT_HU[s]} ({s})" for i, s in enumerate(SUITS))
     assert generated in desc, "public docs no longer generated from ulti.card"
 
 
