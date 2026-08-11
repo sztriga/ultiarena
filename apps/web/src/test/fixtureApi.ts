@@ -41,6 +41,11 @@ export function makeFixtureApi() {
     // Out-of-band like playDelete: the splash lists resumable games on mount; an
     // empty list keeps the recorded endpoint sequence untouched.
     playMine: async () => ({ games: [] }),
+    authDevLogin: async () => { throw new Error("no dev login in tests"); },
+    meGames: async () => ({ games: [], next_cursor: null }),
+    meStats: async () => ({ games: 0 }),
+    meNickname: async () => { throw new Error("meNickname not in this fixture"); },
+    meAnalysis: async () => { throw new Error("meAnalysis not in this fixture"); },
     playDelete: async () => ({ deleted: true }),
     pisExplore: async () => { throw new Error("pisExplore not in this fixture"); },
     puzzleNew: async () => puzzleFixture,

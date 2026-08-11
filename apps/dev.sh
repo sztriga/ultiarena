@@ -25,6 +25,10 @@ if [ ! -d "$REPO_ROOT/apps/web/node_modules" ]; then
   ( cd "$REPO_ROOT/apps/web" && npm install )
 fi
 
+# Local convenience: the profile auto-logs-in as this account (users.devlogin).
+# Never set in production — the endpoint 404s without it.
+export DEV_AUTOLOGIN="${DEV_AUTOLOGIN:-milan}"
+
 echo "→ Starting API on http://127.0.0.1:$API_PORT"
 ( cd "$REPO_ROOT" && "$UVICORN" apps.api.main:app --reload --port "$API_PORT" --host 127.0.0.1 ) &
 API_PID=$!

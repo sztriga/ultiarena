@@ -17,6 +17,7 @@ from fastapi.staticfiles import StaticFiles
 from .pis import router as pis_router
 from .limits import limit_middleware
 from .live import router as live_router
+from .me import router as me_router
 from .play import router as play_router
 from .puzzle import router as puzzle_router
 from .users import router as users_router
@@ -54,6 +55,7 @@ app.include_router(play_router,   prefix="/api")   # /play/* — the full Ulti g
 app.include_router(puzzle_router, prefix="/api")   # /puzzle/* — Villámtalon rush
 app.include_router(users_router,  prefix="/api")   # /auth/* — accounts (docs/MULTIPLAYER.md)
 app.include_router(live_router,   prefix="/api")   # /live/* — lobby, chat, Asztal
+app.include_router(me_router,     prefix="/api")   # /me/* — profile: my games, stats, analysis
 
 # The PUBLIC, versioned research API (docs/PUBLIC_API.md) — its own sub-application
 # with its own OpenAPI docs at /api/v1/docs. Everything above stays internal.

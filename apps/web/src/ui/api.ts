@@ -269,6 +269,24 @@ export interface LivePoll {
   my_table: string | null;
 }
 
+// ── Profile (/me/*) ─────────────────────────────────────────────────────────
+
+export interface MeGame {
+  id: string; created_at: number; seed: number; contract: string;
+  trump: string | null; soloist_seat: number; kontra_level: number;
+  winner: string; made: boolean;
+  my_seat: number; i_was_soloist: boolean; my_gp: number;
+}
+export interface MeContractStat {
+  contract: string; n: number; gp: number; gp_mean: number;
+  sol_n: number; sol_made: number;
+}
+export interface MeStats {
+  games: number; gp_total?: number; gp_per_game?: number; wins?: number;
+  as_soloist?: { n: number; made: number; gp: number };
+  contracts?: MeContractStat[];
+}
+
 /** One live game of this browser, as listed on the splash (resume). */
 export interface PlayOngoing {
   game_id: string;
@@ -333,6 +351,14 @@ export const api = {
   authLogin:    (req: { username: string; password: string; device_id?: string }) =>
     http<{ token: string; username: string }>("POST", "/auth/login", req),
   authLogout:   () => http<{ ok: boolean }>("POST", "/auth/logout", {}),
+  authDevLogin: () => http<{ token: string; username: string }>("POST", "/auth/devlogin", {}),
+  meGames: (device: string, cursor?: number | null, limit = 15) =>
+    http<{ games: MeGame[]; next_cursor: number | null }>(
+      "GET", `/me/games?device=${device}&limit=${limit}${cursor ? `&cursor=${cursor}` : ""}`),
+  meStats:    (device: string) => http<MeStats>("GET", `/me/stats?device=${device}`),
+  meNickname: (username: string) => http<{ username: string }>("POST", "/me/nickname", { username }),
+  meAnalysis: (id: string, device: string) =>
+    http<PlayAnalysis>("POST", `/me/games/${id}/analysis?device=${device}`, {}),
   livePoll:     (chat_after: number) => http<LivePoll>("POST", "/live/poll", { chat_after }),
   liveChat:     (text: string)       => http<{ ok: boolean }>("POST", "/live/chat", { text }),
   tableCreate:  ()                   => http<{ table_id: string }>("POST", "/live/table/create", {}),

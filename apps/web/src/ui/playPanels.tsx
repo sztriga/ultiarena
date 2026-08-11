@@ -85,18 +85,22 @@ function agoLabel(idleS: number): string {
   return `${Math.round(idleS / 3600)}ó`;
 }
 
-export function Splash({ loading, error, onNew, onLive, onPuzzle, ongoing = [], onResume, onDiscard }: {
+export function Splash({ loading, error, onNew, onLive, onPuzzle, onProfile, ongoing = [], onResume, onDiscard }: {
   loading: boolean;
   error: string | null;
   onNew: () => void;
   onLive?: () => void;
   onPuzzle: () => void;
+  onProfile?: () => void;
   ongoing?: PlayOngoing[];
   onResume?: (gameId: string) => void;
   onDiscard?: (gameId: string) => void;
 }) {
   return (
     <div className="app betli-hu-splash">
+      {onProfile && (
+        <button className="splash-profile" title="Profil" onClick={onProfile}>👤</button>
+      )}
       <main className="main betli-hu-splash-main">
         <section style={{ textAlign: "center" }}>
           <h1 className="betli-hu-title">Ulti</h1>

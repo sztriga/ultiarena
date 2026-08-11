@@ -210,3 +210,29 @@ def logout(request: Request = None) -> dict:
 @router.get("/auth/me")
 def me(request: Request = None) -> dict:
     return {"user": user_from_request(request)}
+
+
+@router.post("/auth/devlogin")
+def devlogin(request: Request = None) -> dict:
+    """LOCAL development only: a named account with zero typing (milan 2026-08-11 —
+    "when I test locally, let's assume I'm already logged in"). Enabled by the
+    DEV_AUTOLOGIN env (the account name); refuses non-local callers; 404 in prod."""
+    from ulti.config import env_str
+
+    name = env_str("DEV_AUTOLOGIN")
+    ip = client_ip(request)
+    if not name or ip not in ("local", "127.0.0.1", "::1", "testclient", "unknown"):
+        raise HTTPException(status_code=404, detail="Not found")
+    with _lock:
+        row = _db().execute("SELECT id, username FROM users WHERE username = ?",
+                            (name,)).fetchone()
+        if row is None:
+            uid = uuid.uuid4().hex[:12]
+            salt = os.urandom(16)
+            _db().execute(
+                "INSERT INTO users (id, username, pw_hash, pw_salt, created_at) "
+                "VALUES (?,?,?,?,?)",
+                (uid, name, _scrypt(os.urandom(24).hex(), salt), salt, time.time()))
+        else:
+            uid, name = row[0], row[1]
+    return {"token": _issue_token(uid, name), "username": name}

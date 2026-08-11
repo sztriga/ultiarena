@@ -9,15 +9,16 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { api, type PlayState, type PlayLegalBid, type PlayAnalysis, type PlayOngoing, type PlayResult } from "./api";
+import { api, type PlayState, type PlayLegalBid, type PlayOngoing, type PlayResult } from "./api";
 import { deviceId } from "./device";
 import type { Card, Suit } from "./cards";
 import { SUIT_HUN, SUIT_SYMBOL } from "./cards";
 import { CardBack, CardView } from "./CardView";
 import { UltiTable, type SeatChrome } from "./UltiTable";
-import { useStepScrubber } from "./useStepScrubber";
 import { PuzzleRush } from "./PuzzleRush";
 import { Live } from "./Live";
+import { Profile } from "./Profile";
+import { useAnalysisViewer } from "./useAnalysisViewer";
 import { AnalysisBoard, AuctionPanel, KontraBox, ResultPanel, Splash } from "./playPanels";
 
 type Seat = 0 | 1 | 2;
@@ -26,7 +27,6 @@ import {
   TRUMP_LABEL, KONTRA_WORD, ROLE_LABEL,
   ANIM_STEP_MS, ANIM_TRICK_PAUSE_MS, placeholderHand, CardChip,
   applyUserPlay, playBaseline, applyStepToVisible, useUltiBubble,
-  EffectivePly,
 } from "./playChrome";
 
 /** The auction-style table: your cards at the bottom, 10 face-down placeholders
@@ -42,6 +42,7 @@ function auctionTable(meSeat: Seat, own: Card[]) {
 export function PlayVsAI() {
   const [showPuzzle, setShowPuzzle] = useState(false);   // Villámtalon mini-game overlay
   const [showLive, setShowLive] = useState(false);       // Játék élőben — lobby (Live.tsx)
+  const [showProfile, setShowProfile] = useState(false); // profil — games, stats, analysis
   // A running lobby-table game. The ENTIRE game UI below is shared with the solo
   // game — live mode only adds a 1s poll (opponents' moves arrive by poll instead
   // of inside my own request's response) and table-aware result buttons.
@@ -352,9 +353,18 @@ export function PlayVsAI() {
     });
   }, []);
 
-  // ── Post-game analysis board (god solver + branch exploration) ─────────────
-  const [analysis, setAnalysis] = useState<PlayAnalysis | null>(null);
-  const [analysisOpen, setAnalysisOpen] = useState(false);
+  // ── Post-game analysis board — shared viewer hook (also used by the profile) ──
+  const onAnalysisError = useCallback((m: string) => setError(m), []);
+  const {
+    analysis, analysisOpen, analysisLoading, branch, branching,
+    scrubPly, setScrubPly, effectivePlies, analysisView,
+    openWith, onCloseAnalysis, onClearBranch, onAnalysisCardClick,
+  } = useAnalysisViewer(onAnalysisError);
+  const onOpenAnalysis = useCallback(async () => {
+    if (!state) return;
+    setError(null);
+    await openWith(() => api.playAnalysis({ game_id: state.game_id }));
+  }, [state, openWith]);
 
   // Poll the shared game: adopt when the server's rev moved (someone else acted).
   // New plays run through the SAME animation machine that solo AI responses feed;
@@ -384,106 +394,6 @@ export function PlayVsAI() {
     return () => window.clearInterval(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [liveCtx, state?.rev, state?.phase, pending, analysisOpen]);
-  const [scrubPly, setScrubPly] = useState(0);
-  const [analysisLoading, setAnalysisLoading] = useState(false);
-  // Branch: the FULL alternative line (unchanged prefix + god-PV of the chosen fork), held as a
-  // complete ply list so branches COMPOSE — you can fork again off any ply of a branch, as deep as
-  // you like. `forkPly` is where the latest fork diverged (for the panel + clear).
-  const [branch, setBranch] = useState<{ plies: EffectivePly[]; forkPly: number; value: number } | null>(null);
-  const [branching, setBranching] = useState(false);
-
-  const onOpenAnalysis = useCallback(async () => {
-    if (!state) return;
-    setAnalysisLoading(true); setError(null);
-    try {
-      const ana = await api.playAnalysis({ game_id: state.game_id });
-      setAnalysis(ana); setScrubPly(ana.per_ply.length); setBranch(null); setAnalysisOpen(true);
-    } catch (e) { setError(String(e)); }
-    finally { setAnalysisLoading(false); }
-  }, [state]);
-  const onCloseAnalysis = useCallback(() => { setAnalysisOpen(false); setBranch(null); }, []);
-  const onClearBranch = useCallback(() => {
-    if (!branch || !analysis) return;
-    setBranch(null); setScrubPly(Math.min(branch.forkPly, analysis.per_ply.length));
-  }, [branch, analysis]);
-
-
-  const effectivePlies = useMemo<EffectivePly[]>(() => {
-    if (!analysis) return [];
-    if (branch) return branch.plies;                    // the branch already IS the full line
-    return analysis.per_ply.map((p, i) => ({
-      ply_index: i, player_id: p.player_id, chosen_card: p.chosen_card,
-      legal_card_ids: p.legal_card_ids, verdict: p, by_ai: p.by_ai, is_branch: false }));
-  }, [analysis, branch]);
-
-  useStepScrubber({ enabled: analysisOpen && analysis !== null, max: effectivePlies.length, setStep: setScrubPly });
-
-  const analysisView = useMemo(() => {
-    if (!analysis) return null;
-    // Track what each player has played, then derive hands by FILTERING the initial
-    // hands the API sent. Filtering preserves order, so the server's card order (the
-    // one rule, ulti.card.sort_hand) survives scrubbing — nothing is re-sorted here.
-    const played: Set<number>[] = [new Set(), new Set(), new Set()];
-    let trick: { player_id: 0 | 1 | 2; card: Card }[] = [];
-    for (let i = 0; i < scrubPly && i < effectivePlies.length; i++) {
-      const p = effectivePlies[i];
-      if (trick.length === 3) trick = [];
-      played[p.player_id].add(p.chosen_card.id);
-      trick.push({ player_id: p.player_id, card: p.chosen_card });
-    }
-    let activePlayer: 0 | 1 | 2 | null = null;
-    let legalIds: Set<number> | null = null;
-    let branchAtPly: number | null = null;
-    if (scrubPly > 0) {
-      const last = effectivePlies[scrubPly - 1];
-      activePlayer = last.player_id;
-      legalIds = new Set<number>(last.legal_card_ids);
-      branchAtPly = scrubPly - 1;
-      // The just-played card lives on the TABLE only — it used to be restored into
-      // the hand too ("click an alternative to fork"), which put it in two places
-      // at once and made the middle run one step ahead of the hands (milan spotted
-      // the desync 2026-08-02). Forking never needed it: alternatives are still in
-      // the hand and the click handler checks legal_card_ids, not hand membership.
-    }
-    const hands: Card[][] = analysis.initial_hands.map(
-      (h, pid) => h.filter((c) => !played[pid].has(c.id)));
-    return { hands, currentTrick: trick, activePlayer, legalIds, branchAtPly,
-             currentPly: scrubPly, thisPly: scrubPly > 0 ? effectivePlies[scrubPly - 1] : null };
-  }, [analysis, scrubPly, effectivePlies]);
-
-  const onAnalysisCardClick = useCallback(async (card: Card) => {
-    if (!analysis || !analysisView || branching) return;
-    const branchAt = analysisView.branchAtPly;
-    if (branchAt === null) return;
-    const at = effectivePlies[branchAt];
-    if (!at.legal_card_ids.includes(card.id)) return;
-    setBranching(true); setError(null);
-    try {
-      // moves = the CURRENT line up to the fork (may itself run through earlier branches), so a
-      // fork off a branch replays correctly on the backend.
-      const moves = effectivePlies.slice(0, branchAt).map((p) => p.chosen_card.id);
-      const resp = await api.pisExplore({
-        hands: analysis.initial_hands.map((h) => h.map((c) => c.id)),
-        soloist: analysis.soloist, starting_leader: analysis.leader, total_tricks: 10,
-        moves, forced_card_id: card.id,
-        contract: analysis.solve_contract, build_contract: analysis.build_contract,
-        trump: analysis.trump,
-        talon: analysis.talon.map((c) => c.id),
-        declare_marriages: analysis.declare_marriages,
-        marriage_restrict: analysis.marriage_restrict,
-        multi_weights: analysis.multi_weights,
-      });
-      // alt_pv[0] IS the forced card; splice the new god-continuation onto the unchanged prefix →
-      // the full line. Keeps ply_index == array position, so it composes for the next fork.
-      const prefix = effectivePlies.slice(0, branchAt);
-      const pvPlies: EffectivePly[] = resp.alt_pv.map((s, j) => ({
-        ply_index: branchAt + j, player_id: s.player_id as 0 | 1 | 2, chosen_card: s.card,
-        legal_card_ids: s.legal_card_ids, verdict: null, by_ai: false, is_branch: true }));
-      setBranch({ plies: [...prefix, ...pvPlies], forkPly: branchAt, value: resp.value });
-      setScrubPly(branchAt + 1);
-    } catch (e) { setError(String(e)); }
-    finally { setBranching(false); }
-  }, [analysis, analysisView, effectivePlies, branching]);
 
   // Shared end-of-hand result — one simple line ("Nyertél 4 pontot") + contract + the
   // action buttons. Used identically by a played game AND the all-pass screen.
@@ -501,11 +411,15 @@ export function PlayVsAI() {
   if (showLive) {
     return <Live onExit={() => setShowLive(false)} onEnterGame={onEnterLiveGame} />;
   }
+  if (showProfile) {
+    return <Profile onExit={() => setShowProfile(false)} />;
+  }
 
   if (!state) {
     return <Splash loading={loading} error={error}
                    onNew={onNew} onLive={() => setShowLive(true)}
                    onPuzzle={() => setShowPuzzle(true)}
+                   onProfile={() => setShowProfile(true)}
                    ongoing={ongoing} onResume={onResume} onDiscard={onDiscardGame} />;
   }
 
