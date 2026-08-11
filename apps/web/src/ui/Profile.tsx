@@ -130,10 +130,6 @@ export function Profile({ onExit }: { onExit: () => void }) {
               <span>győzelem ({stats.wins}/{stats.games})</span>
             </div>
             <div className="profile-stat">
-              <b>{Math.round(100 * (stats.as_soloist?.n ?? 0) / stats.games)}%</b>
-              <span>bemondóként ({stats.as_soloist?.n ?? 0}/{stats.games})</span>
-            </div>
-            <div className="profile-stat">
               <b>{(stats.as_soloist?.n ?? 0) > 0
                 ? `${Math.round(100 * stats.as_soloist!.made / stats.as_soloist!.n)}%` : "n/a"}</b>
               <span>győzelem bemondóként ({stats.as_soloist?.made ?? 0}/{stats.as_soloist?.n ?? 0})</span>

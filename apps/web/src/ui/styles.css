@@ -1213,7 +1213,9 @@ html, body, #root {
 .profile-sub { color: var(--muted, #9ca3af); font-size: 13px; margin-top: 2px; }
 .profile-stats { display: flex; flex-wrap: wrap; gap: 10px; }
 .profile-stat {
-  flex: 1 1 100px; text-align: center; padding: 12px 8px;
+  flex: 1 1 100px; padding: 12px 8px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 3px; text-align: center;
   background: var(--panel-2, #15181c); border: 1px solid var(--border, #262a30);
   border-radius: 10px;
 }
