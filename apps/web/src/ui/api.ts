@@ -212,7 +212,7 @@ export interface PlayAnalysisPly {
   // which 81% of mid-game positions tie. `gp_loss_knowable` is the share of that cost
   // findable from the mover's own seat; a large loss with a small knowable share is bad
   // luck rather than a mistake. Null when the server ran with ANALYSIS_WORLDS=0.
-  gp_sol_after?:     number | null;   // position value AFTER the move, soloist's view
+  gp_seat_after?:    number[] | null;  // value AFTER the move, one per PLAY index
   gp_chosen?:        number | null;
   gp_best?:          number | null;
   gp_loss?:          number | null;

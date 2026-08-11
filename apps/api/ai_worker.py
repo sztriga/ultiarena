@@ -246,7 +246,16 @@ def _severity(gp_loss: float) -> str:
 
 
 def _gp_if_played(pos, card, solve_c, bid):
-    """Soloist GP if `card` is played here and BOTH sides then play double-dummy.
+    """PER-SEAT GP if `card` is played here and BOTH sides then play double-dummy.
+
+    Returns [soloist, defender1, defender2] by PLAY index. The soloist collects from
+    BOTH defenders, so their number is the total; each defender pays only their own
+    share. A made piros ulti is +12 to the soloist and −6 to each defender, not −12
+    (milan 2026-08-11). The colourless split is respected too — betli and trumpless
+    duri keep separate per-defender kontra counters, so the two can differ.
+
+    Because every seat now reads its OWN number, everyone simply maximises it and the
+    sign-flipping that used to sit around this function disappears.
 
     This is the number the analysis board should show, and it is not what the solver
     optimises. The solver maximises a weighted sum of BINARY indicators (parti +-1,
@@ -264,7 +273,10 @@ def _gp_if_played(pos, card, solve_c, bid):
         if mv is None:
             mv = pis_bridge.legal_actions(child)[0]
         pis_bridge.apply_move(child, mv)
-    return float(score_oracle(final_pos=child, bid=bid).total_sol)
+    pv = score_oracle(final_pos=child, bid=bid)
+    sol = float(pv.total_sol)
+    d1 = float(pv.total_per_def)
+    return [sol, -d1, -(sol - d1)]
 
 
 def _gp_if_played_blind(pos, card, viewer, solve_c, bid, n_worlds, seed):
@@ -289,7 +301,7 @@ def _gp_if_played_blind(pos, card, viewer, solve_c, bid, n_worlds, seed):
             continue
         world = (pis_bridge.clone_with_hands_and_talon(pos, hands, talon)
                  if iset.talon_known is None else pis_bridge.clone_with_hands(pos, hands))
-        total += _gp_if_played(world, card, solve_c, bid)
+        total += _gp_if_played(world, card, solve_c, bid)[viewer]
         n += 1
     return (total / n) if n else None
 
@@ -342,23 +354,20 @@ def op_analysis(job: dict) -> List[dict]:
 
         bid = job.get("bid")
         if bid is not None:
-            # GP, from the mover's point of view: the soloist wants total_sol UP, a
-            # defender wants it DOWN, so the sign flips for seats 1 and 2.
-            sign = 1.0 if is_solo else -1.0
-            gp = {c: sign * _gp_if_played(pos, c, solve_c, bid) for c in legal_now}
+            # Every seat maximises its OWN GP, so there is no sign to flip anywhere.
+            seats = {c: _gp_if_played(pos, c, solve_c, bid) for c in legal_now}
+            gp = {c: v[pid] for c, v in seats.items()}
             gp_best = max(gp.values())
             gp_chosen = gp[chosen]
             gp_loss = max(0.0, gp_best - gp_chosen)
             gp_best_card = max(gp, key=lambda c: gp[c])
             row.update({
-                # Soloist-perspective value AFTER this move. The client flips it once for
-                # whoever is watching, so the board reads as one continuous evaluation
-                # from your own seat rather than a number whose sign hops per row.
-                # gp_chosen is already sign-flipped for the mover, so multiplying by the
-                # same sign recovers the soloist's view (sign*sign == 1 either way).
-                "gp_sol_after": round(sign * gp_chosen, 2),
-                "gp_chosen": round(sign * gp_chosen, 2),
-                "gp_best": round(sign * gp_best, 2),
+                # All three seats' value AFTER this move, by play index. The client reads
+                # its own entry, so the board is one continuous evaluation from wherever
+                # you happen to be sitting.
+                "gp_seat_after": [round(x, 2) for x in seats[chosen]],
+                "gp_chosen": round(gp_chosen, 2),
+                "gp_best": round(gp_best, 2),
                 "gp_loss": round(gp_loss, 2),
                 "gp_best_card_id": gp_best_card.id,
                 "severity": _severity(gp_loss),
@@ -371,8 +380,8 @@ def op_analysis(job: dict) -> List[dict]:
                                                 job.get("seed", 0) + i * 7919 + c.id)
                          for c in legal_now}
                 if all(v is not None for v in blind.values()):
-                    b = {c: sign * v for c, v in blind.items()}
-                    row["gp_loss_knowable"] = round(max(0.0, max(b.values()) - b[chosen]), 2)
+                    row["gp_loss_knowable"] = round(
+                        max(0.0, max(blind.values()) - blind[chosen]), 2)
         per_ply.append(row)
         pis_bridge.apply_move(pos, chosen)
     return per_ply

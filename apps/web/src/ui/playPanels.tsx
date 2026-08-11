@@ -206,17 +206,15 @@ export function AnalysisBoard({ analysis, analysisView, effectivePlies, branch,
     const v = a.thisPly;
     const maxPly = effectivePlies.length;
     const anaHpi = (analysis.human_play_index ?? 0) as Seat;
-    // The GP column is one continuous evaluation read from YOUR seat: take the soloist's
-    // position value and flip it once if you are defending, rather than flipping per row
-    // by whoever moved. Then the swing between consecutive plies is signed the way a
-    // player expects — up is good for you, whoever caused it.
+    // The GP column is one continuous evaluation read from YOUR seat. The server sends
+    // all three seats' values (the soloist collects from BOTH defenders, so a made piros
+    // ulti is +12 to them and −6 to each defender); we just read our own entry.
     const evalSeries: Record<number, { val: number | null; delta: number }> = {};
     {
-      const vSign = anaHpi === 0 ? 1 : -1;
       let prev: number | null = null;
       for (const p of effectivePlies) {
-        const raw = p.verdict?.gp_sol_after;
-        const val = raw === null || raw === undefined ? null : raw * vSign;
+        const seats = p.verdict?.gp_seat_after;
+        const val = seats && seats.length === 3 ? seats[anaHpi] : null;
         evalSeries[p.ply_index] = { val, delta: val === null || prev === null ? 0 : val - prev };
         if (val !== null) prev = val;
       }
