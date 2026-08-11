@@ -129,12 +129,15 @@ export function Profile({ onExit }: { onExit: () => void }) {
               <b>{winRate}%</b>
               <span>győzelem ({stats.wins}/{stats.games})</span>
             </div>
-            {stats.as_soloist && stats.as_soloist.n > 0 && (
-              <div className="profile-stat">
-                <b>{Math.round(100 * stats.as_soloist.made / stats.as_soloist.n)}%</b>
-                <span>győzelem bemondóként ({stats.as_soloist.made}/{stats.as_soloist.n})</span>
-              </div>
-            )}
+            <div className="profile-stat">
+              <b>{Math.round(100 * (stats.as_soloist?.n ?? 0) / stats.games)}%</b>
+              <span>bemondóként ({stats.as_soloist?.n ?? 0}/{stats.games})</span>
+            </div>
+            <div className="profile-stat">
+              <b>{(stats.as_soloist?.n ?? 0) > 0
+                ? `${Math.round(100 * stats.as_soloist!.made / stats.as_soloist!.n)}%` : "n/a"}</b>
+              <span>győzelem bemondóként ({stats.as_soloist?.made ?? 0}/{stats.as_soloist?.n ?? 0})</span>
+            </div>
             <div className="profile-stat">
               <b className={gpCls(stats.gp_total ?? 0)}>{gpTxt(stats.gp_total ?? 0)}</b>
               <span>össz pont</span>
@@ -143,12 +146,6 @@ export function Profile({ onExit }: { onExit: () => void }) {
               <b className={gpCls(stats.gp_per_game ?? 0)}>{gpTxt(stats.gp_per_game ?? 0)}</b>
               <span>pont / játszma</span>
             </div>
-            {stats.as_soloist && (
-              <div className="profile-stat">
-                <b>{Math.round(100 * stats.as_soloist.n / stats.games)}%</b>
-                <span>bemondóként</span>
-              </div>
-            )}
           </section>
         )}
 
@@ -172,7 +169,7 @@ export function Profile({ onExit }: { onExit: () => void }) {
           </section>
         )}
 
-        <section>
+        <section className="profile-games-section">
           <div className="live-section-title">Játszmáim</div>
           {games.length === 0 ? (
             <div className="live-empty">Még nincs rögzített játszma.</div>
