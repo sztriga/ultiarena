@@ -27,7 +27,7 @@ export const KONTRA_WORD: Record<number, string> = { 0: "", 1: "kontra", 2: "rek
 export const ROLE_LABEL: Record<number, string> = { 0: "Játékos", 1: "Védő 1", 2: "Védő 2" };
 // Compact Hungarian rank labels for the play log.
 export const RANK_SHORT: Record<Rank, string> = {
-  "7": "7", "8": "8", "9": "9", lower: "alsó", upper: "felső", king: "K", "10": "10", ace: "ász",
+  "7": "7", "8": "8", "9": "9", lower: "alsó", upper: "felső", king: "király", "10": "10", ace: "ász",
 };
 // A move in the play log: the coloured suit icon (as on the trump buttons) + rank.
 export function CardChip({ card }: { card: Card }) {

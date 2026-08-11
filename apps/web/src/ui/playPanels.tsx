@@ -22,6 +22,17 @@ const SEV_COLOR: Record<string, string> = {
 };
 const sevColor = (sv?: string | null) => SEV_COLOR[sv ?? "ok"] ?? "#9fe3a5";
 const gp = (x?: number | null) => (x === null || x === undefined ? "—" : `${x > 0 ? "+" : ""}${x.toFixed(1)}`);
+// GP column colour, driven by what the move COST its mover (always >= 0). Best move ->
+// green; deepening red with the loss. Bands match _SEVERITY on the server so the colour
+// and the word never disagree.
+const gpColor = (loss?: number | null) => {
+  const l = loss ?? 0;
+  if (l <= 0.001) return "#7fd48a";        // played the best move
+  if (l < 1) return "#cfd6dd";             // negligible
+  if (l < 3) return "#ffd479";             // pontatlanság
+  if (l < 8) return "#ff8a8a";             // hiba
+  return "#ff5252";                        // baklövés
+};
 
 export function ResultPanel({ r, withAnalysis, loading, analysisLoading, hasRounds,
                               onPlayAgain, onOpenAnalysis, onShowCard, onAbandon }: {
@@ -302,7 +313,12 @@ export function AnalysisBoard({ analysis, analysisView, effectivePlies, branch,
           </section>
           <section>
             <div className="panel betli-hu-log-panel">
-              <div className="panel-title">Lépések · mibe került (GP)</div>
+              <div className="panel-title">
+                Lépések · GP a lépő szemszögéből
+                <span className="muted" style={{ fontWeight: 400, fontSize: 11 }}>
+                  {" "}· a te sorod kiemelve
+                </span>
+              </div>
               <div className="betli-hu-log-scroll">
                 <table className="play-sc-table" style={{ fontSize: 12, width: "100%" }}>
                   <thead>
@@ -313,17 +329,27 @@ export function AnalysisBoard({ analysis, analysisView, effectivePlies, branch,
                       const selected = scrubPly - 1 === p.ply_index;
                       const sev = p.verdict?.severity ?? "ok";
                       const blunder = sev !== "ok";
+                      // The human's own rows get a slightly lighter background, so you can
+                      // find your moves at a glance without an ·AI tag on every AI row.
+                      const isHuman = !p.by_ai && p.player_id === anaHpi;
                       return (
                         <tr key={`${p.ply_index}-${p.is_branch ? "b" : "o"}`}
                             onClick={() => setScrubPly(p.ply_index + 1)}
                             style={{ cursor: "pointer",
-                              background: selected ? "rgba(99,200,255,0.16)" : p.is_branch ? "rgba(162,62,209,0.10)" : undefined,
+                              background: selected ? "rgba(99,200,255,0.16)" : p.is_branch ? "rgba(162,62,209,0.10)" : isHuman ? "rgba(255,255,255,0.055)" : undefined,
                               color: blunder ? sevColor(sev) : undefined, fontWeight: blunder ? 600 : undefined }}>
                           <td className="muted">{p.ply_index + 1}</td>
-                          <td>{p.player_id === 0 ? "J" : `V${p.player_id}`}{p.by_ai ? "·AI" : ""}{p.is_branch ? "·alt" : ""}</td>
+                          <td style={isHuman ? { fontWeight: 700 } : undefined}>
+                            {p.player_id === 0 ? "J" : `V${p.player_id}`}{p.is_branch ? "·alt" : ""}
+                          </td>
                           <td><CardChip card={p.chosen_card} /></td>
                           <td>{p.verdict ? <CardChip card={p.verdict.gp_best_card ?? p.verdict.god_best_card} /> : "—"}</td>
-                          <td className="muted">{p.verdict && (p.verdict.gp_loss ?? 0) > 0 ? `−${(p.verdict.gp_loss ?? 0).toFixed(1)}` : ""}</td>
+                          <td style={{ color: gpColor(p.verdict?.gp_loss), fontWeight: 600, textAlign: "right" }}>
+                            {p.verdict ? gp(p.verdict.gp_chosen) : ""}
+                            {p.verdict && (p.verdict.gp_loss ?? 0) > 0.001 && (
+                              <span style={{ fontWeight: 400, fontSize: 11 }}> ({`−${(p.verdict.gp_loss ?? 0).toFixed(1)}`})</span>
+                            )}
+                          </td>
                           <td>{p.verdict ? sev : "(ág)"}</td>
                         </tr>
                       );
