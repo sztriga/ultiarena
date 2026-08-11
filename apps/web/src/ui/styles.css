@@ -1149,18 +1149,24 @@ html, body, #root {
 }
 .ana-pill--ok { background: transparent; color: #7fd48a; border: 1px solid #2f6b3c; }
 
-.ana-verdict-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
-.ana-cards { display: flex; align-items: center; gap: 8px; }
+/* Cards sit left at their natural width; the cost block takes the rest and the
+   knowable bar STRETCHES to fill it. An earlier version pushed the cost right with
+   margin-left:auto, which left a dead gap down the middle of a wide panel. */
+.ana-verdict-row { display: flex; align-items: center; gap: 14px; }
+.ana-cards { display: flex; align-items: center; gap: 7px; flex: 0 0 auto; }
 .ana-card-slot { display: flex; align-items: center; gap: 5px; }
-.ana-card-gp { font-size: 11px; font-weight: 600; font-variant-numeric: tabular-nums; color: #cfd6dd; }
-.ana-arrow { color: var(--muted); font-size: 13px; }
+.ana-card-gp { font-size: 11px; font-weight: 600; font-variant-numeric: tabular-nums; color: #9aa4af; }
+.ana-arrow { color: #566270; font-size: 13px; }
 
-.ana-cost { display: flex; align-items: center; gap: 12px; margin-left: auto; }
-.ana-cost-main { font-size: 20px; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ana-cost {
+  display: flex; align-items: center; gap: 12px; flex: 1 1 auto; min-width: 0;
+  border-left: 1px solid rgba(255,255,255,.09); padding-left: 14px;
+}
+.ana-cost-main { font-size: 21px; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; white-space: nowrap; flex: 0 0 auto; }
 .ana-cost-main--ok { font-size: 13px; font-weight: 600; color: #7fd48a; }
-.ana-cost-unit { font-size: 11px; font-weight: 600; opacity: .7; }
+.ana-cost-unit { font-size: 11px; font-weight: 600; opacity: .65; }
 
-.ana-known { min-width: 108px; }
-.ana-known-bar { height: 4px; border-radius: 2px; background: rgba(255,255,255,.10); overflow: hidden; }
-.ana-known-fill { height: 100%; background: #ffd479; border-radius: 2px; }
-.ana-known-text { margin-top: 3px; font-size: 10px; color: #cfd6dd; white-space: nowrap; }
+.ana-known { flex: 1 1 auto; min-width: 80px; }
+.ana-known-bar { height: 5px; border-radius: 3px; background: rgba(255,255,255,.09); overflow: hidden; }
+.ana-known-fill { height: 100%; background: #ffd479; border-radius: 3px; }
+.ana-known-text { margin-top: 4px; font-size: 10px; color: #9aa4af; white-space: nowrap; }
