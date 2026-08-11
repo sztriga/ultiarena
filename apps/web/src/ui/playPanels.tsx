@@ -301,51 +301,47 @@ export function AnalysisBoard({ analysis, analysisView, effectivePlies, branch,
                         )}
                       </div>
 
-                      <div className="ana-verdict-cards">
-                        <div className="ana-card-slot">
-                          <div className="ana-card-cap">lépett</div>
-                          <CardChip card={v.verdict.chosen_card} />
-                          <div className="ana-card-gp">{gp(v.verdict.gp_chosen)}</div>
+                      <div className="ana-verdict-row">
+                        <div className="ana-cards">
+                          <div className="ana-card-slot">
+                            <CardChip card={v.verdict.chosen_card} />
+                            <span className="ana-card-gp">{gp(v.verdict.gp_chosen)}</span>
+                          </div>
+                          {(v.verdict.gp_loss ?? 0) > 0.001 && (
+                            <>
+                              <span className="ana-arrow">→</span>
+                              <div className="ana-card-slot">
+                                <CardChip card={v.verdict.gp_best_card ?? v.verdict.god_best_card} />
+                                <span className="ana-card-gp">{gp(v.verdict.gp_best)}</span>
+                              </div>
+                            </>
+                          )}
                         </div>
-                        {(v.verdict.gp_loss ?? 0) > 0.001 && (
-                          <>
-                            <div className="ana-arrow">→</div>
-                            <div className="ana-card-slot">
-                              <div className="ana-card-cap">legjobb</div>
-                              <CardChip card={v.verdict.gp_best_card ?? v.verdict.god_best_card} />
-                              <div className="ana-card-gp">{gp(v.verdict.gp_best)}</div>
+
+                        {(v.verdict.gp_loss ?? 0) > 0.001 ? (
+                          <div className="ana-cost">
+                            <div className="ana-cost-main" style={{ color: sevColor(v.verdict.severity) }}>
+                              −{(v.verdict.gp_loss ?? 0).toFixed(1)}<span className="ana-cost-unit"> GP</span>
                             </div>
-                          </>
+                            {v.verdict.gp_loss_knowable !== null && v.verdict.gp_loss_knowable !== undefined && (() => {
+                              const loss = v.verdict.gp_loss ?? 0;
+                              const known = v.verdict.gp_loss_knowable ?? 0;
+                              const pct = loss > 0 ? Math.max(0, Math.min(100, (known / loss) * 100)) : 0;
+                              return (
+                                <div className="ana-known">
+                                  <div className="ana-known-bar"><div className="ana-known-fill" style={{ width: `${pct}%` }} /></div>
+                                  <div className="ana-known-text">
+                                    <b>{known.toFixed(1)}</b> látható
+                                    {loss - known > 0.05 && <> · <span className="muted">{(loss - known).toFixed(1)} pech</span></>}
+                                  </div>
+                                </div>
+                              );
+                            })()}
+                          </div>
+                        ) : (
+                          <div className="ana-cost"><div className="ana-cost-main ana-cost-main--ok">nem került semmibe</div></div>
                         )}
                       </div>
-
-                      {(v.verdict.gp_loss ?? 0) > 0.001 ? (
-                        <div className="ana-cost">
-                          <div className="ana-cost-main" style={{ color: sevColor(v.verdict.severity) }}>
-                            −{(v.verdict.gp_loss ?? 0).toFixed(1)} <span className="ana-cost-unit">GP</span>
-                          </div>
-                          {v.verdict.gp_loss_knowable !== null && v.verdict.gp_loss_knowable !== undefined && (() => {
-                            const loss = v.verdict.gp_loss ?? 0;
-                            const known = v.verdict.gp_loss_knowable ?? 0;
-                            const pct = loss > 0 ? Math.max(0, Math.min(100, (known / loss) * 100)) : 0;
-                            return (
-                              <div className="ana-known">
-                                <div className="ana-known-bar">
-                                  <div className="ana-known-fill" style={{ width: `${pct}%` }} />
-                                </div>
-                                <div className="ana-known-text">
-                                  ebből <b>{known.toFixed(1)} GP</b> volt látható a helyedből
-                                  {loss - known > 0.05 && (
-                                    <> · <span className="muted">{(loss - known).toFixed(1)} GP pech</span></>
-                                  )}
-                                </div>
-                              </div>
-                            );
-                          })()}
-                        </div>
-                      ) : (
-                        <div className="ana-cost"><div className="ana-cost-main ana-cost-main--ok">nem került semmibe</div></div>
-                      )}
                     </div>
                   </>
                 ) : (
