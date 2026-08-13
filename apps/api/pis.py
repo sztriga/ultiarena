@@ -46,89 +46,91 @@ def pis_explore(req: PisExploreRequest) -> Dict:
     specific card, return the optimal continuation. Stateless — the
     client passes the full position each time. Handles full Ulti (trump,
     marriages, talon, the weighted 'multi' objective) as well as betli."""
-    with ai_pool.solver_lock:
-        contract = req.contract                          # SOLVE contract (may be "multi")
-        build_c  = req.build_contract or contract         # BUILD contract for build_position
-        trump    = req.trump
-        hands    = [[card_from_id(cid) for cid in h] for h in req.hands]
-        talon    = [card_from_id(cid) for cid in (req.talon or [])]
+    contract = req.contract                           # SOLVE contract (may be "multi")
+    build_c  = req.build_contract or contract         # BUILD contract for build_position
+    trump    = req.trump
+    talon    = [card_from_id(cid) for cid in (req.talon or [])]
 
-        if req.multi_weights:
-            from ultisolver._solver_core import set_multi_weights
-            set_multi_weights(**req.multi_weights)
+    # Validate HERE, in the request thread: building a position and applying moves
+    # never solves, so this is cheap and it is what turns a bad request into a 400
+    # instead of a worker exception.
+    def _fresh():
+        p = pis_bridge.build_position(
+            hands=[[card_from_id(cid) for cid in h] for h in req.hands],
+            soloist=req.soloist, leader=req.starting_leader,
+            contract=build_c, trump=trump, talon=list(talon),
+            declare_marriages=req.declare_marriages, marriage_restrict=req.marriage_restrict,
+        )
+        for cid in req.moves:
+            card = card_from_id(cid)
+            if card not in pis_bridge.legal_actions(p):
+                raise HTTPException(status_code=400,
+                                    detail=f"Visszajátszási hiba: a(z) {cid} lap itt nem játszható.")
+            pis_bridge.apply_move(p, card)
+        return p
 
-        def _fresh():
-            p = pis_bridge.build_position(
-                hands=[list(h) for h in hands], soloist=req.soloist, leader=req.starting_leader,
-                contract=build_c, trump=trump, talon=list(talon),
-                declare_marriages=req.declare_marriages, marriage_restrict=req.marriage_restrict,
-            )
-            for cid in req.moves:
-                card = card_from_id(cid)
-                if card not in pis_bridge.legal_actions(p):
-                    raise HTTPException(status_code=400,
-                                        detail=f"Visszajátszási hiba: a(z) {cid} lap itt nem játszható.")
-                pis_bridge.apply_move(p, card)
-            return p
+    pos = _fresh()
+    if pis_bridge.is_terminal(pos):
+        raise HTTPException(status_code=400, detail="A játszma véget ért — nincs mit elemezni.")
 
-        pos = _fresh()
-        if pis_bridge.is_terminal(pos):
-            raise HTTPException(status_code=400, detail="A játszma véget ért — nincs mit elemezni.")
+    forced        = card_from_id(req.forced_card_id)
+    forced_player = pis_bridge.current_player(pos)
+    legal_now     = pis_bridge.legal_actions(pos)
+    if forced not in legal_now:
+        raise HTTPException(status_code=400,
+                            detail=f"A(z) {req.forced_card_id} lap itt nem játszható.")
 
-        forced        = card_from_id(req.forced_card_id)
-        forced_player = pis_bridge.current_player(pos)
-        legal_now     = pis_bridge.legal_actions(pos)
-        if forced not in legal_now:
-            raise HTTPException(status_code=400,
-                                detail=f"A(z) {req.forced_card_id} lap itt nem játszható.")
+    n_played = len(req.moves)
+    forced_step: Dict = {
+        "player_id":      forced_player,
+        "card":           card_to_dict(forced),
+        "trick_index":    n_played // 3,
+        "trick_position": n_played % 3,
+        "legal_card_ids": [c.id for c in legal_now],
+    }
 
-        n_played = len(req.moves)
-        forced_step: Dict = {
-            "player_id":      forced_player,
-            "card":           card_to_dict(forced),
-            "trick_index":    n_played // 3,
-            "trick_position": n_played % 3,
-            "legal_card_ids": [c.id for c in legal_now],
-        }
+    # The SEARCH ships to a worker — it holds the GIL for its whole duration, so
+    # solving it here would stall every other request in this process, not just
+    # this one (ai_pool).
+    res = ai_pool.run("explore", {
+        "hands": req.hands, "soloist": req.soloist, "leader": req.starting_leader,
+        "build_c": build_c, "solve_c": contract, "trump": trump,
+        "talon": [c.id for c in talon],
+        "declare_marriages": req.declare_marriages, "restrict": req.marriage_restrict,
+        "weights": req.multi_weights, "moves": list(req.moves),
+        "forced_card_id": req.forced_card_id,
+    })
 
-        # Apply the forced card, then walk the PV from the resulting position.
-        pis_bridge.apply_move(pos, forced)
-        continuation = pis_bridge.principal_variation(pos, contract=contract)
+    # Walk the continuation on a fresh position to emit the legal ids per step
+    # (no solving — just replay).
+    pos_anno = _fresh()
+    alt_pv: List[Dict] = [forced_step]
+    pis_bridge.apply_move(pos_anno, forced)
+    for i, (pid, cid) in enumerate(res["continuation"]):
+        plies = n_played + 1 + i
+        alt_pv.append({
+            "player_id":      pid,
+            "card":           card_to_dict(card_from_id(cid)),
+            "trick_index":    plies // 3,
+            "trick_position": plies % 3,
+            "legal_card_ids": [c.id for c in pis_bridge.legal_actions(pos_anno)],
+        })
+        pis_bridge.apply_move(pos_anno, card_from_id(cid))
 
-        # For the alt-PV display, rebuild a fresh position, replay moves + forced,
-        # then walk the continuation emitting legal ids per step.
-        pos_anno = _fresh()
-        alt_pv: List[Dict] = [forced_step]
-        pis_bridge.apply_move(pos_anno, forced)
-        for i, (pid, card) in enumerate(continuation):
-            plies = n_played + 1 + i
-            alt_pv.append({
-                "player_id":      pid,
-                "card":           card_to_dict(card),
-                "trick_index":    plies // 3,
-                "trick_position": plies % 3,
-                "legal_card_ids": [c.id for c in pis_bridge.legal_actions(pos_anno)],
-            })
-            pis_bridge.apply_move(pos_anno, card)
-
-        # Outcome value of the alt branch.
-        pos_eval = _fresh()
-        pis_bridge.apply_move(pos_eval, forced)
-        _, alt_value = pis_bridge.solve_best(pos_eval, contract=contract)
-
-        if contract == "betli":
-            soloist_takes_alt = int(round(req.total_tricks - alt_value))
-            verdict = "soloist" if soloist_takes_alt == 0 else "defenders"
-            value_out = float(req.total_tricks - soloist_takes_alt)
-        else:
-            # trump / parti / multi: soloist-perspective value; >0 favors the soloist.
-            soloist_takes_alt = 0
-            verdict = "soloist" if alt_value > 0 else "defenders"
-            value_out = float(alt_value)
-        return {
-            "alt_pv":         alt_pv,
-            "alt_start":      n_played,
-            "value":          value_out,
-            "soloist_takes":  soloist_takes_alt,
-            "verdict":        verdict,
-        }
+    alt_value = res["value"]
+    if contract == "betli":
+        soloist_takes_alt = int(round(req.total_tricks - alt_value))
+        verdict = "soloist" if soloist_takes_alt == 0 else "defenders"
+        value_out = float(req.total_tricks - soloist_takes_alt)
+    else:
+        # trump / parti / multi: soloist-perspective value; >0 favors the soloist.
+        soloist_takes_alt = 0
+        verdict = "soloist" if alt_value > 0 else "defenders"
+        value_out = float(alt_value)
+    return {
+        "alt_pv":         alt_pv,
+        "alt_start":      n_played,
+        "value":          value_out,
+        "soloist_takes":  soloist_takes_alt,
+        "verdict":        verdict,
+    }

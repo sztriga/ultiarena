@@ -401,11 +401,45 @@ def op_analysis(job: dict) -> List[dict]:
     return per_ply
 
 
+# ── Analysis-board branch exploration (/api/pis/explore) ────────────────────────
+
+def _explore_position(job: dict):
+    """The branch's starting position. The ROUTE already validated the deal and every
+    replayed move, so the worker just rebuilds (build/apply never solve)."""
+    pos = pis_bridge.build_position(
+        hands=[[card_from_id(c) for c in h] for h in job["hands"]],
+        soloist=job["soloist"], leader=job["leader"],
+        contract=job["build_c"], trump=job["trump"],
+        talon=[card_from_id(c) for c in job["talon"]],
+        declare_marriages=job["declare_marriages"],
+        marriage_restrict=job.get("restrict"),
+    )
+    for cid in job["moves"]:
+        pis_bridge.apply_move(pos, card_from_id(cid))
+    pis_bridge.apply_move(pos, card_from_id(job["forced_card_id"]))
+    return pos
+
+
+def op_explore(job: dict) -> dict:
+    """Force a card, then return the optimal continuation and the branch's value.
+
+    This runs in a WORKER because the Cython search holds the GIL for its whole
+    duration: solving it in the web process froze every other request (not just
+    the caller's) for seconds at a time. Two fresh positions, exactly as before —
+    principal_variation and solve_best each get an untouched one.
+    """
+    _apply_weights(job.get("weights"))
+    cont = pis_bridge.principal_variation(_explore_position(job), contract=job["solve_c"])
+    _, value = pis_bridge.solve_best(_explore_position(job), contract=job["solve_c"])
+    return {"continuation": [(pid, c.id) for pid, c in cont], "value": float(value)}
+
+
 _OPS = {
     "ai_pick": op_ai_pick,
-    "unit_makeability": op_unit_makeability,
+    "unit_makeability": op_unit_makeability,      # research harnesses call this directly
     "unit_makeability_post1": op_unit_makeability_post1,
     "analysis": op_analysis,
+    "explore": op_explore,
 }
 
 
