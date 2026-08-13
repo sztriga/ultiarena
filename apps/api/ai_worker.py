@@ -374,10 +374,24 @@ def op_analysis(job: dict) -> List[dict]:
                 "gp_swing": round(gp_best - min(gp.values()), 2),
             })
             nw = int(job.get("analysis_worlds") or 0)
-            if nw > 0 and gp_loss > 0:
-                # Only worth sampling where something was actually lost.
-                blind = {c: _gp_if_played_blind(pos, c, pid, solve_c, bid, nw,
-                                                job.get("seed", 0) + i * 7919 + c.id)
+            # The board only needs the knowable split where hindsight found a loss — it is
+            # answering "how much of THIS was findable". A human-evaluation harness wants
+            # the opposite: the info-set regret is its PRIMARY measure, because
+            # double-dummy hindsight is far too forgiving. Playing on with perfect
+            # information for everyone means the outcome is usually already determined, so
+            # single-card choices tie: measured over 186 real human/AI moves, hindsight
+            # flagged ONE. The info-set number asks "was this a good decision given what
+            # you could see", which is the question worth asking of a player.
+            if nw > 0 and (gp_loss > 0 or job.get("knowable_always")):
+                # COMMON RANDOM NUMBERS: every candidate card is evaluated on the SAME
+                # sampled worlds (one seed per ply, not per card). Regret is a DIFFERENCE
+                # between two estimates, so pairing them removes almost all of the
+                # sampling noise. With independent draws the max over candidates is
+                # inflated — the winner's curse — and every player, including the engine
+                # itself, shows spurious losses: measured at 10.3 GP/game for the AI
+                # against a true ceiling of ~0.5.
+                world_seed = job.get("seed", 0) + i * 7919
+                blind = {c: _gp_if_played_blind(pos, c, pid, solve_c, bid, nw, world_seed)
                          for c in legal_now}
                 if all(v is not None for v in blind.values()):
                     row["gp_loss_knowable"] = round(
