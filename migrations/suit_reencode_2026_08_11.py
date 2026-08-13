@@ -1,5 +1,8 @@
 """THE suit re-encoding (milan 2026-08-11): card ids move to display order.
 
+APPLIED 2026-08-11 — kept as the canonical record of the wire-order epoch (its
+verification counterpart is tests/golden/physical_ref.py). Do not run again.
+
 Old wire order: acorns, leaves, hearts, bells   (alphabetical English, historical)
 New wire order: hearts, bells, leaves, acorns   (piros, tök, zöld, makk — and the
                 order ultisolver's own Suit enum ALWAYS had)

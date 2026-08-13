@@ -40,7 +40,7 @@ if os.path.exists("ultisolver/_solver_core.pyx"):
     packages += ["ultisolver", "ultisolver.games", "ultisolver.games.ulti"]
 
 setup(
-    name="trickster-cython-ext",
+    name="ultiarena-cython-ext",
     ext_modules=cythonize(extensions, compiler_directives=_DIRECTIVES),
     package_dir=package_dir,
     packages=packages,

@@ -22,4 +22,5 @@ where = ["."]
 exclude = ["research*", "tests*", "snapszer*", "build*", "assets*", "models*", "apps.web*"]
 
 [tool.pytest.ini_options]
+testpaths = ["tests"]   # research/experiments has module-level scripts pytest must not import
 markers = ["slow: real AI decisions (net + PIMC) — excluded with -m 'not slow'"]

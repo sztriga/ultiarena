@@ -78,36 +78,38 @@ POST /live/table/join   {table_id}    → first free seat
 POST /live/table/leave  {table_id}
 POST /live/table/kick   {table_id, user_id}    (host only)
 POST /live/table/invite {table_id, username}   (host only)
-POST /live/table/start  {table_id}             (host, table full)   [stage 2]
+POST /live/table/start  {table_id}             (host; empty chairs stay AI)
 ```
 
-## The game itself (stage 2 — the next work item)
+(All routes above are mounted under `/api`.)
 
-- `Session` grows `humans: set[int]` (real seats) and `players: {seat: user_id}`.
-  The AI game is `humans={sess.seat}` — the existing behavior, untouched, golden-
-  locked. `_advance_auction`/`_advance_play` skip AI resolution for human seats;
-  with all three human they are pure rule-keepers (turn order, kontra offers,
-  terminal detection, scoring).
-- Snapshots take `viewer: int`. Everything already derives from "the human's
-  seat"; the change is threading the parameter (own hand vs backs, turn flags,
-  result.human_gp per viewer). Bubbles become sequence-numbered events with a
-  per-viewer cursor (decision 2).
-- The web client reuses the entire game UI. New adoption path: a 1s poll during
-  MP games feeds the same animation machine that action responses feed today
-  (opponents' moves arrive by poll instead of by my-request-response).
-- Kontra popup, marriage bubbles, terített reveal, scoring — all already
-  viewer-relative concepts in the engine; they follow the viewer parameter.
-- Recording: identical `record_game` call, three human players with user_ids.
-- Timeouts/abandonment (someone closes the tab mid-game) get a table-level
-  policy later (reclaim the seat after N minutes → AI takes over or the deal is
-  voided); v1 documents it as unhandled.
+## The game itself (stage 2 — BUILT 2026-08-11)
+
+Exactly as designed, and all of it shipped:
+
+- `Session` has `humans: set[int]` (real seats) and `players: {seat: identity}`.
+  The AI game IS `humans={sess.seat}` — one engine, golden-locked;
+  `_advance_auction`/`_advance_play` pause on human seats and resolve AI ones.
+  Empty chairs stay AI, so 1, 2 or 3 people at a table all work.
+- Snapshots are viewer-parameterized (`_snapshot(sess, viewer)`): own hand vs
+  backs, turn flags, per-viewer result. Bubbles use per-viewer cursors
+  (`bubbles_seen`); `sess.rev` bumps on every mutation for poll adoption.
+- The web client reuses the entire game UI; a 1s poll during live games feeds
+  the same animation machine that action responses feed in solo play.
+- Recording: the identical `_record_session` call, human seats carry user_ids.
+- The forehand rotates each round (`table_start`); Következő = the host deals.
+- Verified end-to-end by `tests/api/test_mp_game.py` (a full 3-human deal
+  through the real routes) and `tests/api/test_live.py` (lobby/table flow).
 
 ## Staged rollout
 
 - **Stage 1 (BUILT 2026-08-10):** accounts, lobby (presence + chat), tables with
   join/leave/kick/invite, "Játék élőben" on the splash, logged-in AI games
-  record user_id. Start button visible when full, disabled ("hamarosan").
-- **Stage 2:** the 3-human game loop (engine parameterization + viewer
-  snapshots + poll adoption in the client). This is the next work item.
-- **Stage 3:** polish — reconnection windows, spectating, per-table chat,
-  WS transport if polling ever feels laggy, magic-link auth if passwords annoy.
+  record user_id.
+- **Stage 2 (BUILT 2026-08-11):** the 1-3-human game loop through the ONE engine
+  (see above).
+- **Stage 3 (open):** abandonment policy (tab closed mid-deal: reclaim the seat
+  after N minutes → AI takes over or the deal is voided), per-table chat during
+  play, server-side shared match scorecard, spectating, WS transport if polling
+  ever feels laggy; auth hardening before a public launch (token expiry, hashed
+  browser tokens, min pw 8, hmac.compare_digest).

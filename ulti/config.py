@@ -30,7 +30,14 @@ EXPLOIT{,_EPS,_NW,_FRAC}    play  exp31 safe-exploit soloist
 BETLI_REAL_BID, REBETLI_REAL_BID, BETLI_DEF, MIX_EQUIV   play  promoted-feature gates
 BETLI_DEF_MODEL   betli     path override for the exp36 defense net
 GAMES_DB          recording SQLite path for finished-game recording
+USERS_DB          users     SQLite path for accounts + tokens + api keys
 PUZZLE_SECONDS, PUZZLE_QUEUE   puzzle  Villámtalon duration / precompute depth
+PLAY_SESSION_TTL  engine    idle seconds before a session is reaped
+AI_WORKERS        ai_pool   worker processes for AI decisions (0 = inline)
+ANALYSIS_WORLDS   analysis  worlds for the "knowable" pass (0 disables)
+RATE_LIMIT_RPM    limits    per-IP request budget (0 disables ALL abuse caps)
+MAX_INFLIGHT_PER_IP, MAX_SESSIONS_TOTAL, MAX_SESSIONS_PER_IP   limits  caps
+DEV_AUTOLOGIN     users     LOCAL dev only — auto-login account name (dev.sh)
 
 (Training-only scripts — ulti/bidding/base_head.py — keep their own epoch/lr knobs;
 they are not part of the serving surface.)

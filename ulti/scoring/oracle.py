@@ -1,7 +1,5 @@
 """Scoring oracle — pure function from played-out position to payoff vector.
 
-First sketch. Critique welcome.
-
 The oracle answers: "given this final position and what was bid, how
 many GP does each side win/lose, broken down by rule component?"
 
@@ -83,9 +81,8 @@ class BidSet:
 
 
 # ─────────────────────────────────────────────────────────────────────
-# Per-component GP rates (per defender). Values are TODO — milan to
-# confirm against the variant of Ulti you actually play. Marking the
-# defaults as placeholders so we don't accidentally ship wrong rates.
+# Per-component GP rates (per defender) — milan's table, confirmed
+# 2026-06-14 (incl. the corrected silent-100 values) and golden-locked.
 # ─────────────────────────────────────────────────────────────────────
 
 @dataclass(frozen=True)

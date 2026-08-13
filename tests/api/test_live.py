@@ -5,30 +5,7 @@ whole chain is exercised: bearer tokens, presence-by-poll, the chat cursor, and
 milan's table rules — free join / host kicks / invites / host inheritance."""
 from __future__ import annotations
 
-import pytest
-from fastapi import FastAPI
-from fastapi.testclient import TestClient
-
 from apps.api import live, users
-
-
-@pytest.fixture()
-def client(tmp_path, monkeypatch):
-    monkeypatch.setattr(users, "_DB_PATH", str(tmp_path / "users_test.db"))
-    monkeypatch.setattr(users, "_conn", None)
-    users._token_cache.clear()
-    users._auth_fails.clear()
-    live._members.clear()
-    live._tables.clear()
-    live._chat.clear()
-    live._chat_seq = 0
-    app = FastAPI()
-    app.include_router(users.router, prefix="/api")
-    app.include_router(live.router, prefix="/api")
-    with TestClient(app) as c:
-        yield c
-    if users._conn is not None:
-        users._conn.close()
 
 
 def _register(client, name, password="hunter22") -> dict:

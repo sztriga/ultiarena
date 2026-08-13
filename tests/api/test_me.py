@@ -4,29 +4,9 @@ from __future__ import annotations
 
 import time
 
-import pytest
-from fastapi.testclient import TestClient
-
-from apps.api import limits, live, recording, users
-from apps.api.main import app
+from apps.api import recording
 
 DEV = "dddddddd-1111-2222-3333-444444444444"
-
-
-@pytest.fixture()
-def client(tmp_path, monkeypatch):
-    monkeypatch.setattr(users, "_DB_PATH", str(tmp_path / "users.db"))
-    monkeypatch.setattr(users, "_conn", None)
-    monkeypatch.setattr(recording, "_DB_PATH", str(tmp_path / "games.db"))
-    monkeypatch.setattr(recording, "_conn", None)
-    monkeypatch.setattr(limits, "RATE_LIMIT_RPM", 0)
-    users._token_cache.clear(); users._auth_fails.clear()
-    live._members.clear(); live._tables.clear(); live._chat.clear()
-    with TestClient(app) as c:
-        yield c
-    for m in (users, recording):
-        if m._conn is not None:
-            m._conn.close()
 
 
 def _rec(gid, ts, contract="piros parti", *, user_id=None, device=None, seat=0,

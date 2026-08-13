@@ -6,31 +6,8 @@ browser, with the same cheat-cleanliness (its view never contains hidden cards).
 from __future__ import annotations
 
 import pytest
-from fastapi.testclient import TestClient
 
-from apps.api import limits, live, recording, users
-from apps.api.main import app
-
-
-@pytest.fixture()
-def client(tmp_path, monkeypatch):
-    monkeypatch.setattr(users, "_DB_PATH", str(tmp_path / "users.db"))
-    monkeypatch.setattr(users, "_conn", None)
-    monkeypatch.setattr(recording, "_DB_PATH", str(tmp_path / "games.db"))
-    monkeypatch.setattr(recording, "_conn", None)
-    monkeypatch.setattr(limits, "RATE_LIMIT_RPM", 0)
-    from apps.api import apikeys
-    users._token_cache.clear()
-    users._auth_fails.clear()
-    apikeys._cache.clear()
-    apikeys._hits.clear()
-    live._members.clear(); live._tables.clear(); live._chat.clear()
-    with TestClient(app) as c:
-        yield c
-    if users._conn is not None:
-        users._conn.close()
-    if recording._conn is not None:
-        recording._conn.close()
+from apps.api import recording
 
 
 @pytest.fixture()

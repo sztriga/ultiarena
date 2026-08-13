@@ -47,3 +47,9 @@ tsconfig.tsbuildinfo
 data/
 infra/Caddyfile
 models/candidates/
+
+# The global *.pt / *.npz ignores above would silently swallow a newly PROMOTED
+# head (git status blind, git add refuses) — deployed models must stay visible.
+# models/candidates/ stays ignored (directory rule wins for everything inside it).
+!models/ulti/**/*.pt
+!models/ulti/**/*.npz
