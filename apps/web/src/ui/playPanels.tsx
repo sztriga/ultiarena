@@ -8,7 +8,7 @@ import type { Card } from "./cards";
 
 type Seat = 0 | 1 | 2;
 import { UltiTable, TalonStrip, type SeatChrome } from "./UltiTable";
-import { CardChip, KONTRA_WORD, PLAYER_LABEL, TRUMP_LABEL,
+import { CardChip, KONTRA_WORD, PLAYER_LABEL, TRUMP_LABEL, silentLabel,
 
          type AnalysisView, type EffectivePly } from "./playChrome";
 
@@ -59,7 +59,7 @@ export function ResultPanel({ r, withAnalysis, loading, analysisLoading, hasRoun
         <span className="res-tag">{r.contract}</span>
         {r.kontra_level > 0 && <span className="res-tag res-tag--k">{KONTRA_WORD[r.kontra_level]}</span>}
         {(r.silents ?? []).map((s, i) => (
-          <span key={i} className="res-tag res-tag--s">{s.label} {s.gp >= 0 ? "+" : ""}{s.gp}</span>
+          <span key={i} className="res-tag res-tag--s">{silentLabel(s)}</span>
         ))}
       </div>
       <div className="play-side-actions">
@@ -136,7 +136,7 @@ export function Splash({ loading, error, onNew, onLive, onPuzzle, onProfile, ong
               ))}
             </div>
           )}
-          {error && <div className="error" style={{ marginTop: 14, maxWidth: 480, margin: "14px auto 0" }}>{error}</div>}
+          {error && <div className="error" style={{ maxWidth: 480, margin: "14px auto 0" }}>{error}</div>}
         </section>
       </main>
     </div>

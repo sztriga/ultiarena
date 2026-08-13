@@ -9,7 +9,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { api, type PlayState, type PlayLegalBid, type PlayOngoing, type PlayResult } from "./api";
+import { api, errDetail, type PlayState, type PlayLegalBid, type PlayOngoing, type PlayResult } from "./api";
 import { deviceId } from "./device";
 import type { Card, Suit } from "./cards";
 import { SUIT_HUN, SUIT_SYMBOL } from "./cards";
@@ -24,7 +24,7 @@ import { AnalysisBoard, AuctionPanel, KontraBox, ResultPanel, Splash } from "./p
 type Seat = 0 | 1 | 2;
 
 import {
-  TRUMP_LABEL, KONTRA_WORD, ROLE_LABEL,
+  TRUMP_LABEL, KONTRA_WORD, ROLE_LABEL, silentLabel,
   ANIM_STEP_MS, ANIM_TRICK_PAUSE_MS, placeholderHand, CardChip,
   applyUserPlay, playBaseline, applyStepToVisible, useUltiBubble,
 } from "./playChrome";
@@ -108,7 +108,7 @@ export function PlayVsAI() {
     // Real seat of stable player p = (p + humanSeat) % 3, so player 0 = the human.
     const gp = [0, 1, 2].map((p) => r.seat_gp[(p + humanSeat) % 3] ?? 0);
     const soloist = (solSeat - humanSeat + 3) % 3;
-    const silents = (r.silents ?? []).map((s) => `${s.label} ${s.gp >= 0 ? "+" : ""}${s.gp}`);
+    const silents = (r.silents ?? []).map(silentLabel);
     setRounds((rs) => [...rs, { contract: r.contract, gp, soloist, winner: r.winner, silents }]);
   }, [state?.phase, state?.game_id]);   // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -177,21 +177,27 @@ export function PlayVsAI() {
     return () => { alive = false; };
   }, [state]);
 
-  const onNew = useCallback(async () => {
-    setLoading(true); setError(null); setPending(null); resetBubbles();
-    try {
-      // You always open the first deal as the 12-card holder (seat 0).
-      setState(await api.playNew({ seat: 0, seed: undefined, device_id: deviceId() }));
-    } catch (e) { setError(String(e)); setState(null); }
+  /** Every server action runs through here: one busy flag, one error surface
+   *  (the backend's Hungarian message), one place that can never forget to clear
+   *  `loading`. `onFail` restores whatever state the action was optimistic about. */
+  const run = useCallback(async (fn: () => Promise<void>, onFail?: () => void) => {
+    setLoading(true); setError(null);
+    try { await fn(); }
+    catch (e) { setError(errDetail(e)); onFail?.(); }
     finally { setLoading(false); }
-  }, [resetBubbles]);
+  }, []);
+
+  const onNew = useCallback(async () => {
+    setPending(null); resetBubbles();
+    // You always open the first deal as the 12-card holder (seat 0).
+    await run(async () => setState(await api.playNew({ seat: 0, seed: undefined, device_id: deviceId() })),
+              () => setState(null));
+  }, [run, resetBubbles]);
 
   const onResume = useCallback(async (gid: string) => {
-    setLoading(true); setError(null); setPending(null); resetBubbles();
-    try { setState(await api.playState(gid)); }
-    catch (e) { setError(String(e)); setState(null); }
-    finally { setLoading(false); }
-  }, [resetBubbles]);
+    setPending(null); resetBubbles();
+    await run(async () => setState(await api.playState(gid)), () => setState(null));
+  }, [run, resetBubbles]);
 
   const onDiscardGame = useCallback((gid: string) => {
     setOngoing((o) => o.filter((g) => g.game_id !== gid));   // optimistic
@@ -221,23 +227,23 @@ export function PlayVsAI() {
       // Következő at a live table: the HOST deals the next round (the server
       // rotates the forehand); everyone else's poll adopts the new game_id.
       if (!liveCtx.isHost) return;
-      setLoading(true); setError(null); setPending(null); resetBubbles();
-      try {
+      setPending(null); resetBubbles();
+      await run(async () => {
         const r = await api.tableStart(liveCtx.tableId);
         setLiveCtx({ ...liveCtx, gameId: r.game_id });
         recordedGame.current = null;
         setState(await api.playState(r.game_id));
-      } catch (e) { setError(String(e)); }
-      finally { setLoading(false); }
+      });
       return;
     }
     const next = (rotate ? (state.seat + 1) % 3 : state.seat) as Seat;
     const old = state.game_id;
-    setLoading(true); setError(null); setPending(null); resetBubbles();
-    try { setState(await api.playNew({ seat: next, device_id: deviceId() })); api.playDelete(old, deviceId()).catch(() => {}); }
-    catch (e) { setError(String(e)); }
-    finally { setLoading(false); }
-  }, [state, resetBubbles, liveCtx]);
+    setPending(null); resetBubbles();
+    await run(async () => {
+      setState(await api.playNew({ seat: next, device_id: deviceId() }));
+      api.playDelete(old, deviceId()).catch(() => {});
+    });
+  }, [state, run, resetBubbles, liveCtx]);
 
   const onAbandon = useCallback(async () => {
     if (liveCtx) { onExitLive(); return; }                // shared game — never delete it
@@ -262,8 +268,7 @@ export function PlayVsAI() {
   // start play), or a contract bid (discard 2 + trump).
   const onConfirm = useCallback(async () => {
     if (!state || !selBid) return;
-    setLoading(true); setError(null);
-    try {
+    await run(async () => {
       if (selBid.kind === "pass") {
         settleInto(await api.playPass(state.game_id, [...discards]));      // bury 2 as the talon
       } else {
@@ -275,52 +280,40 @@ export function PlayVsAI() {
           discard_ids: [...discards],
         }));
       }
-    } catch (e) { setError(String(e)); }
-    finally { setLoading(false); }
-  }, [state, selBid, discards, settleInto]);
+    });
+  }, [state, selBid, discards, settleInto, run]);
 
   // Auction step (overcall): pick the talon up to bid, or decline without it.
   const onPickup = useCallback(async () => {
     if (!state) return;
-    setLoading(true); setError(null);
-    try { setState(await api.playPickup(state.game_id)); }   // stays in the bid step
-    catch (e) { setError(String(e)); }
-    finally { setLoading(false); }
-  }, [state]);
+    await run(async () => setState(await api.playPickup(state.game_id)));   // stays in the bid step
+  }, [state, run]);
   const onAuctionPass = useCallback(async () => {
     if (!state) return;
-    setLoading(true); setError(null);
-    try { settleInto(await api.playPass(state.game_id, [])); }   // decline / accept, no discard
-    catch (e) { setError(String(e)); }
-    finally { setLoading(false); }
-  }, [state, settleInto]);
+    await run(async () => settleInto(await api.playPass(state.game_id, [])));  // decline / accept, no discard
+  }, [state, settleInto, run]);
   const onTrump = useCallback(async (suit: string) => {
     if (!state) return;
-    setLoading(true); setError(null);
-    try { settleInto(await api.playTrump(state.game_id, suit)); }   // you're the soloist → you lead
-    catch (e) { setError(String(e)); }
-    finally { setLoading(false); }
-  }, [state, settleInto]);
+    await run(async () => settleInto(await api.playTrump(state.game_id, suit)));  // soloist → you lead
+  }, [state, settleInto, run]);
 
   // Kontra the given units (empty = pass/"Tovább"). For a combined game each unit is
   // decided separately; the human picks any subset.
   const onKontra = useCallback(async (units: string[]) => {
     if (!state) return;
-    setLoading(true); setError(null);
     // Drop the kontra box right away and keep the table as-is, so the continuation
     // cards can animate in one-by-one instead of snapping on all at once.
     const base = { ...state, phase: "play" as const, kontra: null };
     setState(base);
-    try {
+    await run(async () => {
       const resp = await api.playKontra({ game_id: state.game_id, units });
       if ((resp.history?.length ?? 0) > (base.history?.length ?? 0) && resp.phase !== "bid") {
         setPending(resp);   // animate the cards the AI plays after your decision
       } else {
         setState(resp);
       }
-    } catch (e) { setError(String(e)); setState(state); }
-    finally { setLoading(false); }
-  }, [state]);
+    }, () => setState(state));
+  }, [state, run]);
   const toggleKontraUnit = useCallback((key: string) => {
     setKontraSel((prev) => {
       const n = new Set(prev);
@@ -334,11 +327,8 @@ export function PlayVsAI() {
     if (state.current_player !== state.human_play_index) return;
     if (!state.legal_card_ids?.includes(card.id)) return;
     setState(applyUserPlay(state, card));    // optimistic — drop the card immediately
-    setLoading(true); setError(null);
-    try { setPending(await api.playMove({ game_id: state.game_id, card_id: card.id })); }
-    catch (e) { setError(String(e)); }
-    finally { setLoading(false); }
-  }, [state, loading, animating]);
+    await run(async () => setPending(await api.playMove({ game_id: state.game_id, card_id: card.id })));
+  }, [state, loading, animating, run]);
 
   const toggleDiscard = useCallback((c: Card) => {
     setDiscards((prev) => {

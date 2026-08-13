@@ -158,11 +158,6 @@ html, body, #root {
 .card-clickable { cursor: pointer; transition: transform 120ms ease, border-color 120ms ease; }
 .card-clickable:hover { transform: translateY(-4px); border-color: var(--accent-2); }
 
-.card-highlight {
-  outline: 3px solid var(--accent);
-  outline-offset: 2px;
-  border-color: var(--accent);
-}
 /* Illegal cards in the active player's hand. Kept readable; the playable
    cards are what pops out, not the dim ones that disappear. */
 .card-dim     { opacity: 0.78; filter: saturate(0.7); }
@@ -276,11 +271,6 @@ html, body, #root {
   font-size: 11px;
   color: var(--muted);
   font-weight: 600;
-}
-
-.ulti-trick-slot.is-winner .ulti-trick-player {
-  color: var(--accent-2);
-  font-weight: 700;
 }
 
 .ulti-trick-empty {
@@ -434,20 +424,6 @@ html, body, #root {
 
 .ulti-bubble-in  { animation: bubble-in  220ms ease-out forwards; }
 .ulti-bubble-out { animation: bubble-out 320ms ease-in  forwards; }
-
-@keyframes bubble-in {
-  0%   { opacity: 0; transform: translate(-50%, 6px) scale(0.92); }
-  100% { opacity: 1; transform: translate(-50%, 0)   scale(1); }
-}
-
-@keyframes bubble-in {
-  0%   { opacity: 0; transform: translate(-50%, 6px) scale(0.92); }
-  100% { opacity: 1; transform: translate(-50%, 0)   scale(1); }
-}
-@keyframes bubble-out {
-  0%   { opacity: 1; transform: translate(-50%, 0)   scale(1); }
-  100% { opacity: 0; transform: translate(-50%, -6px) scale(0.95); }
-}
 
 @keyframes bubble-in {
   0%   { opacity: 0; transform: translate(-50%, 6px) scale(0.92); }
@@ -681,20 +657,6 @@ html, body, #root {
   opacity: 0.65;
 }
 
-@media (max-width: 720px) {
-  .betli-hu-tile-grid-3,
-  .betli-hu-tile-grid-4 {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 720px) {
-  .betli-hu-tile-grid-3,
-  .betli-hu-tile-grid-4 {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
 /* Slightly tighter title + a hair more breathing room on tiles. */
 .betli-hu-title {
   font-size: 56px;
@@ -769,15 +731,6 @@ html, body, #root {
 .betli-hu-game .hand-fan        { padding: 18px 0 8px; }
 .betli-hu-game .ulti-player-role { padding-top: 6px; font-size: 13px; }
 
-/* Slim result banner so the end-of-hand UI doesn't push things off-screen. */
-.betli-hu-game .betli-hu-result          { margin-top: 10px; padding: 12px 18px 14px; }
-.betli-hu-game .betli-hu-result-headline { font-size: 22px; margin-bottom: 2px; }
-.betli-hu-game .betli-hu-result-sub      { font-size: 12px; }
-.betli-hu-game .betli-hu-result .betli-hu-deal-btn {
-  padding: 10px 22px;
-  font-size: 15px;
-  margin-top: 10px !important;
-}
 
 /* ── Ulti vs AI — bidding-panel contract dropdown ─────────────────────── */
 .ulti-bid-select {
@@ -985,9 +938,7 @@ html, body, #root {
 .ulti-auction-player { font-weight: 600; min-width: 50px; }
 .ulti-auction-action { padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; }
 .ulti-auction-action.pass { color: var(--muted); }
-.ulti-auction-action.hold { color: #66bb6a; }
 .ulti-auction-action.bid { color: var(--accent); }
-.ulti-auction-action.pickup { color: #42a5f5; }
 .ulti-bid-select-row { display: flex; gap: 10px; align-items: flex-start; justify-content: center; flex-wrap: wrap; }
 .ulti-bid-confirm {
   padding: 10px 20px; background: var(--accent); color: #fff; border: none;
@@ -1040,6 +991,8 @@ html, body, #root {
 }
 .puzzle-rules b { color: #a78bfa; }
 .puzzle-actions { display: flex; gap: 12px; align-items: center; margin-top: 10px; }
+.betli-hu-deal-btn--puzzle { background: #7c3aed; }
+.puzzle-error { max-width: 480px; margin: 0 auto 12px; }
 .puzzle-back { background: transparent; }
 
 /* HUD bar */
@@ -1053,7 +1006,6 @@ html, body, #root {
   color: var(--text); min-width: 74px;
 }
 .puzzle-timer.is-low { color: var(--bad); animation: puzzle-pulse 1s infinite; }
-@keyframes puzzle-pulse { 50% { opacity: 0.5; } }
 @keyframes puzzle-pulse { 50% { opacity: 0.5; } }
 .puzzle-score { display: flex; flex-direction: column; line-height: 1.05; }
 .puzzle-score b { font-size: 24px; color: var(--accent); font-variant-numeric: tabular-nums; }
@@ -1090,7 +1042,6 @@ html, body, #root {
 .puzzle-flash.is-miss .puzzle-flash-points { color: var(--muted); }
 .puzzle-flash-msg { display: flex; flex-direction: column; gap: 3px; font-size: 13px; color: var(--text); }
 .puzzle-flash-opt { display: flex; gap: 4px; }
-@keyframes puzzle-flash-in { from { transform: translateY(-6px); opacity: 0; } to { transform: none; opacity: 1; } }
 @keyframes puzzle-flash-in { from { transform: translateY(-6px); opacity: 0; } to { transform: none; opacity: 1; } }
 
 .puzzle-chip {
@@ -1171,7 +1122,6 @@ html, body, #root {
   border-left: 1px solid rgba(255,255,255,.09); padding-left: 16px;
 }
 .ana-cost-main { font-size: 21px; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; white-space: nowrap; flex: 0 0 auto; }
-.ana-cost-main--ok { font-size: 13px; font-weight: 600; color: #7fd48a; }
 .ana-cost-unit { font-size: 11px; font-weight: 600; opacity: .65; }
 
 .ana-known { flex: 0 0 auto; width: 132px; }

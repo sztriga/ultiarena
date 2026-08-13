@@ -3,22 +3,23 @@
 // The value net scores your talon vs the optimal one. Combo multiplier, rising difficulty.
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 
-import { api } from "./api";
+import { api, errDetail } from "./api";
 import type { PuzzleState, PuzzleResult } from "./api";
-import type { Card, Rank, Suit } from "./cards";
-import { cardFromId, SUIT_SYMBOL } from "./cards";
+import type { Card, Rank } from "./cards";
+import { cardFromId, SUIT_HUN, SUIT_SYMBOL } from "./cards";
 import { HandView } from "./CardView";
 
-const RANK_SHORT: Record<Rank, string> = {
+// Compact rank initials — the puzzle chips are tiny. (playChrome.RANK_SHORT is the
+// spelled-out Hungarian used everywhere else; suit names come from cards.SUIT_HUN.)
+const RANK_INITIAL: Record<Rank, string> = {
   "7": "7", "8": "8", "9": "9", lower: "J", upper: "Q", king: "K", "10": "10", ace: "A",
 };
-const SUIT_HU: Record<Suit, string> = { hearts: "piros", acorns: "makk", leaves: "zöld", bells: "tök" };
 
 function Chip({ card }: { card: Card }) {
   return (
     <span className="puzzle-chip">
       <span className={`trump-symbol trump-${card.suit}`}>{SUIT_SYMBOL[card.suit]}</span>
-      <span className="puzzle-chip-rank">{RANK_SHORT[card.rank]}</span>
+      <span className="puzzle-chip-rank">{RANK_INITIAL[card.rank]}</span>
     </span>
   );
 }
@@ -40,6 +41,7 @@ export function PuzzleRush({ onExit }: { onExit: () => void }) {
   const [flash, setFlash] = useState<PuzzleResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [remain, setRemain] = useState(0);
+  const [error, setError] = useState<string | null>(null);
 
   const deadlineRef = useRef<number>(0);
   const flashTimer = useRef<number | null>(null);
@@ -47,7 +49,9 @@ export function PuzzleRush({ onExit }: { onExit: () => void }) {
   const busyRef = useRef(false);
   const gidRef = useRef<string | null>(null);
   const endRef = useRef<() => void>(() => {});
-  gidRef.current = state?.game_id ?? null;
+  // Refs are written in an effect, never during render (a render-phase write is
+  // the classic double-invoke footgun even when it happens to be idempotent).
+  useEffect(() => { gidRef.current = state?.game_id ?? null; }, [state]);
 
   const endGame = useCallback(async () => {
     if (endedRef.current) return;
@@ -58,18 +62,21 @@ export function PuzzleRush({ onExit }: { onExit: () => void }) {
       try { setState(await api.puzzleEnd(gid)); } catch { /* keep last snapshot */ }
     }
   }, []);
-  endRef.current = endGame;
+  useEffect(() => { endRef.current = endGame; }, [endGame]);
 
   const start = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       const s = await api.puzzleNew();
       deadlineRef.current = performance.now() + s.time_left * 1000;
       endedRef.current = false;
       busyRef.current = false;
+      gidRef.current = s.game_id;      // submit() may fire before the effect runs
       setState(s); setPicked([]); setFlash(null); setRemain(s.time_left);
       setPhase("play");
     } catch (e) {
+      setError(errDetail(e, "Nem sikerült elindítani — próbáld újra."));
       setPhase("intro");
     } finally { setLoading(false); }
   }, []);
@@ -86,8 +93,11 @@ export function PuzzleRush({ onExit }: { onExit: () => void }) {
       }
       setState(s); setPicked([]);
       if (s.done) endRef.current();
-    } catch { /* ignore transient */ }
-    finally { busyRef.current = false; }
+    } catch (e) {
+      // a dropped submit costs the player a puzzle — say so instead of freezing
+      setError(errDetail(e, "Nem sikerült elküldeni — próbáld újra."));
+      setPicked([]);
+    } finally { busyRef.current = false; }
   }, []);
 
   // auto-submit once two cards are picked
@@ -125,7 +135,10 @@ export function PuzzleRush({ onExit }: { onExit: () => void }) {
 
   const shell = (body: ReactNode) => (
     <div className="app betli-hu-game play-vs-ai puzzle-rush">
-      <main className="main puzzle-main">{body}</main>
+      <main className="main puzzle-main">
+        {error && <div className="error puzzle-error">{error}</div>}
+        {body}
+      </main>
     </div>
   );
 
@@ -142,8 +155,7 @@ export function PuzzleRush({ onExit }: { onExit: () => void }) {
           <li>Ahogy nő a pontszám, <b>nehezednek</b> a feladványok.</li>
         </ul>
         <div className="puzzle-actions">
-          <button className="betli-hu-deal-btn" onClick={start} disabled={loading}
-                  style={{ background: "#7c3aed" }}>
+          <button className="betli-hu-deal-btn betli-hu-deal-btn--puzzle" onClick={start} disabled={loading}>
             {loading ? "…" : "Start"}
           </button>
           <button className="btn puzzle-back" onClick={onExit}>Vissza</button>
@@ -164,8 +176,7 @@ export function PuzzleRush({ onExit }: { onExit: () => void }) {
           <span>leghosszabb sorozat <b>{state?.best_combo ?? 0}</b></span>
         </div>
         <div className="puzzle-actions">
-          <button className="betli-hu-deal-btn" onClick={start} disabled={loading}
-                  style={{ background: "#7c3aed" }}>
+          <button className="betli-hu-deal-btn betli-hu-deal-btn--puzzle" onClick={start} disabled={loading}>
             {loading ? "…" : "Újra"}
           </button>
           <button className="btn puzzle-back" onClick={onExit}>Vissza</button>
@@ -201,7 +212,7 @@ export function PuzzleRush({ onExit }: { onExit: () => void }) {
               <span className="puzzle-contract">{pz.contract_label}</span>
               {pz.trump && (
                 <span className="puzzle-adu"> — adu:{" "}
-                  <b className={`trump-${pz.trump}`}>{SUIT_HU[pz.trump]}</b>
+                  <b className={`trump-${pz.trump}`}>{SUIT_HUN[pz.trump]}</b>
                 </span>
               )}
             </div>

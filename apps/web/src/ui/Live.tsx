@@ -8,7 +8,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { api, type LiveChatMsg, type LivePoll, type LiveTable } from "./api";
+import { api, errDetail, type LiveChatMsg, type LivePoll, type LiveTable } from "./api";
 import { getAuth, setAuth, type Auth } from "./auth";
 import { deviceId } from "./device";
 
@@ -44,9 +44,7 @@ function AuthPanel({ onAuthed, onExit }: { onAuthed: (a: Auth) => void; onExit: 
       const r = await call({ username, password, device_id: deviceId() });
       onAuthed({ token: r.token, username: r.username });
     } catch (e) {
-      // surface only the backend's Hungarian detail, not the raw HTTP noise
-      const m = String(e).match(/\{"detail":"([^"]+)"\}/);
-      setError(m ? m[1] : "Nem sikerült — próbáld újra.");
+      setError(errDetail(e, "Nem sikerült — próbáld újra."));
     } finally { setBusy(false); }
   }, [mode, username, password, busy, onAuthed]);
 
@@ -136,8 +134,7 @@ function Lobby({ auth, onExit, onLogout, onEnterGame }: {
   const act = useCallback(async (fn: () => Promise<unknown>) => {
     try { await fn(); await poll(); }
     catch (e) {
-      const m = String(e).match(/\{"detail":"([^"]+)"\}/);
-      setError(m ? m[1] : "Nem sikerült.");
+      setError(errDetail(e, "Nem sikerült."));
     }
   }, [poll]);
 

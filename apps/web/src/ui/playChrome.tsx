@@ -25,6 +25,10 @@ export const TRUMP_LABEL = (s: string | null | undefined): string =>
 export const KONTRA_WORD: Record<number, string> = { 0: "", 1: "kontra", 2: "rekontra" };
 // Play-index → role name (0 = soloist). Used by the play log and seat labels.
 export const ROLE_LABEL: Record<number, string> = { 0: "Játékos", 1: "Védő 1", 2: "Védő 2" };
+/** A silent (csendes) contract as one chip of text — "csendes ulti +4". Used by the
+ *  result panel and the match scorecard, which must read the same. */
+export const silentLabel = (s: { label: string; gp: number }): string =>
+  `${s.label} ${s.gp >= 0 ? "+" : ""}${s.gp}`;
 // Compact Hungarian rank labels for the play log.
 export const RANK_SHORT: Record<Rank, string> = {
   "7": "7", "8": "8", "9": "9", lower: "alsó", upper: "felső", king: "király", "10": "10", ace: "ász",

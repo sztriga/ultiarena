@@ -6,7 +6,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { api, type MeGame, type MeStats } from "./api";
+import { api, errDetail, type MeGame, type MeStats } from "./api";
 import { getAuth, setAuth, type Auth } from "./auth";
 import { deviceId } from "./device";
 import { AnalysisBoard } from "./playPanels";
@@ -49,13 +49,14 @@ export function Profile({ onExit }: { onExit: () => void }) {
     try {
       const r = await api.meGames(deviceId(), cursor, PAGE);
       setGames(r.games); setNextCursor(r.next_cursor); setError(null);
-    } catch (e) { setError(String(e)); }
+    } catch (e) { setError(errDetail(e)); }
   }, []);
 
-  useEffect(() => {
-    loadPage(cursorStack[cursorStack.length - 1]);
-    api.meStats(deviceId()).then(setStats).catch(() => {});
-  }, [auth, cursorStack, loadPage]);
+  // The page follows the pager; the stats don't — they cover ALL your games, so
+  // paging through the list must not refetch (and re-render) them.
+  useEffect(() => { loadPage(cursorStack[cursorStack.length - 1]); },
+            [cursorStack, loadPage]);
+  useEffect(() => { api.meStats(deviceId()).then(setStats).catch(() => {}); }, [auth]);
 
   const saveNick = useCallback(async () => {
     if (nickDraft === null || !auth) return;
@@ -64,8 +65,7 @@ export function Profile({ onExit }: { onExit: () => void }) {
       const a = { ...auth, username: r.username };
       setAuth(a); setAuthState(a); setNickDraft(null); setError(null);
     } catch (e) {
-      const m = String(e).match(/\{"detail":"([^"]+)"\}/);
-      setError(m ? m[1] : "Nem sikerült átnevezni.");
+      setError(errDetail(e, "Nem sikerült átnevezni."));
     }
   }, [nickDraft, auth]);
 

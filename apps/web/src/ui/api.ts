@@ -20,6 +20,13 @@ async function http<T>(method: string, path: string, body?: unknown): Promise<T>
   return resp.json() as Promise<T>;
 }
 
+/** The backend's Hungarian message out of a thrown error — every API failure the
+ *  user sees goes through here, so nobody is shown raw HTTP noise. */
+export function errDetail(e: unknown, fallback?: string): string {
+  const m = String(e).match(/\{"detail":"([^"]+)"\}/);
+  return m ? m[1] : (fallback ?? String(e));
+}
+
 // ── Perfect-information solver probe ──────────────────────────────────────
 
 export interface PisPVStep {
