@@ -55,7 +55,6 @@ export function PlayVsAI() {
   const [ongoing, setOngoing] = useState<PlayOngoing[]>([]);        // this browser's live games (splash resume)
 
   const [selPos,   setSelPos]   = useState<number | null>(null);   // index into legal_bids
-  const [selTrump, setSelTrump] = useState<string | null>(null);
   const [discards, setDiscards] = useState<Set<number>>(new Set());
   const [showCard, setShowCard] = useState(false);                 // scorecard popup
   const [showCaptured, setShowCaptured] = useState(false);         // captured-cards popup
@@ -159,10 +158,7 @@ export function PlayVsAI() {
     if (!isBidTurn) return;
     setDiscards(new Set());
     const bids = auction?.legal_bids ?? [];
-    const pos = bids.length ? 0 : null;
-    setSelPos(pos);
-    const b = pos !== null ? bids[pos] : null;
-    setSelTrump(b && b.trump_options.length ? b.trump_options[0] : null);
+    setSelPos(bids.length ? 0 : null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bidTurnKey]);
 
@@ -281,7 +277,7 @@ export function PlayVsAI() {
       }
     } catch (e) { setError(String(e)); }
     finally { setLoading(false); }
-  }, [state, selBid, selTrump, discards, settleInto]);
+  }, [state, selBid, discards, settleInto]);
 
   // Auction step (overcall): pick the talon up to bid, or decline without it.
   const onPickup = useCallback(async () => {
@@ -517,7 +513,7 @@ export function PlayVsAI() {
       ? (state.usernames?.[auction.turn] ?? `P${auction.turn}`) : null;
     const auctionPanel = (
       <AuctionPanel auction={auction} seat={state.seat} selPos={selPos}
-                    setSelPos={setSelPos} setSelTrump={setSelTrump} selBid={selBid}
+                    setSelPos={setSelPos} selBid={selBid}
                     discards={discards} canConfirm={canConfirm} loading={loading}
                     onConfirm={onConfirm} onAuctionPass={onAuctionPass} onPickup={onPickup}
                     waitingName={waitingName} />
@@ -647,14 +643,11 @@ export function PlayVsAI() {
   // The kontra decision lives in the SIDEBAR box — the same slot that later shows the
   // result — rather than over the table (milan 2026-08-11: reverted from the mid-field
   // modal). It is easy to miss there, so the box flashes and glows red when it appears.
-  const kontraModal = null;
-
   return (
     <div className="app betli-hu-game play-vs-ai">
       <main className="main">
         <section className="play-col-main">
           {error && <div className="error">{error}</div>}
-          {kontraModal}
 
           <UltiTable
             hands={tableHands}

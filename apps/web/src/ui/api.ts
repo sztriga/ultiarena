@@ -333,7 +333,6 @@ export interface PuzzleState {
 }
 
 export const api = {
-  health:   () => http<{ status: string }>("GET", "/health"),
   pisExplore:      (req: PisExploreRequest)      => http<PisExploreResponse>("POST", "/pis/explore", req),
   playNew:    (req: PlayNewRequest)                        => http<PlayState>("POST", "/play/new", req),
   playBid:    (req: PlayBidRequest)                        => http<PlayState>("POST", "/play/bid", req),
@@ -369,7 +368,6 @@ export const api = {
   tableStart:   (table_id: string)   => http<{ game_id: string }>("POST", "/live/table/start", { table_id }),
   puzzleNew:   ()                                            => http<PuzzleState>("POST", "/puzzle/new"),
   puzzleSolve: (req: { game_id: string; discard_ids: number[] }) => http<PuzzleState>("POST", "/puzzle/solve", req),
-  puzzleState: (game_id: string)                            => http<PuzzleState>("GET",  `/puzzle/state/${game_id}`),
   puzzleEnd:   (game_id: string)                            => http<PuzzleState>("POST", `/puzzle/end/${game_id}`),
 };
 

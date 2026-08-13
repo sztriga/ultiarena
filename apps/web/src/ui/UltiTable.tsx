@@ -14,9 +14,7 @@ import { cardLabel, cardUrl, type Card } from "./cards";
 export interface SeatChrome {
   /** Inline label content (name, role tag, etc.). */
   label: ReactNode;
-  /** Optional speech-bubble text shown over the seat. */
-  bubble?: string | null;
-  /** Optional pre-rendered (timed) bubble node — takes precedence over `bubble`. */
+  /** Optional pre-rendered (timed) speech-bubble node shown over the seat. */
   bubbleNode?: ReactNode;
 }
 
@@ -39,11 +37,6 @@ export interface UltiTableProps {
   legalIds:     Set<number> | null;
   /** Click handler. Cards not in `legalIds` swallow the click. */
   onCardClick?: (card: Card) => void;
-
-  /** Highlight a single card in the soloist hand (e.g., last-played). */
-  highlightId?: number;
-  /** When the trick has 3 cards and the winner is known, highlights that slot. */
-  trickWinner?: 0 | 1 | 2 | null;
 
   /** Optional content above the defender row (contract badge, alt marker, …). */
   aboveDefenders?: ReactNode;
@@ -72,7 +65,6 @@ export interface UltiTableProps {
 }
 
 function SeatHand({
-  pid,
   cards,
   chrome,
   isActive,
@@ -80,7 +72,6 @@ function SeatHand({
   onCardClick,
   hidden = false,
 }: {
-  pid:         1 | 2;
   cards:       Card[];
   chrome:      SeatChrome;
   isActive:    boolean;
@@ -88,7 +79,6 @@ function SeatHand({
   onCardClick: ((c: Card) => void) | undefined;
   hidden?:     boolean;
 }) {
-  void pid;
   const click = isActive ? onCardClick : undefined;
   return (
     <div className={`ulti-ai-hand ${isActive ? "is-active" : ""}`}>
@@ -110,9 +100,7 @@ function SeatHand({
             })}
       </div>
       <div className="ulti-bubble-anchor">
-        {chrome.bubbleNode ?? (chrome.bubble && (
-          <div className="ulti-speech-bubble ulti-bubble-in">{chrome.bubble}</div>
-        ))}
+        {chrome.bubbleNode}
       </div>
     </div>
   );
@@ -123,7 +111,6 @@ function SoloistHand({
   chrome,
   isActive,
   legalIds,
-  highlightId,
   selectedIds,
   markIds,
   onCardClick,
@@ -133,7 +120,6 @@ function SoloistHand({
   chrome:      SeatChrome;
   isActive:    boolean;
   legalIds:    Set<number> | null;
-  highlightId: number | undefined;
   selectedIds?: Set<number>;
   markIds?:     Set<number>;
   onCardClick: ((c: Card) => void) | undefined;
@@ -156,14 +142,7 @@ function SoloistHand({
   return (
     <div className="ulti-bottom-seat">
       <div className="ulti-bubble-anchor" style={{ height: 0, position: "relative" }}>
-        {chrome.bubbleNode ?? (chrome.bubble && (
-          <div
-            className="ulti-speech-bubble ulti-bubble-in"
-            style={{ top: -36 }}
-          >
-            {chrome.bubble}
-          </div>
-        ))}
+        {chrome.bubbleNode}
       </div>
       <div className={`ulti-player-role ${isActive ? "" : "muted"}`}>
         {chrome.label}
@@ -176,7 +155,6 @@ function SoloistHand({
         <HandView
           cards={cards}
           size="hand"
-          highlightId={highlightId}
           dimIds={dimIds}
           playableIds={playableIds}
           selectedIds={selectedIds}
@@ -191,12 +169,10 @@ function SoloistHand({
 
 function TrickArea({
   currentTrick,
-  trickWinner,
   seatNames,
   bottomSeat = 0,
 }: {
   currentTrick: TrickPlay[];
-  trickWinner:  0 | 1 | 2 | null | undefined;
   seatNames:    { 0: string; 1: string; 2: string };
   bottomSeat?:  0 | 1 | 2;
 }) {
@@ -212,12 +188,10 @@ function TrickArea({
     <div className="ulti-trick-area">
       {order.map((pid) => {
         const play = slots[pid];
-        const isWinner =
-          currentTrick.length === 3 && play !== undefined && trickWinner === pid;
         return (
-          <div key={pid} className={`ulti-trick-slot ${isWinner ? "is-winner" : ""}`}>
+          <div key={pid} className="ulti-trick-slot">
             <div className="ulti-trick-player">
-              {seatNames[pid]}{isWinner ? " ★" : ""}
+              {seatNames[pid]}
             </div>
             {play
               ? <CardView card={play.card} size="trick" />
@@ -258,8 +232,6 @@ export function UltiTable(props: UltiTableProps) {
     activePlayer,
     legalIds,
     onCardClick,
-    highlightId,
-    trickWinner,
     aboveDefenders,
     belowTrick,
     seatNames,
@@ -283,7 +255,6 @@ export function UltiTable(props: UltiTableProps) {
       {aboveDefenders}
       <div className="ulti-ai-row">
         <SeatHand
-          pid={top1 === 0 ? 1 : (top1 as 1 | 2)}
           cards={hands[top1]}
           chrome={seats[top1]}
           isActive={activePlayer === top1}
@@ -292,7 +263,6 @@ export function UltiTable(props: UltiTableProps) {
           hidden={isHidden(top1)}
         />
         <SeatHand
-          pid={top2 === 0 ? 2 : (top2 as 1 | 2)}
           cards={hands[top2]}
           chrome={seats[top2]}
           isActive={activePlayer === top2}
@@ -304,7 +274,6 @@ export function UltiTable(props: UltiTableProps) {
       {!hideTrick && (
         <TrickArea
           currentTrick={currentTrick}
-          trickWinner={trickWinner}
           seatNames={seatNames}
           bottomSeat={bottomSeat}
         />
@@ -315,7 +284,6 @@ export function UltiTable(props: UltiTableProps) {
         chrome={seats[bottomSeat]}
         isActive={activePlayer === bottomSeat}
         legalIds={activePlayer === bottomSeat ? legalIds : null}
-        highlightId={highlightId}
         selectedIds={selectedIds}
         markIds={markIds}
         onCardClick={onCardClick}

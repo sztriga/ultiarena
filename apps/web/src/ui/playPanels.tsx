@@ -411,14 +411,13 @@ export function AnalysisBoard({ analysis, analysisView, effectivePlies, branch,
 // The auction overlay: current bid, history, and the human's bid controls
 // (select + trump badge + confirm / passz / Felveszem). Verbatim from PlayVsAI;
 // selection state stays in the parent.
-export function AuctionPanel({ auction, seat, selPos, setSelPos, setSelTrump, selBid,
+export function AuctionPanel({ auction, seat, selPos, setSelPos, selBid,
                                discards, canConfirm, loading,
                                onConfirm, onAuctionPass, onPickup, waitingName = null }: {
   auction: NonNullable<PlayState["auction"]>;
   seat: number;
   selPos: number | null;
   setSelPos: (p: number | null) => void;
-  setSelTrump: (t: string | null) => void;
   selBid: PlayLegalBid | null;
   discards: Set<number>;
   canConfirm: boolean;
@@ -473,11 +472,7 @@ export function AuctionPanel({ auction, seat, selPos, setSelPos, setSelTrump, se
             </div>
             <div className="ulti-bid-select-row">
               <select className="ulti-bid-select" value={selPos ?? ""}
-                      onChange={(e) => {
-                        const pos = Number(e.target.value); setSelPos(pos);
-                        const b = auction.legal_bids?.[pos];
-                        setSelTrump(b && b.trump_options.length ? b.trump_options[0] : null);
-                      }}>
+                      onChange={(e) => setSelPos(Number(e.target.value))}>
                 {(auction.legal_bids ?? []).map((b, i) => (
                   <option key={`${b.kind}:${b.rung_index}:${b.bid_index}`} value={i}>
                     {b.label}{b.kind === "bid" ? ` — ${b.value}p` : ""}

@@ -50,9 +50,7 @@ export function makeFixtureApi() {
     pisExplore: async () => { throw new Error("pisExplore not in this fixture"); },
     puzzleNew: async () => puzzleFixture,
     puzzleSolve: async () => { throw new Error("puzzleSolve not in this fixture"); },
-    puzzleState: async () => puzzleFixture,
     puzzleEnd: async () => puzzleFixture,
-    health: async () => ({ status: "ok" }),
   };
 
   return {
