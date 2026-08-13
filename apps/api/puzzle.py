@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import itertools
 import random
+import sys
 import time
 import uuid
 from collections import deque
@@ -231,8 +232,11 @@ class PuzzleSession:
                         self.queue.append(pz)
                 else:
                     time.sleep(0.02)
-            except Exception:
-                time.sleep(0.05)      # never let the filler die on a transient error
+            except Exception as e:
+                # never let the filler die — but a repeating error must be findable,
+                # not a silent forever-spinning thread (the recording.py convention)
+                print(f"[puzzle] filler error: {e!r}", file=sys.stderr, flush=True)
+                time.sleep(0.05)
 
     def _next_puzzle(self) -> Optional[Puzzle]:
         with self.lock:

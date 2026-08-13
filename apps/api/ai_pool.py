@@ -26,7 +26,9 @@ from __future__ import annotations
 
 import atexit
 import os
+import sys
 from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures.process import BrokenProcessPool
 from multiprocessing import get_context
 from threading import RLock
 from typing import Any
@@ -63,4 +65,14 @@ def run(op: str, job: dict) -> Any:
     if AI_WORKERS <= 0:
         with solver_lock:
             return ai_worker.dispatch(op, job)
-    return _get_pool().submit(ai_worker.dispatch, op, job).result()
+    try:
+        return _get_pool().submit(ai_worker.dispatch, op, job).result()
+    except BrokenProcessPool:
+        # One crashed worker (a Cython segfault) poisons the whole executor and every
+        # future AI decision with it. Discard it, rebuild once, retry this job.
+        global _pool
+        with _pool_lock:
+            _pool = None
+        print(f"[ai_pool] worker pool broke on {op!r} — rebuilding",
+              file=sys.stderr, flush=True)
+        return _get_pool().submit(ai_worker.dispatch, op, job).result()

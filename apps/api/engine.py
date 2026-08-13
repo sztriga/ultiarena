@@ -8,7 +8,6 @@ dependency graph stays a fan (engine <- flows <- routes), never a cycle.
 import time
 import uuid
 from contextlib import contextmanager
-from pathlib import Path
 from threading import RLock
 from typing import Dict, List, Optional
 
@@ -19,21 +18,17 @@ from fastapi import HTTPException
 # bidding imports below, so the library sees the deployed defaults; explicit env wins.
 # Champion config re-tuned 2026-07-22 on the FIXED bidder (post the auction.py generator
 # bug that unlocked non-piros contracts); true head-to-head +0.40 GP/game (exp30/exp32).
-from ulti.config import apply_deploy_defaults, env_bool, env_float, env_int
+from ulti.config import apply_deploy_defaults, env_bool, env_int
 apply_deploy_defaults()
 
 from ulti.bidding.ladder import GPTable, contract_name  # noqa: E402
 from ulti.bidding.deal import deal_12_10_10  # noqa: E402
+from ulti.card import SUIT_HU as _SUIT_HU  # noqa: E402  (one source for suit names)
 try:
     from ulti.betli import defense as _exp36  # noqa: E402  (exp36 betli-defense net; models/ulti/betli/betli_defense.pt)
 except Exception:  # pragma: no cover
     _exp36 = None
 
-_REPO = Path(__file__).resolve().parents[2]
-
-
-_PIMC_N = env_int("PLAY_PIMC_N", 16)
-_KONTRA_NDET = env_int("PLAY_KONTRA_NDET", 6)
 _GP = GPTable()
 
 # ── Exploitative soloist play (exp31 — the champion's biggest play-side lever) ──
@@ -45,30 +40,14 @@ _GP = GPTable()
 # GP/deal vs a fallible defender, 0 regression vs a perfect one, ~1.3-1.6 s/move. Gated OFF
 # on terített (open hand → no hidden info to exploit + amplified stakes). EXPLOIT=0 disables.
 _EXPLOIT      = env_bool("EXPLOIT", True)          # deployed ON = the frontier
-# Modeled human mistake rate. Retuned 0.30 → 0.15 (overnight exp33 robustness matrix, 2026-07-23):
-# a LOW modeled ε dominates — pooled strength gain +0.75 vs +0.34 GP/deal (t+3.3), AND it's the only
-# value that stays safe against a near-perfect defender (over-modeling — assuming the opponent is
-# sloppier than they are — set aggressive traps that BACKFIRE vs strong defense). Conservative
-# modeling captures the easy traps without gambling on unlikely mistakes.
-_EXPLOIT_EPS  = env_float("EXPLOIT_EPS", 0.15)
-_EXPLOIT_NW   = env_int("EXPLOIT_NW", 16)        # sampled worlds per decision
-_EXPLOIT_FRAC = env_float("EXPLOIT_FRAC", 0.10)  # safe-set slack (rel. to value spread)
+# (the exploit tuning knobs — EXPLOIT_EPS/NW/FRAC — live where they are read: ai_worker)
 
-# ── exp37: imperfect/bluff PLAIN betli bidding — PROMOTED 2026-07-24 (BETLI_REAL_BID=0 reverts).
-# The bidder scores PLAIN betli by a REALISTIC-defense make-prob (not the god double-dummy), so it
-# bids the cheap 5p betli on hands that make vs imperfect defenders (exp38 ladder: 5.9% of bids,
-# +4.84 GP/bid; ~+0.16 GP/game). rebetli/terített keep the god prob (they're voluntary doublings).
-_BETLI_REAL_BID = env_bool("BETLI_REAL_BID", True)
 # ── exp36: learned betli-DEFENSE net for a PLAIN (hidden-info) betli — PROMOTED 2026-07-24 (BETLI_DEF=0
 # reverts to PIMC). −21pp soloist steal vs PIMC (benchmark). Scoped to PLAIN betli — terített betli is
 # already defended near-god by the reveal (must_hold). Falls back to PIMC if the net is unavailable.
+# (the exp37/39 betli/rebetli BIDDING gates live in ulti.bidding.frontier, which owns
+#  the deployed bidder configuration — see _bid_fn below.)
 _BETLI_DEF = env_bool("BETLI_DEF", True)
-# ── exp39: extend the realistic-defense prob to REBETLI (the HIDDEN 10p doubling) — PROMOTED 2026-07-25
-# (REBETLI_REAL_BID=0 reverts). Lets the AI escalate betli→rebetli when its realistic make is near-certain
-# (gated behind REBETLI_FLOOR=0.90, higher than plain betli's 0.80). exp39 self-play: rebetli 8.5% of bids,
-# +8.14 GP/bid, does NOT cannibalise ulti; head-to-head vs the rebetli-off frontier +0.16 GP/game (within
-# noise → ~neutral, mildly +). This is the human-like "bid betli, escalate to rebetli when confident" move.
-_REBETLI_REAL_BID = env_bool("REBETLI_REAL_BID", True)
 # ── anti-tell: randomise inside an equivalence block (MIX_EQUIV=0 reverts). Whatever picks
 # the card — PIMC, the exp36 net, the exploit soloist — deterministically returns the same
 # member of a provably-equivalent run, which leaks "I hold nothing above this". Mixing is
@@ -104,8 +83,7 @@ def _bid_fn():
             # bidder instead of an accidental uncalibrated one. milan 2026-08-02.
             from ulti.bidding.frontier import frontier_bid_fn, frontier_provider
             _provider_obj = frontier_provider()
-            _bid_fn_obj = frontier_bid_fn(_provider_obj, betli_real=_BETLI_REAL_BID,
-                                          rebetli_real=_REBETLI_REAL_BID)
+            _bid_fn_obj = frontier_bid_fn(_provider_obj)
         return _bid_fn_obj
 
 
@@ -144,8 +122,7 @@ class Session:
         self.device_id: Optional[str] = None
         self.seat = seat            # the user's real auction seat (0/1/2)
         self.seed = seed
-        self.redeals = 0            # dead-deal (all-pass) re-deals in this session
-        self.phase = "bid"          # bid -> (kontra -> play -> done); all-pass re-deals in place
+        self.phase = "bid"          # bid → (trump_select) → play ⇄ kontra → done | passed
 
         # ── auction state (real-seat space) ──
         sol12, d1, d2 = deal_12_10_10(seed)
@@ -221,9 +198,40 @@ def _reap_idle_sessions() -> None:
         _sessions.pop(gid, None)
 
 
-from ulti.card import SUIT_HU as _SUIT_HU  # noqa: E402  (one source for suit names)
+def _install_session(sess: "Session", request, owner: Optional[str] = None) -> None:
+    """EVERY session enters the store through here — solo /play/new, a live table,
+    an API match — so the reap + cap-guard + insert are one critical section on
+    every path (limits.guard_new_session contract). ``owner`` overrides the cap key
+    for sessions not owned by the request IP ("live:<table>", "api:<key>")."""
+    from .limits import guard_new_session
+    with _sessions_lock:
+        _reap_idle_sessions()
+        sess.owner_ip = guard_new_session(
+            request, _sessions, lambda s: getattr(s, "owner_ip", None), owner=owner)
+        _sessions[sess.id] = sess
 
 
+def solve_plan(bid, trump: Optional[str], sol_cards: Optional[list] = None) -> tuple:
+    """Contract → solver objective, stated ONCE: (solve_c, build_c, trump, restrict,
+    weights). Live play setup, recorded-game analysis and the public rules kernel all
+    map through here — three hand-written copies of this drifted apart once already.
+
+    betli solves as betli; a PURE colorless durchmars (no ulti/100 rider — trump is
+    None exactly for the colorless rungs) as durchmars; everything else as the
+    weighted "multi" objective built on a parti position, with the 100-games'
+    marriage restriction. ``weights`` needs the soloist's cards; pass None when the
+    caller only builds a position (the public /legal / /score kernel)."""
+    if bid.betli:
+        return ("betli", "betli", None, None, None)
+    if bid.durchmars and trump is None and not (bid.ulti or bid.forty_hundred
+                                                or bid.twenty_hundred):
+        return ("durchmars", "durchmars", None, None, None)
+    restrict = "40" if bid.forty_hundred else ("20" if bid.twenty_hundred else None)
+    weights = None
+    if sol_cards is not None:
+        from ulti.bidding.scorers import _play_weights
+        weights = _play_weights(bid, sol_cards, trump)
+    return ("multi", "parti", trump, restrict, weights)
 
 
 def _recipe(sess: "Session") -> dict:
@@ -266,7 +274,7 @@ def _get(game_id: str) -> Session:
     with _sessions_lock:
         sess = _sessions.get(game_id)
     if sess is None:
-        raise HTTPException(status_code=404, detail=f"unknown game_id {game_id}")
+        raise HTTPException(status_code=404, detail="Nincs ilyen játszma.")
     sess.last_touch = time.time()
     return sess
 

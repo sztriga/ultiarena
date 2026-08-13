@@ -6,14 +6,14 @@ from typing import Dict, List, Optional
 from ulti.bidding.ladder import overcalls
 from ulti.bidding.bidder import rung_ev
 from ulti.bidding.auction import PASS_PENALTY
-from ulti.bidding.scorers import resolve_bidset, _play_weights
+from ulti.bidding.scorers import resolve_bidset
 from ulti.solvers import pis as pis_bridge
 from ulti.solvers import determinize as _det
 from ulti.scoring.units import kontra_units as _kontra_units
 from ulti.card import TRUMP_CHOICES
 from fastapi import HTTPException
 
-from .engine import Session, _GP, _SUIT_HU, _bid_fn, _bid_label, _provider
+from .engine import Session, _GP, _SUIT_HU, _bid_fn, _bid_label, _provider, solve_plan
 from .ai_play import _advance_play, _record_session
 
 
@@ -57,13 +57,56 @@ def _apply_bid(sess: Session, pid: int, bundle: tuple, bid_override=None) -> Non
     })
 
 
+def _require_marriage_for_100(chosen, hand10: list, trump: Optional[str]) -> None:
+    """A 100-game needs the marriage in hand. With a known trump (piros) check it
+    exactly; with a deferred trump, require the marriage exists in SOME suit you
+    could pick (else the contract is impossible whatever you choose)."""
+    from ulti.bidding.recipe import sol_marriages
+    if chosen is None or not (chosen.forty_hundred or chosen.twenty_hundred):
+        return
+    if trump is not None:
+        has40, has20 = sol_marriages(hand10, trump)
+    else:
+        marr = [sol_marriages(hand10, t) for t in TRUMP_CHOICES]
+        has40 = any(m[0] for m in marr)
+        has20 = any(m[1] for m in marr)
+    if chosen.forty_hundred and not has40:
+        raise HTTPException(status_code=400,
+                            detail="Nincs meg a 40 (adu király + felső) a 40-100-hoz.")
+    if chosen.twenty_hundred and not has20:
+        raise HTTPException(status_code=400,
+                            detail="Nincs meg a 20 (király + felső pár) a 20-100-hoz.")
+
+
+def _pass_decline(sess: Session, pid: int) -> None:
+    """Auction-step pass: decline WITHOUT picking up — the talon is untouched."""
+    sess.a_history.append({"pid": pid, "kind": "pass"})
+    sess.a_passes += 1
+    sess.a_turn = (pid + 1) % 3
+    _advance_auction(sess)
+
+
+def _pass_bury(sess: Session, pid: int, discard_ids: List[int]) -> None:
+    """Bid-step passz (forehand opening / picked-up): bury 2 of your 12 as the talon
+    the next player picks up, then the pass proceeds as usual."""
+    cards12 = list(sess.a_hands[pid]) + list(sess.a_talon)
+    discard = [c for c in cards12 if c.id in discard_ids]
+    if len(discard) != 2:
+        raise HTTPException(status_code=400,
+                            detail="Jelölj ki 2 lapot a talonba a passz előtt.")
+    sess.a_hands[pid] = [c for c in cards12 if c.id not in discard_ids]
+    sess.a_talon = discard
+    sess.a_awaiting_bid = False
+    _pass_decline(sess, pid)
+
+
 def _human_bundle(sess: Session, rung, trump: Optional[str], discard_ids: List[int],
                   seat: Optional[int] = None) -> tuple:
     seat = sess.seat if seat is None else seat
     cards12 = list(sess.a_hands[seat]) + list(sess.a_talon)
     discard = [c for c in cards12 if c.id in discard_ids]
     if len(discard) != 2:
-        raise HTTPException(status_code=400, detail="must discard exactly 2 of your 12 cards")
+        raise HTTPException(status_code=400, detail="Pontosan 2 lapot tegyél a talonba.")
     hand10 = [c for c in cards12 if c.id not in discard_ids]
     # EV for the AI's overcall threshold. A colored contract whose trump is
     # DEFERRED (you pick the suit after the auction) is scored at the BEST over the
@@ -75,7 +118,7 @@ def _human_bundle(sess: Session, rung, trump: Optional[str], discard_ids: List[i
         ev = rung_ev(rung, _provider().base_probs(hand10, "hearts"), _GP)
     else:                                        # non-piros colored → best over 3 suits
         cand = [rung_ev(rung, _provider().base_probs(hand10, t), _GP)
-                for t in ("acorns", "leaves", "bells")]
+                for t in TRUMP_CHOICES]
         cand = [e for e in cand if e is not None]
         ev = max(cand) if cand else None
     ev = float(ev) if ev is not None else float(rung.value)
@@ -201,15 +244,7 @@ def _setup_play(sess: Session) -> None:
     sess.bid = bid
     sess.bid_name = _bid_label(bid)
 
-    n_trick = int(bid.ulti) + int(bid.durchmars) + int(bid.betli)
-    if bid.betli:
-        solve_c, build_c, t, restrict, weights = "betli", "betli", None, None, None
-    elif bid.durchmars and rung.colorless and n_trick == 1:
-        solve_c, build_c, t, restrict, weights = "durchmars", "durchmars", None, None, None
-    else:
-        solve_c, build_c, t = "multi", "parti", trump
-        restrict = "40" if bid.forty_hundred else ("20" if bid.twenty_hundred else None)
-        weights = _play_weights(bid, sol, trump)
+    solve_c, build_c, t, restrict, weights = solve_plan(bid, trump, sol)
 
     sess.p_solve_contract = solve_c
     sess.p_build_contract = build_c

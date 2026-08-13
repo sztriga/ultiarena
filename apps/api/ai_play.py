@@ -4,13 +4,13 @@
 import random
 import sys
 import time
-from typing import List
+from typing import List, Optional
 
 from ulti.bidding.scorers import _primary_made
 from ulti.solvers import pis as pis_bridge
 from ulti.solvers.blocks import equivalent_moves
 from ulti.scoring.oracle import score as score_oracle
-from ulti.card import card_from_id
+from ulti.card import card_from_id, sort_hand
 
 from .serialize import card_to_dict
 from .engine import Session, _BETLI_DEF, _EXPLOIT, _MIX_EQUIV, _exp36, _recipe
@@ -128,6 +128,52 @@ def _advance_play(sess: Session) -> None:
         pis_bridge.apply_move(sess.p_pos, ch)
         _record_play(sess, p, ch, by_ai=True)
     _finish(sess)
+
+
+# ── Analysis (the god-solver post-mortem board) ─────────────────────────────────
+
+def analysis_payload(raw: List[dict], *, game_id: str, contract: Optional[str],
+                     solve_c: str, build_c: str, restrict: Optional[str],
+                     weights: Optional[dict], trump: Optional[str],
+                     hands0: List[list], talon: list, human_pi: int, by_ai) -> dict:
+    """The analysis response, built ONCE for both boards — the live post-game
+    (play.play_analysis) and the profile's recorded-game replay (me.game_analysis).
+    The two used to hand-roll this and drifted (gp_seat_after went missing from
+    /me). ``by_ai(row)`` says whether a ply was an AI's move: the live game reads
+    its own history, a recording reads its players list."""
+    per_ply: List[dict] = []
+    for row in raw:
+        per_ply.append({
+            "ply_index": row["ply_index"], "player_id": row["player_id"],
+            "chosen_card": card_to_dict(card_from_id(row["chosen_card_id"])),
+            "god_best_card": card_to_dict(card_from_id(row["god_best_card_id"])),
+            "god_best_value": row["god_best_value"],
+            "god_chosen_value": row["god_chosen_value"],
+            "is_blunder": row["is_blunder"],
+            "legal_card_ids": row["legal_card_ids"],
+            "by_ai": bool(by_ai(row)),
+            # GP verdict — what the move actually cost, and how much of that was findable
+            "gp_chosen": row.get("gp_chosen"), "gp_best": row.get("gp_best"),
+            "gp_seat_after": row.get("gp_seat_after"),
+            "gp_loss": row.get("gp_loss"), "gp_swing": row.get("gp_swing"),
+            "gp_loss_knowable": row.get("gp_loss_knowable"),
+            "severity": row.get("severity"),
+            "gp_best_card": (card_to_dict(card_from_id(row["gp_best_card_id"]))
+                             if row.get("gp_best_card_id") is not None else None),
+        })
+    return {
+        "game_id": game_id,
+        "contract": contract,
+        # everything /pis/explore needs to fork a line off this exact deal:
+        "solve_contract": solve_c, "build_contract": build_c,
+        "marriage_restrict": restrict, "multi_weights": weights,
+        "declare_marriages": trump is not None,
+        "soloist": 0, "human_play_index": human_pi, "leader": 0, "trump": trump,
+        "initial_hands": [[card_to_dict(c) for c in sort_hand(h, trump is None)]
+                          for h in hands0],
+        "talon": [card_to_dict(c) for c in talon],
+        "per_ply": per_ply,
+    }
 
 
 _SILENT_LABEL = {

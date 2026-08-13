@@ -1,20 +1,9 @@
 """
-Perfect-information solver endpoint.
+Perfect-information solver endpoint — POST /api/pis/explore.
 
-POST /api/pis/probe
-    Generate a (currently betli-only) biased deal, solve it face-up with
-    the ultisolver Cython alpha-beta solver, return the verdict + every
-    legal opening move's value + the principal variation + diagnostics.
-
-POST /api/pis/explore
-    "What if?" branch exploration. Replays a sequence of moves on the
-    initial deal, then forces a specific card and returns the optimal
-    continuation.
-
-Today both endpoints solve only Betli (full 10-card, no trimming — the
-Cython solver is hardcoded to 10 tricks). The plumbing is contract-aware
-end to end (``solvers.pis`` accepts a ``contract`` arg), so adding the
-contract dropdown later is just exposing it through the request schema.
+"What if?" branch exploration for the analysis board: replay a sequence of moves
+on the initial deal, force a specific card, return the optimal continuation.
+Contract-aware end to end (betli / parti / durchmars / the weighted "multi").
 """
 from __future__ import annotations
 
@@ -31,16 +20,6 @@ from .serialize import card_to_dict
 
 router = APIRouter()
 
-
-# ──────────────────────────────────────────────────────────────────────────────
-# Helpers
-# ──────────────────────────────────────────────────────────────────────────────
-
-
-
-# ──────────────────────────────────────────────────────────────────────────────
-# Branch exploration
-# ──────────────────────────────────────────────────────────────────────────────
 
 class PisExploreRequest(BaseModel):
     hands:           List[List[int]]    # 3 lists of card_ids — initial deal
@@ -88,22 +67,20 @@ def pis_explore(req: PisExploreRequest) -> Dict:
                 card = card_from_id(cid)
                 if card not in pis_bridge.legal_actions(p):
                     raise HTTPException(status_code=400,
-                                        detail=f"Replay failed at card id {cid}: not legal here.")
+                                        detail=f"Visszajátszási hiba: a(z) {cid} lap itt nem játszható.")
                 pis_bridge.apply_move(p, card)
             return p
 
         pos = _fresh()
         if pis_bridge.is_terminal(pos):
-            raise HTTPException(status_code=400, detail="Game already over — nothing to explore.")
+            raise HTTPException(status_code=400, detail="A játszma véget ért — nincs mit elemezni.")
 
         forced        = card_from_id(req.forced_card_id)
         forced_player = pis_bridge.current_player(pos)
         legal_now     = pis_bridge.legal_actions(pos)
         if forced not in legal_now:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Card {req.forced_card_id} is not a legal play for player {forced_player} here.",
-            )
+            raise HTTPException(status_code=400,
+                                detail=f"A(z) {req.forced_card_id} lap itt nem játszható.")
 
         n_played = len(req.moves)
         forced_step: Dict = {
@@ -155,26 +132,3 @@ def pis_explore(req: PisExploreRequest) -> Dict:
             "soloist_takes":  soloist_takes_alt,
             "verdict":        verdict,
         }
-
-
-# ──────────────────────────────────────────────────────────────────────────────
-# PIMC play-through with god annotations
-# ──────────────────────────────────────────────────────────────────────────────
-# All three seats are played by PIMC (each seeing only its own info set).
-# At every ply the god solver is consulted on the *true* full-info position
-# to label the chosen move as a blunder or not.
-#
-# Blunder (for betli, binary outcome):
-#     soloist on move: best_value == 10 (could have won)
-#                      but chosen_value < 10 (PIMC's pick loses).
-#     defender on move: best_value < 10 (defenders could win)
-#                      but chosen_value == 10 (PIMC threw it away).
-# In other words: the move flipped a previously-decided outcome the wrong way.
-
-
-
-_BETLI_WIN_VAL = 10.0
-
-
-
-

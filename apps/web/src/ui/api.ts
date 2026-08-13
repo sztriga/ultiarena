@@ -345,7 +345,7 @@ export const api = {
   playMove:   (req: { game_id: string; card_id: number }) => http<PlayState>("POST", "/play/move", req),
   playState:  (game_id: string)                            => http<PlayState>("POST", "/play/state", { game_id }),
   playMine:   (device_id: string)                          => http<{ games: PlayOngoing[] }>("POST", "/play/mine", { device_id }),
-  playDelete: (game_id: string)                            => http<{ deleted: boolean }>("DELETE", `/play/session/${game_id}`),
+  playDelete: (game_id: string, device_id: string)         => http<{ deleted: boolean }>("DELETE", `/play/session/${game_id}?device=${device_id}`),
   authRegister: (req: { username: string; password: string; device_id?: string }) =>
     http<{ token: string; username: string }>("POST", "/auth/register", req),
   authLogin:    (req: { username: string; password: string; device_id?: string }) =>

@@ -14,24 +14,23 @@ creation/steps (each step may run real AI in the empty chairs).
 from __future__ import annotations
 
 import random
-import sqlite3
 from typing import Dict, List, Optional
 
 from fastapi import FastAPI, HTTPException, Request
 from pydantic import BaseModel, Field
 
 from ulti.bidding.deal import deal_12_10_10
-from ulti.bidding.ladder import overcalls, contract_name
+from ulti.bidding.ladder import BIDS_BY_NAME
 from ulti.card import RANK_HU, RANKS, SUIT_HU, SUITS, card_from_id
 from ulti.scoring.oracle import score as oracle_score
 from ulti.scoring.units import kontra_units
 from ulti.solvers import pis as pis_bridge
 
 from . import play as play_routes
-from . import recording
 from .apikeys import check_key_rate, require_key
 from .apikeys import router as keys_router
-from .engine import Session, _sessions, _sessions_lock
+from .engine import Session, _install_session, solve_plan
+from .recording import games_db
 from .auction_flow import _advance_auction
 
 v1 = FastAPI(
@@ -84,13 +83,6 @@ A card is a number from 0 to 31: `suit = id // 8`, `rank = id % 8`.
 )
 v1.include_router(keys_router)
 
-# name → BidSet for every game on the ladder (the wire names are the display names,
-# e.g. "piros ulti", "40-100-duri", "rebetli").
-_BIDS: Dict[str, object] = {}
-for _r in overcalls(None):
-    for _b in _r.bids:
-        _BIDS.setdefault(contract_name(_b), _b)
-
 
 # ── Rules kernel (class: free) ──────────────────────────────────────────────────
 
@@ -122,20 +114,13 @@ class PositionRequest(BaseModel):
 
 
 def _rebuild(req: PositionRequest):
-    bid = _BIDS.get(req.contract)
+    bid = BIDS_BY_NAME.get(req.contract)
     if bid is None:
         raise HTTPException(status_code=400,
                             detail=f"ismeretlen kontraktus: {req.contract!r}")
-    if bid.betli:
-        build_c, trump, restrict = "betli", None, None
-    elif bid.durchmars and not (bid.ulti or bid.forty_hundred or bid.twenty_hundred) \
-            and req.trump is None:
-        build_c, trump, restrict = "durchmars", None, None
-    else:
-        if req.trump is None:
-            raise HTTPException(status_code=400, detail="ehhez a játékhoz adu kell")
-        build_c, trump = "parti", req.trump
-        restrict = "40" if bid.forty_hundred else ("20" if bid.twenty_hundred else None)
+    _solve_c, build_c, trump, restrict, _w = solve_plan(bid, req.trump)
+    if build_c == "parti" and trump is None:
+        raise HTTPException(status_code=400, detail="ehhez a játékhoz adu kell")
     if sorted(len(h) for h in req.hands) != [10, 10, 10] or len(req.talon) != 2:
         raise HTTPException(status_code=400, detail="3×10 lap + 2 talon kell")
     pos = pis_bridge.build_position(
@@ -194,11 +179,6 @@ def score(req: ScoreRequest, request: Request = None) -> dict:
 
 # ── Dataset (class: free) ───────────────────────────────────────────────────────
 
-def _games_db() -> sqlite3.Connection:
-    recording._db()                       # ensure the file + schema exist
-    return sqlite3.connect(f"file:{recording._DB_PATH}?mode=ro", uri=True)
-
-
 @v1.get("/games", tags=["dataset"])
 def games(request: Request = None, contract: Optional[str] = None,
           since: Optional[float] = None, limit: int = 100,
@@ -219,7 +199,7 @@ def games(request: Request = None, contract: Optional[str] = None,
     if cond:
         q += " WHERE " + " AND ".join(cond)
     q += " ORDER BY created_at DESC LIMIT ?"; args.append(limit)
-    con = _games_db()
+    con = games_db()
     rows = con.execute(q, args).fetchall()
     con.close()
     out = [{"id": r[0], "created_at": r[1], "contract": r[2], "trump": r[3],
@@ -236,7 +216,7 @@ def game(game_id: str, request: Request = None) -> dict:
     import json as _json
     ident = require_key(request)
     check_key_rate(ident["key_id"], "free")
-    con = _games_db()
+    con = games_db()
     r = con.execute("SELECT id, created_at, seed, contract, trump, soloist_seat, "
                     "human_seat, kontra_level, winner, made, seat_gp, players, transcript "
                     "FROM games WHERE id = ?", (game_id,)).fetchone()
@@ -281,13 +261,15 @@ def match_create(req: MatchRequest, request: Request = None) -> dict:
     sess.players = {s: {"user_id": ident["user_id"], "username": ident["username"]}
                     for s in humans}
     sess.players_by_user = {ident["user_id"]: min(humans)}
-    sess.owner_ip = f"api:{ident['key_id']}"        # recording gate + attribution
-    with _sessions_lock:
-        _sessions[sess.id] = sess
-    _advance_auction(sess)                 # frontier chairs may act immediately
-    sess.rev += 1
+    # owner "api:<key>" = the recording gate, attribution AND the per-owner session
+    # cap (one key can't park unbounded matches); the global cap applies too.
+    _install_session(sess, request, owner=f"api:{ident['key_id']}")
+    with sess.lock:                        # the id is live the moment it's stored
+        _advance_auction(sess)             # frontier chairs may act immediately
+        sess.rev += 1
+        rev = sess.rev
     return {"match_id": sess.id, "seed": seed,
-            "my_seats": sorted(humans), "rev": sess.rev}
+            "my_seats": sorted(humans), "rev": rev}
 
 
 @v1.get("/matches/{match_id}", tags=["matches"])

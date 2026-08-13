@@ -42,9 +42,12 @@ _inflight: Dict[str, int] = {}
 _last_sweep = 0.0
 
 # Requests that make the AI think — these are the ones worth metering hard.
+# ("/api/me/games/" with the slash matches only the per-game analysis, not the list;
+#  "/api/v1/matches" covers create + act — each step may run real AI in the empty chairs.)
 _HEAVY = ("/api/play/move", "/api/play/new", "/api/play/bid", "/api/play/pass",
           "/api/play/kontra", "/api/play/trump", "/api/play/analysis",
-          "/api/puzzle/new", "/api/puzzle/solve", "/api/pis/explore")
+          "/api/puzzle/new", "/api/puzzle/solve", "/api/pis/explore",
+          "/api/me/games/", "/api/v1/matches")
 
 
 def client_ip(request: Optional[Request]) -> str:
@@ -138,9 +141,11 @@ async def limit_middleware(request: Request, call_next):
 
 
 def guard_new_session(request: Optional[Request], sessions: dict, owner_of,
-                      on_evict=None) -> str:
-    """Called before creating a game/puzzle; returns the owning IP so the caller can
-    tag the new session.
+                      on_evict=None, owner: Optional[str] = None) -> str:
+    """Called before creating a game/puzzle; returns the owner key so the caller can
+    tag the new session. The key defaults to the client IP; a caller whose sessions
+    are owned by something else (a live table "live:<id>", an API key "api:<id>")
+    passes ``owner`` so the per-owner cap counts THOSE sessions.
 
     CONTRACT: the caller must hold its sessions lock across guard + insert (one
     critical section), otherwise two concurrent creates can both pass the cap check
@@ -155,7 +160,7 @@ def guard_new_session(request: Optional[Request], sessions: dict, owner_of,
     ``owner_of(session) -> ip``; ``on_evict(session)`` releases resources (a puzzle
     session owns a background thread).
     """
-    ip = client_ip(request)
+    ip = owner if owner is not None else client_ip(request)
     if RATE_LIMIT_RPM <= 0 or request is None:      # local/in-process caller → no caps
         return ip
     if len(sessions) >= MAX_SESSIONS_TOTAL:

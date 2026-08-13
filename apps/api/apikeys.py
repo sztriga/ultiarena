@@ -49,9 +49,15 @@ CREATE TABLE IF NOT EXISTS api_keys (
 """
 
 
+_schema_on = None                  # the connection the DDL has run on
+
+
 def _db():
+    global _schema_on
     con = users._db()
-    con.executescript(_SCHEMA)
+    if con is not _schema_on:      # once per CONNECTION (tests swap the DB), not per request
+        con.executescript(_SCHEMA)
+        _schema_on = con
     return con
 
 
@@ -97,8 +103,7 @@ def check_key_rate(key_id: str, cls: str) -> None:
 def require_key(request: Request) -> dict:
     """The calling key's identity, or 401. Browser tokens are NOT keys — the public
     API is key-only so usage is always attributable to a mintable, revocable thing."""
-    auth = (request.headers.get("authorization", "") if request else "")
-    token = auth[7:].strip() if auth.lower().startswith("bearer ") else ""
+    token = users.bearer_token(request)
     if not token.startswith("ua_"):
         raise HTTPException(status_code=401,
                             detail="API-kulcs kell (Authorization: Bearer ua_…).")
@@ -116,8 +121,7 @@ class MintRequest(BaseModel):
 
 @router.post("/keys")
 def mint_key(req: MintRequest, request: Request = None) -> dict:
-    auth = (request.headers.get("authorization", "") if request else "")
-    if auth[7:].strip().startswith("ua_"):
+    if users.bearer_token(request).startswith("ua_"):
         raise HTTPException(status_code=403, detail="Kulcs nem hozhat létre kulcsot.")
     user = users.require_user(request)
     token = "ua_" + os.urandom(20).hex()

@@ -161,24 +161,31 @@ def _next_kontra_offer(sess: Session):
     return None
 
 
+def _apply_kontra_choice(sess: Session, role: str, pidx: int, chosen: List[str]) -> None:
+    """Apply a made kontra/rekontra decision — the ONE state mutation + announcement
+    bubble, whoever decided (an AI seat below, the human via /play/kontra)."""
+    if role == "def":
+        sess.k_off[pidx] = True
+        for U in chosen:
+            sess.k_def[U][pidx] = True
+    else:                                # soloist rekontra
+        sess.k_rk_off = True
+        for U in chosen:
+            sess.k_rekontra[U] = True
+    if chosen:
+        labels = ", ".join(_UNIT_HU.get(U, U) for U in chosen)
+        word, player, ply = (("Kontra", pidx, pidx) if role == "def"
+                             else ("Rekontra", 0, 3))
+        sess.bubbles.append({"player": player, "text": f"{word}! ({labels})", "ply": ply})
+    _recompute_k_level(sess)
+
+
 def _apply_kontra_ai(sess: Session, role: str, pidx: int, avail: List[str]) -> None:
     """A non-human seat's per-unit kontra/rekontra decision (own-hand makeability)."""
     if role == "def":
-        sess.k_off[pidx] = True
         hit = [U for U in avail if _ai_defender_kontras_unit(sess, pidx, U)]
-        for U in hit:
-            sess.k_def[U][pidx] = True
-        if hit:
-            labels = ", ".join(_UNIT_HU.get(U, U) for U in hit)
-            sess.bubbles.append({"player": pidx, "text": f"Kontra! ({labels})", "ply": pidx})
-    else:                                # soloist rekontra
-        sess.k_rk_off = True
+    else:
         hit = [U for U in avail if _ai_soloist_rekontras_unit(sess, U)]
-        for U in hit:
-            sess.k_rekontra[U] = True
-        if hit:
-            labels = ", ".join(_UNIT_HU.get(U, U) for U in hit)
-            sess.bubbles.append({"player": 0, "text": f"Rekontra! ({labels})", "ply": 3})
-    _recompute_k_level(sess)
+    _apply_kontra_choice(sess, role, pidx, hit)
 
 

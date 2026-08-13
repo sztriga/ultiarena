@@ -267,6 +267,16 @@ def overcalls(current: Optional[Rung]) -> List[Rung]:
     return [r for r in LADDER if r.index > floor]
 
 
+BIDS_BY_NAME: dict = {}
+for _r in LADDER:
+    for _b in _r.bids:
+        BIDS_BY_NAME.setdefault(contract_name(_b), _b)
+del _r, _b
+# name → BidSet for every game on the ladder. The names ARE the wire/display names
+# ("piros ulti", "40-100-duri", "rebetli") — the public API and the recorded-game
+# analysis both resolve stored contract names through this one map.
+
+
 # Pass economics (milan): passing the would-be soloist forfeits −2/def — NOT a
 # neutral floor. gps = [-4, +2, +2] (P0 pays 2 to each opponent). Piros parti's
 # EV/def = 4p-2 ties the pass at p=0 and beats it for any p>0 → you bid the

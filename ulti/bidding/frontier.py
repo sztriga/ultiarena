@@ -25,9 +25,14 @@ from typing import Optional
 
 from ulti.config import env_bool
 
-# Deployed promotion gates (mirrored from apps/api/engine.py, which now imports these).
-BETLI_REAL_BID = env_bool("BETLI_REAL_BID", True)      # exp37, promoted 2026-07-24
-REBETLI_REAL_BID = env_bool("REBETLI_REAL_BID", True)  # exp39, promoted 2026-07-25
+# Deployed promotion gates — the ONE place these are read; the app builds its bidder
+# through frontier_bid_fn and inherits them.
+# exp37 (promoted 2026-07-24): PLAIN betli is scored by a REALISTIC-defense make-prob
+# (not the god double-dummy) → bids the cheap 5p betli that makes vs imperfect defense.
+# exp39 (promoted 2026-07-25): the same realistic prob extends to REBETLI (the hidden
+# 10p doubling), gated behind REBETLI_FLOOR=0.90. Set the env to 0 to revert either.
+BETLI_REAL_BID = env_bool("BETLI_REAL_BID", True)
+REBETLI_REAL_BID = env_bool("REBETLI_REAL_BID", True)
 
 
 def _repo_root() -> str:

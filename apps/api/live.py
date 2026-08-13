@@ -229,7 +229,7 @@ def table_start(req: TableRequest, request: Request = None) -> dict:
     import random as _random
 
     from .auction_flow import _advance_auction
-    from .engine import Session, _sessions, _sessions_lock
+    from .engine import Session, _install_session, _sessions, _sessions_lock
 
     user = require_user(request)
     with _lock:
@@ -260,12 +260,15 @@ def table_start(req: TableRequest, request: Request = None) -> dict:
         sess.live = True
         sess.players = players
         sess.players_by_user = {p["user_id"]: seat for seat, p in players.items()}
-        sess.owner_ip = f"live:{t['id']}"     # passes the recording gate; not an IP
-        with _sessions_lock:
-            _sessions[sess.id] = sess
+        # owner "live:<table>" = the recording gate, attribution AND the per-owner
+        # session cap (a table's old rounds count against it, not the host's IP).
+        _install_session(sess, request, owner=f"live:{t['id']}")
         t["game_id"] = sess.id
         t["state"] = "playing"
         t["round"] = rnd + 1
-    _advance_auction(sess)                    # AI chairs may open the bidding at once
-    sess.rev += 1
+    # Under the session's lock: the table members' polls can adopt the game_id the
+    # moment live._lock is released above — the opening AI turns must not race them.
+    with sess.lock:
+        _advance_auction(sess)                # AI chairs may open the bidding at once
+        sess.rev += 1
     return {"game_id": sess.id}

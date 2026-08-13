@@ -199,7 +199,7 @@ export function PlayVsAI() {
 
   const onDiscardGame = useCallback((gid: string) => {
     setOngoing((o) => o.filter((g) => g.game_id !== gid));   // optimistic
-    api.playDelete(gid).catch(() => {});
+    api.playDelete(gid, deviceId()).catch(() => {});
   }, []);
 
   // ── Live (lobby-table) game plumbing ──────────────────────────────────────
@@ -238,14 +238,14 @@ export function PlayVsAI() {
     const next = (rotate ? (state.seat + 1) % 3 : state.seat) as Seat;
     const old = state.game_id;
     setLoading(true); setError(null); setPending(null); resetBubbles();
-    try { setState(await api.playNew({ seat: next, device_id: deviceId() })); api.playDelete(old).catch(() => {}); }
+    try { setState(await api.playNew({ seat: next, device_id: deviceId() })); api.playDelete(old, deviceId()).catch(() => {}); }
     catch (e) { setError(String(e)); }
     finally { setLoading(false); }
   }, [state, resetBubbles, liveCtx]);
 
   const onAbandon = useCallback(async () => {
     if (liveCtx) { onExitLive(); return; }                // shared game — never delete it
-    if (state) await api.playDelete(state.game_id).catch(() => {});
+    if (state) await api.playDelete(state.game_id, deviceId()).catch(() => {});
     setState(null); setError(null); setPending(null); resetBubbles();
     setRounds([]); recordedGame.current = null;
   }, [state, resetBubbles, liveCtx, onExitLive]);

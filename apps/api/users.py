@@ -108,15 +108,18 @@ def _issue_token(user_id: str, username: str) -> str:
     return token
 
 
+def bearer_token(request: Optional[Request]) -> str:
+    """The Authorization bearer token, or "" — the ONE place the header is parsed."""
+    if request is None:
+        return ""
+    auth = request.headers.get("authorization", "")
+    return auth[7:].strip() if auth.lower().startswith("bearer ") else ""
+
+
 def user_from_request(request: Optional[Request]) -> Optional[dict]:
     """{user_id, username} for a valid bearer token; None for anonymous/in-process.
     The cheap, everywhere-safe identity hook (decision: identity fills in)."""
-    if request is None:
-        return None
-    auth = request.headers.get("authorization", "")
-    if not auth.lower().startswith("bearer "):
-        return None
-    token = auth[7:].strip()
+    token = bearer_token(request)
     if not token:
         return None
     if token.startswith("ua_"):        # an API key IS an identity (docs/PUBLIC_API.md)
@@ -198,8 +201,7 @@ def login(req: Credentials, request: Request = None) -> dict:
 
 @router.post("/auth/logout")
 def logout(request: Request = None) -> dict:
-    auth = (request.headers.get("authorization", "") if request else "")
-    token = auth[7:].strip() if auth.lower().startswith("bearer ") else ""
+    token = bearer_token(request)
     if token:
         with _lock:
             _db().execute("DELETE FROM tokens WHERE token = ?", (token,))
@@ -217,8 +219,6 @@ def devlogin(request: Request = None) -> dict:
     """LOCAL development only: a named account with zero typing (milan 2026-08-11 —
     "when I test locally, let's assume I'm already logged in"). Enabled by the
     DEV_AUTOLOGIN env (the account name); refuses non-local callers; 404 in prod."""
-    from ulti.config import env_str
-
     name = env_str("DEV_AUTOLOGIN")
     ip = client_ip(request)
     if not name or ip not in ("local", "127.0.0.1", "::1", "testclient", "unknown"):

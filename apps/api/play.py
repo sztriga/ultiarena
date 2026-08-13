@@ -3,25 +3,24 @@ Play — interactive full-ladder Ulti against the frontier champion.
 
 The user picks a seat (P0 / P1 / P2), then plays a complete game:
 
-  1. AUCTION   — the full 33-rung ladder. ANY seat may open (forehand = P0 acts
-                 first; if all three pass the deal is dead → redeal). On your turn
-                 you bid a higher contract + trump + discard 2, or pass; the two AI
-                 seats bid with the frontier net-bidder (FLOOR=0.7, kontra-aware).
-                 We reimplement the exp-23 auction loop so we can pause on the
-                 user's turn and resolve all AI turns synchronously in one request.
-  2. KONTRA    — for simple contracts (parti/ulti/betli/durchmars) the defenders may
-                 kontra and the soloist rekontra. AI decides hand-based (own-hand
-                 makeability, cheat-clean); the user gets Kontra/Rekontra buttons.
-                 Kontra is a pure scoring multiplier — play is unchanged.
-  3. PLAY      — the winning contract is played out. AI = frontier PIMC; user plays
-                 their own cards. Mirrors the betli_hu engine (pis bridge).
-  4. SCORE     — scoring/oracle.py, with the kontra level applied.
+  1. AUCTION   — the full ladder. ANY seat may open (forehand acts first); if all
+                 three pass, the deal is SCORED as passz (the forehand pays) and the
+                 next hand rotates the dealer. The AI seats bid with the frontier
+                 net-bidder (deployed profile in ulti.config, kontra-aware). The
+                 auction loop pauses on the user's turn and resolves all AI turns
+                 synchronously in one request (auction_flow).
+  2. KONTRA    — interleaved with trick 1, PER UNIT: a combined game exposes every
+                 committed unit separately (kontra_flow). AI decides hand-based
+                 (own-hand signals, cheat-clean); the user gets buttons.
+  3. PLAY      — the winning contract is played out. AI = frontier PIMC + the exp36
+                 betli-defense net; the user plays their own cards (pis bridge).
+  4. SCORE     — scoring/oracle.py, with the per-unit kontra levels applied.
 
 Cheat-clean: every AI decision (bid, kontra, play) sees only its own hand + public
 info. The frontier net-bidder ignores the `others` hands; PIMC and the kontra
 makeability estimate pool+reshuffle the hidden cards. God is never used here.
 
-Sessions live in-memory; restart the server to clear them.
+Sessions live in-memory with an idle TTL (engine._reap_idle_sessions).
 """
 from __future__ import annotations
 
@@ -31,26 +30,23 @@ import time
 from typing import List, Optional
 
 from ulti.bidding.ladder import overcalls
-from ulti.bidding.recipe import sol_marriages
 from ulti.solvers import pis as pis_bridge
-from ulti.scoring.units import kontra_units as _kontra_units  # noqa: F401  (re-export: tests/ulti/test_kontra_units.py)
-from ulti.card import card_from_id, sort_hand
+from ulti.card import TRUMP_CHOICES, card_from_id
 from ulti.config import env_int
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 
-from .serialize import card_to_dict
-from .limits import guard_new_session
 from .users import user_from_request
 from .engine import (
-    Session, _hold, _play_index, _reap_idle_sessions, _recipe, _sessions,
+    Session, _hold, _install_session, _play_index, _recipe, _sessions,
     _sessions_lock, _viewer_seat,
 )
 from .auction_flow import (
-    _advance_auction, _apply_bid, _human_bundle, _resolve_auction, _setup_play,
+    _advance_auction, _apply_bid, _human_bundle, _pass_bury, _pass_decline,
+    _require_marriage_for_100, _resolve_auction, _setup_play,
 )
-from .kontra_flow import _recompute_k_level, _UNIT_HU
-from .ai_play import _advance_play, _record_play
+from .kontra_flow import _apply_kontra_choice
+from .ai_play import _advance_play, _record_play, analysis_payload
 from . import ai_pool
 from .snapshots import _snapshot
 
@@ -76,15 +72,12 @@ def play_new(req: NewRequest, request: Request = None) -> dict:
     user = user_from_request(request)             # logged in → the recording carries it
     sess.players = {req.seat: {"user_id": user["user_id"] if user else None,
                                "username": user["username"] if user else None}}
-    with _sessions_lock:
-        _reap_idle_sessions()           # cheap O(n) sweep on the rare new-game call
-        # guard + insert under ONE lock hold — the cap check and the insert must be
-        # atomic or concurrent creates can both pass and overshoot the cap.
-        sess.owner_ip = guard_new_session(
-            request, _sessions, lambda s: getattr(s, "owner_ip", None))
-        _sessions[sess.id] = sess
-    _advance_auction(sess)
-    snap = _snapshot(sess)
+    _install_session(sess, request)
+    # Under the session's own lock: /play/mine can already list this game (same
+    # device, second tab), so the opening AI turns must not race a /play/state.
+    with sess.lock:
+        _advance_auction(sess)
+        snap = _snapshot(sess)
     snap["setup_ms"] = (time.perf_counter() - t0) * 1000.0
     return snap
 
@@ -103,22 +96,22 @@ def play_bid(req: BidRequest, request: Request = None) -> dict:
     with _hold(req.game_id) as sess:
         viewer = _viewer_seat(sess, request)
         if sess.phase != "bid" or sess.a_done:
-            raise HTTPException(status_code=400, detail="not in the bidding phase")
+            raise HTTPException(status_code=400, detail="Nem licitfázis.")
         if sess.a_turn != viewer:
-            raise HTTPException(status_code=400, detail="not your turn to bid")
+            raise HTTPException(status_code=400, detail="Nem te következel.")
         if not sess.a_awaiting_bid:
-            raise HTTPException(status_code=400, detail="pick the talon up before bidding")
+            raise HTTPException(status_code=400, detail="Előbb vedd fel a talont.")
 
         current = sess.a_current["rung"] if sess.a_current else None
         legal = {r.index: r for r in overcalls(current)}
         rung = legal.get(req.rung_index)
         if rung is None:
-            raise HTTPException(status_code=400, detail="that contract is not a legal overcall")
+            raise HTTPException(status_code=400, detail="Ez nem érvényes emelés.")
         # pick the specific game on this rung (None → resolve from hand)
         if req.bid_index is None:
             chosen = None
         elif not (0 <= req.bid_index < len(rung.bids)):
-            raise HTTPException(status_code=400, detail="invalid bid_index for this rung")
+            raise HTTPException(status_code=400, detail="Érvénytelen bid_index ezen a fokon.")
         else:
             chosen = rung.bids[req.bid_index]
         # Trump color is NOT declared during bidding for a plain colored game — you
@@ -132,21 +125,7 @@ def play_bid(req: BidRequest, request: Request = None) -> dict:
             trump = None                    # deferred → chosen in trump_select
 
         bundle = _human_bundle(sess, rung, trump, req.discard_ids, seat=viewer)
-        # A 100-game needs the marriage in hand. With a known trump (piros) check it
-        # exactly; with a deferred trump, require the marriage exists in SOME suit you
-        # could pick (else the contract is impossible whatever you choose).
-        if chosen is not None and (chosen.forty_hundred or chosen.twenty_hundred):
-            hand10 = bundle[4]
-            if trump is not None:
-                has40, has20 = sol_marriages(hand10, trump)
-            else:
-                marr = [sol_marriages(hand10, t) for t in ("acorns", "leaves", "bells")]
-                has40 = any(m[0] for m in marr)
-                has20 = any(m[1] for m in marr)
-            if chosen.forty_hundred and not has40:
-                raise HTTPException(status_code=400, detail="you don't hold a 40 (trump K+Q) for a 40-100 game")
-            if chosen.twenty_hundred and not has20:
-                raise HTTPException(status_code=400, detail="you don't hold a 20 (K+Q pair) for a 20-100 game")
+        _require_marriage_for_100(chosen, bundle[4], trump)
         _apply_bid(sess, viewer, bundle, bid_override=chosen)
         sess.a_awaiting_bid = False
         sess.a_passes = 0
@@ -170,14 +149,14 @@ def play_pickup(req: PickupRequest, request: Request = None) -> dict:
     with _hold(req.game_id) as sess:
         viewer = _viewer_seat(sess, request)
         if sess.phase != "bid" or sess.a_done:
-            raise HTTPException(status_code=400, detail="not in the bidding phase")
+            raise HTTPException(status_code=400, detail="Nem licitfázis.")
         if sess.a_turn != viewer:
-            raise HTTPException(status_code=400, detail="not your turn")
+            raise HTTPException(status_code=400, detail="Nem te következel.")
         if sess.a_awaiting_bid:
-            raise HTTPException(status_code=400, detail="you already hold the talon")
+            raise HTTPException(status_code=400, detail="Már nálad a talon.")
         current = sess.a_current["rung"] if sess.a_current else None
         if not overcalls(current):
-            raise HTTPException(status_code=400, detail="no higher bid available — accept or pass")
+            raise HTTPException(status_code=400, detail="Nincs magasabb licit — fogadd el vagy passzolj.")
         sess.a_awaiting_bid = True        # → bid step; turn stays with you
         sess.a_picked_up = True           # ring the 2 cards you just took up
         sess.rev += 1
@@ -197,36 +176,18 @@ def play_pass(req: PassRequest, request: Request = None) -> dict:
     with _hold(req.game_id) as sess:
         viewer = _viewer_seat(sess, request)
         if sess.phase != "bid" or sess.a_done:
-            raise HTTPException(status_code=400, detail="not in the bidding phase")
+            raise HTTPException(status_code=400, detail="Nem licitfázis.")
         if sess.a_turn != viewer:
-            raise HTTPException(status_code=400, detail="not your turn to bid")
+            raise HTTPException(status_code=400, detail="Nem te következel.")
         holder = sess.a_current is not None and sess.a_current["pid"] == viewer
-        if holder:
-            # Kezdés / Elfogadom — accept your winning bid, start play. No new discard.
-            _resolve_auction(sess)
-        elif sess.a_reclaim_offered and sess.a_current is None:
-            # Forehand's reclaim declined → the deal is dead → re-deal a fresh hand (same dealer).
+        if holder or (sess.a_reclaim_offered and sess.a_current is None):
+            # Kezdés / Elfogadom (accept your winning bid, start play) — or the
+            # forehand declining the reclaim → the deal is dead, scored as passz.
             _resolve_auction(sess)
         elif sess.a_awaiting_bid:
-            # Bid step (forehand opening / picked-up): passz buries 2 → the talon the
-            # next player picks up.
-            cards12 = list(sess.a_hands[viewer]) + list(sess.a_talon)
-            discard = [c for c in cards12 if c.id in req.discard_ids]
-            if len(discard) != 2:
-                raise HTTPException(status_code=400, detail="select 2 cards to bury as the talon before passing")
-            sess.a_hands[viewer] = [c for c in cards12 if c.id not in req.discard_ids]
-            sess.a_talon = discard
-            sess.a_awaiting_bid = False
-            sess.a_history.append({"pid": viewer, "kind": "pass"})
-            sess.a_passes += 1
-            sess.a_turn = (viewer + 1) % 3
-            _advance_auction(sess)
+            _pass_bury(sess, viewer, req.discard_ids)    # bid step: bury 2, pass
         else:
-            # Auction step: decline WITHOUT picking up — the talon is untouched.
-            sess.a_history.append({"pid": viewer, "kind": "pass"})
-            sess.a_passes += 1
-            sess.a_turn = (viewer + 1) % 3
-            _advance_auction(sess)
+            _pass_decline(sess, viewer)                  # auction step: talon untouched
         sess.rev += 1
         snap = _snapshot(sess, viewer)
     snap["step_ms"] = (time.perf_counter() - t0) * 1000.0
@@ -245,11 +206,11 @@ def play_trump(req: TrumpRequest, request: Request = None) -> dict:
     with _hold(req.game_id) as sess:
         viewer = _viewer_seat(sess, request)
         if sess.phase != "trump_select":
-            raise HTTPException(status_code=400, detail="not choosing a trump")
+            raise HTTPException(status_code=400, detail="Nem adu-választás van.")
         if viewer != sess.a_winner:
-            raise HTTPException(status_code=400, detail="a győztes választ adut")
-        if req.trump not in ("acorns", "leaves", "bells"):
-            raise HTTPException(status_code=400, detail="pick makk / zöld / tök")
+            raise HTTPException(status_code=400, detail="A győztes választ adut.")
+        if req.trump not in TRUMP_CHOICES:
+            raise HTTPException(status_code=400, detail="tök / zöld / makk közül válassz")
         sess.a_current["trump"] = req.trump
         _setup_play(sess)
         _advance_play(sess)
@@ -273,9 +234,9 @@ def play_kontra(req: KontraRequest, request: Request = None) -> dict:
     with _hold(req.game_id) as sess:
         viewer = _viewer_seat(sess, request)
         if sess.phase != "kontra" or sess.k_next is None:
-            raise HTTPException(status_code=400, detail="no kontra decision pending")
+            raise HTTPException(status_code=400, detail="Nincs függő kontra döntés.")
         if sess.k_next["play_index"] != _play_index(sess, viewer):
-            raise HTTPException(status_code=400, detail="nem a te kontra döntésed")
+            raise HTTPException(status_code=400, detail="Nem a te kontra döntésed.")
         role = sess.k_next["role"]
         pidx = sess.k_next["play_index"]
         avail = sess.k_next.get("units", [])
@@ -287,21 +248,7 @@ def play_kontra(req: KontraRequest, request: Request = None) -> dict:
             chosen = list(avail)
         else:
             chosen = []
-        if role == "def":
-            sess.k_off[pidx] = True
-            for U in chosen:
-                sess.k_def[U][pidx] = True
-            if chosen:
-                labels = ", ".join(_UNIT_HU.get(U, U) for U in chosen)
-                sess.bubbles.append({"player": pidx, "text": f"Kontra! ({labels})", "ply": pidx})
-        else:                                # soloist rekontra
-            sess.k_rk_off = True
-            for U in chosen:
-                sess.k_rekontra[U] = True
-            if chosen:
-                labels = ", ".join(_UNIT_HU.get(U, U) for U in chosen)
-                sess.bubbles.append({"player": 0, "text": f"Rekontra! ({labels})", "ply": 3})
-        _recompute_k_level(sess)
+        _apply_kontra_choice(sess, role, pidx, chosen)
         sess.k_next = None
         sess.phase = "play"
         _advance_play(sess)                  # resume play (may offer the next kontra)
@@ -322,17 +269,17 @@ def play_move(req: MoveRequest, request: Request = None) -> dict:
     with _hold(req.game_id) as sess:
         viewer = _viewer_seat(sess, request)
         if sess.phase != "play":
-            raise HTTPException(status_code=400, detail="not in the play phase")
+            raise HTTPException(status_code=400, detail="Nem játékfázis.")
         if pis_bridge.is_terminal(sess.p_pos):
-            raise HTTPException(status_code=400, detail="game already over")
+            raise HTTPException(status_code=400, detail="A játszma már véget ért.")
         cur = pis_bridge.current_player(sess.p_pos)
         if cur != _play_index(sess, viewer):
-            raise HTTPException(status_code=400, detail=f"not your turn (current player {cur})")
+            raise HTTPException(status_code=400, detail="Nem te következel.")
 
         card = card_from_id(req.card_id)
         legal = pis_bridge.legal_actions(sess.p_pos)
         if card not in legal:
-            raise HTTPException(status_code=400, detail=f"card {req.card_id} is not a legal play")
+            raise HTTPException(status_code=400, detail="Ez a lap most nem játszható.")
 
         sess.voids.observe(sess.p_pos, cur, card)
         pis_bridge.apply_move(sess.p_pos, card)
@@ -358,10 +305,7 @@ def play_analysis(req: AnalysisRequest, request: Request = None) -> dict:
     with _hold(req.game_id) as sess:
         _viewer_seat(sess, request)          # live game → members only (403 otherwise)
         if not sess.play_hands0:
-            raise HTTPException(status_code=400, detail="no played hand to analyze yet")
-        sol, d1, d2 = sess.play_hands0
-        solve_c, build_c, weights, trump = (sess.p_solve_contract, sess.p_build_contract,
-                                            sess.p_weights, sess.trump)
+            raise HTTPException(status_code=400, detail="Még nincs lejátszott parti az elemzéshez.")
         # The whole god-solve loop runs in a WORKER (ids in, ids out); here we only
         # decorate the result with card dicts + the by_ai flags from the history.
         # `bid` and the world count are what turn the analysis from solver units into
@@ -372,44 +316,15 @@ def play_analysis(req: AnalysisRequest, request: Request = None) -> dict:
                    analysis_worlds=env_int("ANALYSIS_WORLDS", 8))
         raw = ai_pool.run("analysis", job)
         history = list(sess.p_history)
-        game_id, bid_name = sess.id, sess.bid_name
-        restrict, human_pi = sess.p_restrict, sess.human_play_index
-        talon = list(sess.play_talon)
-    per_ply: List[dict] = []
-    for row in raw:
-        step = history[row["ply_index"]]
-        per_ply.append({
-            "ply_index": row["ply_index"], "player_id": row["player_id"],
-            "chosen_card": card_to_dict(card_from_id(row["chosen_card_id"])),
-            "god_best_card": card_to_dict(card_from_id(row["god_best_card_id"])),
-            "god_best_value": row["god_best_value"],
-            "god_chosen_value": row["god_chosen_value"],
-            "is_blunder": row["is_blunder"],
-            "legal_card_ids": row["legal_card_ids"],
-            "by_ai": bool(step.get("by_ai", False)),
-            # GP verdict — what the move actually cost, and how much of that was findable
-            "gp_chosen": row.get("gp_chosen"), "gp_best": row.get("gp_best"),
-            "gp_seat_after": row.get("gp_seat_after"),
-            "gp_loss": row.get("gp_loss"), "gp_swing": row.get("gp_swing"),
-            "gp_loss_knowable": row.get("gp_loss_knowable"),
-            "severity": row.get("severity"),
-            "gp_best_card": (card_to_dict(card_from_id(row["gp_best_card_id"]))
-                             if row.get("gp_best_card_id") is not None else None),
-        })
-    return {
-        "game_id": game_id,
-        "contract": bid_name,
-        # everything /pis/explore needs to fork a line off this exact deal:
-        "solve_contract": solve_c, "build_contract": build_c,
-        "marriage_restrict": restrict, "multi_weights": weights,
-        "declare_marriages": trump is not None,
-        "soloist": 0, "human_play_index": human_pi, "leader": 0, "trump": trump,
-        "initial_hands": [[card_to_dict(c) for c in sort_hand(h, trump is None)]
-                          for h in (sol, d1, d2)],
-        "talon": [card_to_dict(c) for c in talon],
-        "per_ply": per_ply,
-        "analysis_ms": (time.perf_counter() - t0) * 1000.0,
-    }
+        out = analysis_payload(
+            raw, game_id=sess.id, contract=sess.bid_name,
+            solve_c=sess.p_solve_contract, build_c=sess.p_build_contract,
+            restrict=sess.p_restrict, weights=sess.p_weights, trump=sess.trump,
+            hands0=sess.play_hands0, talon=sess.play_talon,
+            human_pi=sess.human_play_index,
+            by_ai=lambda row: history[row["ply_index"]].get("by_ai", False))
+    out["analysis_ms"] = (time.perf_counter() - t0) * 1000.0
+    return out
 
 
 class StateRequest(BaseModel):
@@ -445,7 +360,17 @@ def play_mine(req: MineRequest) -> dict:
 
 
 @router.delete("/play/session/{game_id}")
-def play_delete(game_id: str) -> dict:
+def play_delete(game_id: str, device: Optional[str] = None) -> dict:
+    """Cancel an ongoing solo game (the × on the splash's resume rows). Guarded like
+    the other routes: a live table's game can't be deleted here, and a session tied
+    to a browser is deletable only by that browser's device id."""
     with _sessions_lock:
-        existed = _sessions.pop(game_id, None) is not None
-    return {"deleted": existed}
+        sess = _sessions.get(game_id)
+        if sess is None:
+            return {"deleted": False}
+        if sess.live:
+            raise HTTPException(status_code=403, detail="Asztalos játszma — nem törölhető innen.")
+        if sess.device_id is not None and sess.device_id != device:
+            raise HTTPException(status_code=403, detail="Nem a te játszmád.")
+        _sessions.pop(game_id, None)
+    return {"deleted": True}

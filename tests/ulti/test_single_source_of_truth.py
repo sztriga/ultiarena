@@ -80,13 +80,37 @@ def test_cython_rank_order_is_bound_by_behaviour():
 
 
 def test_kontra_units_are_not_redefined_in_the_api_layer():
-    """apps.api.play must IMPORT the unit rules, not restate them."""
-    play = (_ROOT / "apps" / "api" / "play.py").read_text()
-    assert "from ulti.scoring.units import" in play
-    for banned in ("def kontra_units", "def _kontra_units",
-                   '_UNIT_OBJ = {', '_UNITS_ORDER = ('):
-        assert banned not in play, (
-            f"apps/api/play.py redefines {banned!r} — it belongs in ulti.scoring.units")
+    """The api layer must IMPORT the unit rules, not restate them."""
+    flow = (_ROOT / "apps" / "api" / "auction_flow.py").read_text()
+    assert "from ulti.scoring.units import" in flow
+    for fname in ("play.py", "auction_flow.py", "kontra_flow.py"):
+        src = (_ROOT / "apps" / "api" / fname).read_text()
+        for banned in ("def kontra_units", "def _kontra_units",
+                       '_UNIT_OBJ = {', '_UNITS_ORDER = ('):
+            assert banned not in src, (
+                f"apps/api/{fname} redefines {banned!r} — it belongs in ulti.scoring.units")
+
+
+def test_solver_objective_mapping_has_one_home():
+    """Contract → solver objective (solve/build contract, restrict) is stated ONCE —
+    apps.api.engine.solve_plan. Live play setup, recorded-game analysis and the
+    public kernel all map through it; the three hand-written copies drifted once."""
+    from apps.api.engine import solve_plan
+    from ulti.bidding.ladder import LADDER
+
+    for r in LADDER:
+        for b in r.bids:
+            trump = None if r.colorless else "hearts"
+            solve_c, build_c, t, restrict, w = solve_plan(b, trump)
+            if b.betli:
+                assert (solve_c, build_c, t, restrict) == ("betli", "betli", None, None)
+            elif r.colorless:                      # pure colorless durchmars
+                assert (solve_c, build_c, t, restrict) == (
+                    "durchmars", "durchmars", None, None)
+            else:
+                assert (solve_c, build_c, t) == ("multi", "parti", "hearts")
+                assert restrict == ("40" if b.forty_hundred
+                                    else "20" if b.twenty_hundred else None)
 
 
 def test_oracle_and_kontra_offer_share_the_parti_rule():
@@ -158,6 +182,7 @@ def test_trump_choice_order_is_derived_not_hand_listed():
     assert TRUMP_CHOICES == ['bells', 'leaves', 'acorns']
     assert [DISPLAY_SUIT_ORDER[s] for s in TRUMP_CHOICES] == sorted(
         DISPLAY_SUIT_ORDER[s] for s in TRUMP_CHOICES)
-    for fname in ("snapshots.py", "auction_flow.py"):
+    for fname in ("snapshots.py", "auction_flow.py", "play.py"):
         src = (_ROOT / "apps" / "api" / fname).read_text()
-        assert '"bells", "leaves", "acorns"' not in src, f"{fname} hand-lists the trump order"
+        for listed in ('"bells", "leaves", "acorns"', '"acorns", "leaves", "bells"'):
+            assert listed not in src, f"{fname} hand-lists the trump suits"

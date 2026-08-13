@@ -65,18 +65,27 @@ def should_record(origin: str | None) -> bool:
 
 
 def _db() -> sqlite3.Connection:
-    global _conn
-    if _conn is None:
-        Path(_DB_PATH).parent.mkdir(parents=True, exist_ok=True)
-        _conn = sqlite3.connect(_DB_PATH, check_same_thread=False)
-        # WAL: analysis tooling reads this file WHILE the server writes — under the
-        # default rollback journal a concurrent reader gets "database is locked".
-        _conn.execute("PRAGMA journal_mode=WAL")
-        _conn.execute("PRAGMA busy_timeout=5000")
-        _conn.execute("PRAGMA synchronous=NORMAL")
-        _conn.executescript(_SCHEMA)
-        _conn.commit()
-    return _conn
+    with _lock:                    # first-call init may race (record vs a reader)
+        global _conn
+        if _conn is None:
+            Path(_DB_PATH).parent.mkdir(parents=True, exist_ok=True)
+            _conn = sqlite3.connect(_DB_PATH, check_same_thread=False)
+            # WAL: analysis tooling reads this file WHILE the server writes — under the
+            # default rollback journal a concurrent reader gets "database is locked".
+            _conn.execute("PRAGMA journal_mode=WAL")
+            _conn.execute("PRAGMA busy_timeout=5000")
+            _conn.execute("PRAGMA synchronous=NORMAL")
+            _conn.executescript(_SCHEMA)
+            _conn.commit()
+        return _conn
+
+
+def games_db() -> sqlite3.Connection:
+    """A fresh READ-ONLY connection for query endpoints (/me/*, /api/v1 dataset) —
+    per-request, so no cross-thread sharing; the caller closes it. The write path
+    stays the single _db() connection above."""
+    _db()                          # ensure the file + schema exist
+    return sqlite3.connect(f"file:{_DB_PATH}?mode=ro", uri=True)
 
 
 def record_game(rec: dict) -> None:

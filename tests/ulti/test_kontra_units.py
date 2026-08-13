@@ -15,7 +15,7 @@ import os
 
 os.environ.setdefault("KONTRA", "1")
 
-from apps.api.play import _kontra_units          # noqa: E402
+from ulti.scoring.units import kontra_units as _kontra_units  # noqa: E402
 from ulti.bidding.ladder import overcalls        # noqa: E402
 
 

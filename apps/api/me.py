@@ -17,12 +17,14 @@ from typing import List, Optional
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 
-from ulti.bidding.scorers import _play_weights
-from ulti.card import card_from_id, sort_hand
+from ulti.bidding.ladder import BIDS_BY_NAME
+from ulti.card import card_from_id
 from ulti.config import env_int
 
 from . import ai_pool
-from .serialize import card_to_dict
+from .ai_play import analysis_payload
+from .engine import solve_plan
+from .recording import games_db
 from .users import user_from_request
 
 router = APIRouter()
@@ -56,7 +58,6 @@ def _is_mine(players: list, ident: dict) -> Optional[dict]:
 
 def _my_rows(ident: dict, since: Optional[float] = None,
              cursor: Optional[float] = None, limit: Optional[int] = None) -> List[dict]:
-    from .public import _games_db
     q = ("SELECT id, created_at, seed, contract, trump, soloist_seat, kontra_level, "
          "winner, made, seat_gp, players FROM games WHERE EXISTS ("
          "SELECT 1 FROM json_each(games.players) je WHERE ")
@@ -73,7 +74,7 @@ def _my_rows(ident: dict, since: Optional[float] = None,
     q += " ORDER BY created_at DESC"
     if limit:
         q += " LIMIT ?"; args.append(limit)
-    con = _games_db()
+    con = games_db()
     rows = con.execute(q, args).fetchall()
     con.close()
     out = []
@@ -168,10 +169,8 @@ def set_nickname(req: NickRequest, request: Request = None) -> dict:
 @router.post("/me/games/{game_id}/analysis")
 def game_analysis(game_id: str, request: Request = None,
                   device: Optional[str] = None) -> dict:
-    from .public import _BIDS, _games_db
-
     ident = _identity(request, device)
-    con = _games_db()
+    con = games_db()
     r = con.execute("SELECT contract, trump, soloist_seat, human_seat, seed, players, "
                     "transcript FROM games WHERE id = ?", (game_id,)).fetchone()
     con.close()
@@ -182,24 +181,16 @@ def game_analysis(game_id: str, request: Request = None,
     if _is_mine(players, ident) is None:
         raise HTTPException(status_code=403, detail="Nem a te játszmád.")
     t = json.loads(r[6])
-    bid = _BIDS.get(contract)
+    bid = BIDS_BY_NAME.get(contract)
     if bid is None or not t.get("plays"):
         raise HTTPException(status_code=400, detail="Ez a játszma nem elemezhető.")
 
-    # transcript deal is PLAY space (soloist first) — same objective mapping as
-    # auction_flow._setup_play, from the recorded contract
+    # transcript deal is PLAY space (soloist first); the contract maps to the solver
+    # objective through the same solve_plan the live game used
     hands0 = t["deal"]["hands"]
     talon = t["deal"]["talon"]
     sol_cards = [card_from_id(c) for c in hands0[0]]
-    if bid.betli:
-        solve_c, build_c, tr, restrict, weights = "betli", "betli", None, None, None
-    elif bid.durchmars and trump is None and not (bid.ulti or bid.forty_hundred
-                                                  or bid.twenty_hundred):
-        solve_c, build_c, tr, restrict, weights = "durchmars", "durchmars", None, None, None
-    else:
-        solve_c, build_c, tr = "multi", "parti", trump
-        restrict = "40" if bid.forty_hundred else ("20" if bid.twenty_hundred else None)
-        weights = _play_weights(bid, sol_cards, trump)
+    solve_c, build_c, tr, restrict, weights = solve_plan(bid, trump, sol_cards)
 
     job = {"hands0": hands0, "talon": talon, "build_c": build_c, "solve_c": solve_c,
            "trump": tr, "restrict": restrict, "has_ulti": bool(bid.ulti),
@@ -212,35 +203,10 @@ def game_analysis(game_id: str, request: Request = None,
     # by_ai per play index: which seats were people (human/bot) in this recording
     human_pis = {(p["seat"] - soloist_seat) % 3 for p in players
                  if p.get("kind") in ("human", "bot")}
-    per_ply: List[dict] = []
-    for row in raw:
-        per_ply.append({
-            "ply_index": row["ply_index"], "player_id": row["player_id"],
-            "chosen_card": card_to_dict(card_from_id(row["chosen_card_id"])),
-            "god_best_card": card_to_dict(card_from_id(row["god_best_card_id"])),
-            "god_best_value": row["god_best_value"],
-            "god_chosen_value": row["god_chosen_value"],
-            "is_blunder": row["is_blunder"],
-            "legal_card_ids": row["legal_card_ids"],
-            "by_ai": row["player_id"] not in human_pis,
-            "gp_chosen": row.get("gp_chosen"), "gp_best": row.get("gp_best"),
-            "gp_loss": row.get("gp_loss"), "gp_swing": row.get("gp_swing"),
-            "gp_loss_knowable": row.get("gp_loss_knowable"),
-            "severity": row.get("severity"),
-            "gp_best_card": (card_to_dict(card_from_id(row["gp_best_card_id"]))
-                             if row.get("gp_best_card_id") is not None else None),
-        })
-    return {
-        "game_id": game_id,
-        "contract": contract,
-        "solve_contract": solve_c, "build_contract": build_c,
-        "marriage_restrict": restrict, "multi_weights": weights,
-        "declare_marriages": tr is not None,
-        "soloist": 0,
-        "human_play_index": min(human_pis) if human_pis else 0,
-        "leader": 0, "trump": tr,
-        "initial_hands": [[card_to_dict(c) for c in sort_hand(
-            [card_from_id(i) for i in h], tr is None)] for h in hands0],
-        "talon": [card_to_dict(card_from_id(c)) for c in talon],
-        "per_ply": per_ply,
-    }
+    return analysis_payload(
+        raw, game_id=game_id, contract=contract,
+        solve_c=solve_c, build_c=build_c, restrict=restrict, weights=weights,
+        trump=tr, hands0=[[card_from_id(i) for i in h] for h in hands0],
+        talon=[card_from_id(c) for c in talon],
+        human_pi=min(human_pis) if human_pis else 0,
+        by_ai=lambda row: row["player_id"] not in human_pis)
