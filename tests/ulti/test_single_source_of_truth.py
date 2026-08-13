@@ -91,6 +91,28 @@ def test_kontra_units_are_not_redefined_in_the_api_layer():
                 f"apps/api/{fname} redefines {banned!r} — it belongs in ulti.scoring.units")
 
 
+def test_the_kontra_rule_is_not_copied_beside_the_engine():
+    """The exp27 defender gates live in ulti.bidding.kontra. The live game and the
+    human-play evaluator must CALL that rule — an evaluator grading people against
+    a mirrored copy would quietly stop measuring the engine it claims to measure
+    (it did: the thresholds were pasted into ulti/eval/human_eval.py)."""
+    from ulti.bidding import kontra as K
+
+    for mod in ("apps.api.kontra_flow", "ulti.eval.human_eval"):
+        m = __import__(mod, fromlist=["defender_kontras_unit"])
+        assert m.defender_kontras_unit is K.defender_kontras_unit, (
+            f"{mod} does not use ulti.bidding.kontra.defender_kontras_unit")
+
+    # and nobody re-states the numbers
+    for path in list((_ROOT / "ulti").rglob("*.py")) + list((_ROOT / "apps").rglob("*.py")):
+        if path == _ROOT / "ulti" / "bidding" / "kontra.py":
+            continue
+        src = path.read_text()
+        for banned in ("KONTRA_ULTI_TRUMPS =", "KONTRA_DURI_TRUMPS ="):
+            assert banned not in src, (
+                f"{path.relative_to(_ROOT)} re-declares {banned!r} — import it instead")
+
+
 def test_solver_objective_mapping_has_one_home():
     """Contract → solver objective (solve/build contract, restrict) is stated ONCE —
     apps.api.engine.solve_plan. Live play setup, recorded-game analysis and the

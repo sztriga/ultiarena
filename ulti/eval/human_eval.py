@@ -60,6 +60,7 @@ from ulti.bidding.auction import _best_pickup, _blind_best, DEBIAS_PCTL   # noqa
 from ulti.bidding.deal import deal_12_10_10                              # noqa: E402
 from ulti.bidding.frontier import (BETLI_REAL_BID, REBETLI_REAL_BID,     # noqa: E402
                                    frontier_provider)
+from ulti.bidding.kontra import defender_kontras_unit                    # noqa: E402
 from ulti.bidding.ladder import LADDER, GPTable, overcalls               # noqa: E402
 from ulti.bidding.scorers import resolve_bidset, _play_weights           # noqa: E402
 from ulti.card import card_from_id                                       # noqa: E402
@@ -68,10 +69,6 @@ from ulti.scoring.units import kontra_units                              # noqa:
 PASS_PENALTY = 2.0
 _DB = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(
     os.path.abspath(__file__)))), "data", "games.db")
-
-# exp27 deployed defender gates, mirrored from apps/api/kontra_flow (parti removed exp47)
-_KONTRA_ULTI_TRUMPS = 4
-_KONTRA_DURI_TRUMPS = 3
 
 
 # ── one decision ────────────────────────────────────────────────────────────────
@@ -177,16 +174,10 @@ class Evaluator:
             if seat == sol_seat:
                 continue
             own = [card_from_id(i) for i in dealt["hands"][seat]]
-            ntr = sum(1 for c in own if trump and c.suit == trump)
             for U in units:
-                if U == "ulti":
-                    eng = ntr >= _KONTRA_ULTI_TRUMPS
-                elif U == "durchmars" and trump is not None:
-                    eng = ntr >= _KONTRA_DURI_TRUMPS
-                elif U == "40_100" and trump is not None:
-                    eng = any(c.suit == trump and c.rank in ("king", "upper") for c in own)
-                else:
-                    eng = False
+                # THE deployed rule, not a copy of it — grading a human against a
+                # mirrored threshold would silently stop measuring the real engine.
+                eng = defender_kontras_unit(own, trump, U)
                 # `kontra_by` (recorded from 2026-08-13) says WHO doubled, by play index.
                 # Without it a COLORED unit is ambiguous: együtt sírunk means one
                 # defender's kontra binds both, so the level alone cannot attribute.

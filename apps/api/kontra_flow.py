@@ -3,7 +3,7 @@
 
 from typing import List
 
-from ulti.bidding.kontra import _sol_ev
+from ulti.bidding.kontra import _sol_ev, defender_kontras_unit
 from ulti.scoring.units import UNITS_ORDER as _UNITS_ORDER
 
 from .engine import Session, _recipe
@@ -25,58 +25,11 @@ _UNIT_HU = {"parti": "parti", "ulti": "ulti", "40_100": "40-100", "20_100": "20-
 # research harnesses. The soloist's REKONTRA still uses the post-trick-1 variant below.)
 
 
-# exp27 per-unit defender-kontra gates (validated 2026-07-21 — held-out tournament vs
-# the old blind-makeability rule: +7.7 GP/deal for the defenders, cheat-clean). The old
-# rule `_sol_ev(blind_makeability) < 0` wildly over-kontra'd: it sampled RANDOM soloist
-# hands and ignored that the soloist BID the contract, so it "saw" ~6-11% makeability
-# when the true make is ~80% → kontra'd makeable ulti/parti and paid double (the soloist's
-# rekontra amplified the loss further). Per-unit calibrated signals instead — own hand only.
-_KONTRA_ULTI_TRUMPS = 4     # ulti: kontra iff this defender holds >=4 trumps (make ~32%; 3→76%)
-_KONTRA_DURI_TRUMPS = 3     # colored durchmars: kontra iff >=3 trumps (make ~2-5%; 0→50%)
-
-# PARTI: no kontra. Removed 2026-08-03 (exp47, 11,994 defender-positions on the honest
-# post-talon-fix frontier). The old rule was `blind makeability < 0.10`, and it LOST in
-# both rekontra worlds — change in soloist GP vs never-kontra +0.077 (t+6.0) with no
-# rekontra, +1.133 (t+39.7) under a re-doubling soloist. It fired on 58% of positions at a
-# 53% make rate: a coin flip, doubled.
-#
-# No threshold on that signal can work. The estimate is biased −0.490 (mean 0.127 against
-# a true 0.617) and its reliability curve is so compressed that even its lowest bin
-# [0.00,0.05) still makes 49.4% — it never separates below-50% from above-50%.
-#
-# Structural replacements were swept too. Every one that looked good without a rekontra
-# died with one, because the breakeven is 50% ONLY if the soloist cannot re-double; once
-# he can, you need him far below it:
-#     trump 40 alone     fires 7.2%, makes 25.0%   -0.062 -> +0.007   (neutral)
-#     two 20s alone      fires 3.9%, makes 44.4%   +0.000 -> +0.068   (loses)
-#     4+ trumps alone    fires 3.5%, makes 34.1%   -0.023 -> +0.023   (loses)
-#     40 AND a 20        fires 2.1%, makes 14.9%   -0.025 -> -0.012   (only survivor)
-# "40 AND a 20" is the sole rule negative in both worlds and it is worth -0.012 GP per
-# position — indistinguishable from abstaining, and not worth a special case.
-#
-# Removing this also deletes a PIMC solve per defender per deal: faster AND better.
-# NB this is a verdict against the FRONTIER, which passes 39% of deals and makes 65-94% of
-# what it bids, so it hands the defenders nothing worth doubling. Against a human who
-# over-bids the answer may differ — that is the exp49 question, not this one.
-
-
 def _ai_defender_kontras_unit(sess: Session, pidx: int, U: str) -> bool:
-    """Cheat-clean per-unit kontra from this defender's OWN hand. Trump count is the
-    decisive signal for the trick contracts (ulti/duri); parti, the 100-games and
-    betli/colorless-duri abstain (no own-hand signal beats not kontra-ing)."""
-    own = sess.play_hands0[pidx]
-    if U == "ulti":
-        return sum(1 for c in own if c.suit == sess.trump) >= _KONTRA_ULTI_TRUMPS
-    if U == "durchmars" and sess.trump is not None:
-        return sum(1 for c in own if c.suit == sess.trump) >= _KONTRA_DURI_TRUMPS
-    if U == "40_100" and sess.trump is not None:
-        # milan 2026-07-23: a 40-100 declares the TRUMP marriage (the "40"). If a defender
-        # holds a card of the trump marriage (K or felső of trump), the soloist can't hold the
-        # full trump marriage → the 40-100 is unmakeable → auto-kontra.
-        return any(c.suit == sess.trump and c.rank in ("king", "upper") for c in own)
-    # 20-100: the 20's colour is NOT declared, so the trump test doesn't apply — the rule is
-    # about the NON-trump marriages and is still being pinned down with milan. Abstain for now.
-    return False               # 20-100 / betli / colorless durchmars → abstain
+    """This session's defender applying THE rule (ulti.bidding.kontra) to their own
+    hand — the exp27 gates and their evidence live there, with the evaluator that
+    grades human kontras against the same function."""
+    return defender_kontras_unit(sess.play_hands0[pidx], sess.trump, U)
 
 
 def _unit_makeability_post_trick1(sess: Session, unit: str, salt: int) -> float:
