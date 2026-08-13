@@ -9,30 +9,17 @@ holding the marriage. Optional per-head isotonic calibration (load if present).
 from __future__ import annotations
 
 import os
-from ulti.config import env_str
-import sys
 
 import numpy as np
 import torch
 
-_HERE = os.path.dirname(os.path.abspath(__file__))
-
-
-def _repo_root(start):
-    d = start
-    while d != os.path.dirname(d):
-        if os.path.exists(os.path.join(d, "pyproject.toml")):
-            return d
-        d = os.path.dirname(d)
-    return os.path.dirname(start)
-
+from ulti.config import env_str, repo_root
+from ulti.vnet.pickup import featurize
+from ulti.bidding.recipe import sol_marriages
+from ulti.bidding.base_head import Head
 
 # consolidated deployed bidder heads (repo-root/models/ulti/bidding)
-_MODELS_DIR = os.path.join(_repo_root(_HERE), "models", "ulti", "bidding")
-
-from ulti.vnet.pickup import featurize          # noqa: E402
-from ulti.bidding.recipe import sol_marriages     # noqa: E402
-from ulti.bidding.base_head import Head           # noqa: E402
+_MODELS_DIR = os.path.join(repo_root(), "models", "ulti", "bidding")
 from ulti.bidding.bidder import BaseProbs               # noqa: E402
 
 COLORED = ("parti", "ulti", "reach100_40", "reach100_20", "duri_colored")
@@ -97,7 +84,6 @@ class NetProvider:
 
 
 if __name__ == "__main__":
-    pass
     from ulti.bidding.deal import deal_12_10_10
     prov = NetProvider()
     sol12, d1, d2 = deal_12_10_10(seed=7)

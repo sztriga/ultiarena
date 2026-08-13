@@ -1,28 +1,23 @@
 """Game state and mechanics for the Ulti play phase.
 
-This module handles dealing, trick play, and scoring for a 3-player
-Ulti deal once the contract has been determined.  Bidding logic is
-not implemented here — the caller sets the soloist, trump, and
-contract type before play begins.
+Trick play and scoring for a 3-player Ulti deal once the contract is known.
+Dealing, the talon and the auction are NOT here — the caller supplies a fully
+set-up state (the app builds one through ulti.solvers.pis).
 """
 
 from __future__ import annotations
 
-import random
 from dataclasses import dataclass
 from typing import List, Optional
 
 from ultisolver.games.ulti.cards import (
     Card,
-    HAND_SIZE,
     LAST_TRICK_BONUS,
     NUM_PLAYERS,
     Rank,
     Suit,
-    TALON_SIZE,
     TOTAL_POINTS,
     TRICKS_PER_GAME,
-    make_deck,
 )
 from ultisolver.games.ulti.rules import TrickResult, legal_response, resolve_trick
 
@@ -104,115 +99,10 @@ class GameState:
 
 
 # ---------------------------------------------------------------------------
-#  Dealing
-# ---------------------------------------------------------------------------
-
-
-def deal(seed: int = 0, dealer: int = 0) -> tuple[GameState, list[Card]]:
-    """Deal cards for an Ulti game.
-
-    Returns ``(state, talon)`` where:
-    - ``state`` has 3 hands of 10 cards each
-    - ``talon`` is the 2 extra cards (to be picked up by the soloist)
-
-    Deal order (counter-clockwise from dealer):
-      5 to each player → 2 to talon → 5 to each player.
-    """
-    rng = random.Random(seed)
-    deck = make_deck()
-    rng.shuffle(deck)
-
-    # Play order: first bidder = to dealer's right (next in CCW)
-    first = next_player(dealer)
-    second = next_player(first)
-    third = next_player(second)  # == dealer
-    order = [first, second, third]
-
-    hands: list[list[Card]] = [[], [], []]
-    pos = 0
-
-    # Round 1: 5 cards each
-    for p in order:
-        hands[p] = deck[pos : pos + 5]
-        pos += 5
-
-    # Talon: 2 cards
-    talon = deck[pos : pos + TALON_SIZE]
-    pos += TALON_SIZE
-
-    # Round 2: 5 cards each
-    for p in order:
-        hands[p].extend(deck[pos : pos + 5])
-        pos += 5
-
-    assert pos == 32
-
-    state = GameState(
-        hands=hands,
-        trump=None,
-        betli=False,
-        soloist=first,      # default; overridden by set_contract
-        dealer=dealer,
-        captured=[[], [], []],
-        scores=[0, 0, 0],
-        leader=first,       # first bidder leads trick 1
-        trick_no=0,
-        trick_cards=[],
-        last_trick=None,
-    )
-    return state, talon
-
-
-# ---------------------------------------------------------------------------
-#  Pre-play setup (soloist picks up talon, discards, contract is set)
-# ---------------------------------------------------------------------------
-
-
-def pickup_talon(state: GameState, soloist: int, talon: list[Card]) -> None:
-    """Soloist picks up the 2-card talon (hand goes 10 → 12)."""
-    assert len(talon) == TALON_SIZE
-    state.hands[soloist].extend(talon)
-    state.soloist = soloist
-
-
-def discard_talon(state: GameState, discards: list[Card]) -> None:
-    """Soloist discards 2 cards back down to 10.
-
-    Discarded cards are stored separately in ``talon_discards``.
-    Their card-point value counts for the **defenders** (not the
-    soloist) — this is reflected in ``defender_points()``.
-    Only the soloist knows which cards were discarded; defenders
-    cannot see them.
-    """
-    assert len(discards) == TALON_SIZE
-    soloist = state.soloist
-    for c in discards:
-        state.hands[soloist].remove(c)
-    state.talon_discards = list(discards)
-
-
-def set_contract(
-    state: GameState,
-    soloist: int,
-    trump: Optional[Suit],
-    betli: bool = False,
-) -> None:
-    """Configure the contract for the play phase.
-
-    Parameters
-    ----------
-    soloist : player index who declared the contract
-    trump : trump suit, or None for Betli
-    betli : whether Betli rules apply (no must-beat, no trump)
-    """
-    state.soloist = soloist
-    state.trump = trump
-    state.betli = betli
-
-
-# ---------------------------------------------------------------------------
 #  Play phase
 # ---------------------------------------------------------------------------
+# (Dealing / talon / contract setup live OUTSIDE this package — the app deals via
+#  ulti.bidding.deal and builds positions through ulti.solvers.pis.)
 
 
 def current_player(state: GameState) -> int:

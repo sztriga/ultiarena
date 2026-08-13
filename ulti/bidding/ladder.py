@@ -26,14 +26,10 @@ the current high bid, and in what order do rungs sit." See `reference_bidding_la
 """
 from __future__ import annotations
 
-import os
-import sys
 from dataclasses import dataclass
 from typing import List, Optional, Tuple
 
-_REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-
-from ulti.scoring.oracle import BidSet, GPTable  # noqa: E402
+from ulti.scoring.oracle import BidSet, GPTable
 
 
 # ─────────────────────────────────────────────────────────────────────

@@ -10,24 +10,14 @@ Torch-lazy: nothing is imported until the first call, so importing this module i
 from __future__ import annotations
 
 import os
-from ulti.config import env_str
+from ulti.config import env_str, repo_root
 
 import numpy as np
 
 from ulti.solvers import pis as _pis
 
-def _repo_root(start):
-    d = start
-    while d != os.path.dirname(d):
-        if os.path.exists(os.path.join(d, "pyproject.toml")):
-            return d
-        d = os.path.dirname(d)
-    return os.path.dirname(start)
-
-
-_ROOT = _repo_root(os.path.dirname(os.path.abspath(__file__)))
-_MODEL_PATH = env_str("BETLI_DEF_MODEL") or (
-                             os.path.join(_ROOT, "models/ulti/betli/betli_defense.pt"))
+_MODEL_PATH = env_str("BETLI_DEF_MODEL") or os.path.join(
+    repo_root(), "models/ulti/betli/betli_defense.pt")
 FEAT_DIM = 139
 _NET = None
 from ulti.card import SUITS as _SUITS

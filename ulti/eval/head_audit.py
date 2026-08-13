@@ -48,7 +48,7 @@ HEADS: Dict[str, dict] = {
     "betli":          dict(colored=False, gate=None, solve="betli",     build="betli",     weights=None,                    restrict=None),
     "colorless_duri": dict(colored=False, gate=None, solve="durchmars", build="durchmars", weights=None,                    restrict=None),
 }
-TRUMPS = ("hearts", "acorns", "leaves", "bells")
+from ulti.bidding.auction import TRUMPS      # one search order (see its comment)
 
 
 def _god_label(job: dict) -> int:

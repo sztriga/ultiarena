@@ -1,6 +1,8 @@
-"""Value-net pipeline (training + deployed inference helpers).
+"""Value-net inputs.
 
-``pickup``  — the deployed bidding featurizer + calibration (36-dim hand+trump)
-``betli``   — betli value-net training stack (features, net, datagen)
-``net``/``net_nnue``/``augment`` — shared model + augmentation building blocks
+``pickup`` — the deployed bidding featurizer (hand + trump → the vector every
+bidding head reads) plus the suit-permutation augmentation the trainer uses.
+
+The heads themselves are ``ulti.bidding.base_head.Head``; training them is
+``ulti.pipeline.frontier_heads``.
 """

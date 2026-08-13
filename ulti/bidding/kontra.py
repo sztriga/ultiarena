@@ -17,12 +17,7 @@ are UNCHANGED. So everything here is closed-form on the make-probability `p`:
 """
 from __future__ import annotations
 
-import os
-import sys
-
-_HERE = os.path.dirname(os.path.abspath(__file__))
-
-from ulti.scoring.oracle import GPTable   # noqa: E402
+from ulti.scoring.oracle import GPTable
 
 _GP = GPTable()
 

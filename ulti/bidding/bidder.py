@@ -26,14 +26,10 @@ v0 APPROXIMATIONS (flagged for milan — all in `rung_ev`):
 """
 from __future__ import annotations
 
-import os
-import sys
 from dataclasses import dataclass
 from typing import List, Optional, Tuple
 
-_HERE = os.path.dirname(os.path.abspath(__file__))
-
-from ulti.bidding.ladder import (  # noqa: E402
+from ulti.bidding.ladder import (
     LADDER, Rung, GPTable, overcalls, PASS_VALUE_PER_DEF,
 )
 

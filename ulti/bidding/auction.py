@@ -17,18 +17,19 @@ this treats the announced contract as revealing its EV). Greedy, no bluffing.
 from __future__ import annotations
 
 import itertools
+
+import numpy as np
+
 from ulti.config import env_float
-import os
-import sys
+from ulti.bidding.ladder import GPTable, overcalls
+from ulti.bidding.bidder import rung_ev
+from ulti.bidding.deal import deal_12_10_10
 
-_HERE = os.path.dirname(os.path.abspath(__file__))
-
-import numpy as np  # noqa: E402
-
-from ulti.bidding.ladder import GPTable, overcalls  # noqa: E402
-from ulti.bidding.bidder import rung_ev  # noqa: E402
-from ulti.bidding.deal import deal_12_10_10  # noqa: E402
-
+# The trump SEARCH order — one definition, imported by everything that sweeps suits
+# (ulti.eval.head_audit). Deliberately NOT ulti.card.SUITS: this order is load-bearing,
+# because equal-EV candidates are decided by which suit the sweep reaches first, so
+# reordering it silently changes which contract the bidder announces (and the golden
+# transcript hash). Display order lives in ulti.card — this is search order.
 TRUMPS = ("hearts", "acorns", "leaves", "bells")
 PASS_PENALTY = 2.0   # opener forfeits −2/def by passing
 # exp-20 canon: the DECISION value for a contract is a percentile (not the max)

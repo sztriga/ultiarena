@@ -1,32 +1,14 @@
-"""
-Biased deal generator + forced-contract match/arena runner.
+"""Biased deal generator — hands that plausibly BID a given contract.
 
-Ports the legacy ``UltiDojo.deal`` to the ``ulti.card`` model and drives
-``UltiGame`` into a forced contract using the dealt cards, so two specialists
-can be compared head-to-head on the contract they were trained for.
+A uniformly random deal almost never produces a biddable ulti or durchmars, so
+sampling one is useless for training a head or filling a puzzle. ``deal_biased``
+skews a deal towards a contract via a ``ContractSpec`` (trump-count weights plus
+the cards the contract REQUIRES, e.g. the trump 7 for an ulti), and the
+``deal_*`` wrappers below are the per-contract specs already tuned.
 
-Adding a new contract
----------------------
-The generic engine below — ``deal_biased``, ``run_contract_match``,
-``run_contract_arena`` — is parameterised by a ``ContractSpec``. To support
-a new contract (say 40-100), define a new spec::
-
-    HUNDRED_SPEC = ContractSpec(
-        name='40100',
-        bid_action_offset=4,                      # action layout: 0..3 parti
-        trump_count_weights={3: 0.10, ...},       # tune to taste
-        mandatory_trump_ranks=('K', '10'),        # adjust to engine rules
-    )
-
-then call ``run_contract_arena(spec=HUNDRED_SPEC, ...)``. The Ulti wrappers
-at the bottom of this file are kept for backwards compatibility with the
-existing FastAPI callers.
-
-Differences from trickster's UltiDojo:
-- Always seeds the contract-mandatory cards (e.g. trump 7 for Ulti) into
-  the declarer's hand. The legacy ``Licit.ULTI`` required it; the old engine's
-  training-time dojo sometimes generates trump-7-less hands that we'd have
-  to throw away.
+Used by the Villámtalon puzzle (apps/api/puzzle.py) to deal a hand worth playing,
+and by the training pipeline (ulti.pipeline.frontier_heads) to oversample the
+positive class. Adding a contract = one more ``ContractSpec`` + wrapper.
 """
 from __future__ import annotations
 

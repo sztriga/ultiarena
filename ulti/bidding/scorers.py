@@ -15,11 +15,8 @@ pimc_outcome — placeholder for the periodic realistic (closed-play) check.
 from __future__ import annotations
 
 from ulti.config import env_int
-import sys
-
-
-from ulti.bidding.ladder import GPTable                                   # noqa: E402
-from ulti.bidding.recipe import sol_marriages                       # noqa: E402
+from ulti.bidding.ladder import GPTable
+from ulti.bidding.recipe import sol_marriages
 
 GP = GPTable()
 

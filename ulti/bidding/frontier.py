@@ -23,7 +23,7 @@ from __future__ import annotations
 import os
 from typing import Optional
 
-from ulti.config import env_bool
+from ulti.config import env_bool, repo_root
 
 # Deployed promotion gates — the ONE place these are read; the app builds its bidder
 # through frontier_bid_fn and inherits them.
@@ -35,21 +35,12 @@ BETLI_REAL_BID = env_bool("BETLI_REAL_BID", True)
 REBETLI_REAL_BID = env_bool("REBETLI_REAL_BID", True)
 
 
-def _repo_root() -> str:
-    d = os.path.dirname(os.path.abspath(__file__))
-    while d != os.path.dirname(d):
-        if os.path.exists(os.path.join(d, "pyproject.toml")):
-            return d
-        d = os.path.dirname(d)
-    return d
-
-
 def frontier_provider(**kw):
     """NetProvider exactly as the app builds it: isotonic calibration ON, and the exp37
     realistic-betli head available (whether it is USED is the bidder's gate)."""
     from ulti.bidding.provider import NetProvider
     kw.setdefault("calibrate", True)
-    kw.setdefault("betli_real_dir", os.path.join(_repo_root(), "models", "ulti", "betli"))
+    kw.setdefault("betli_real_dir", os.path.join(repo_root(), "models", "ulti", "betli"))
     return NetProvider(**kw)
 
 

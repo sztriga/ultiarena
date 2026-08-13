@@ -53,6 +53,17 @@ REGISTRY: Dict[str, tuple] = {}
 _TRUE = ("1", "true", "yes")
 
 
+def repo_root() -> str:
+    """The repo root (the directory holding pyproject.toml) — where models/ and data/
+    live. One definition; model loaders used to carry a copy each."""
+    d = os.path.dirname(os.path.abspath(__file__))
+    while d != os.path.dirname(d):
+        if os.path.exists(os.path.join(d, "pyproject.toml")):
+            return d
+        d = os.path.dirname(d)
+    return os.path.dirname(os.path.abspath(__file__))
+
+
 def _record(name: str, parsed, default):
     REGISTRY[name] = (os.environ.get(name), parsed, default)
     return parsed

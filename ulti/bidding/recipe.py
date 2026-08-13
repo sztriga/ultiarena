@@ -1,4 +1,5 @@
-"""Local copy of exp21 recipe.sol_marriages (hand-only, no import coupling)."""
+"""Marriage detection from a hand — the canonical home (provider, scorers, the
+auction flow, head_audit and the pipeline all import it from here)."""
 from __future__ import annotations
 
 
