@@ -7,6 +7,7 @@ import type { PlayAnalysis, PlayLegalBid, PlayOngoing, PlayResult, PlayState } f
 import type { Card } from "./cards";
 
 type Seat = 0 | 1 | 2;
+import { CardView } from "./CardView";
 import { UltiTable, TalonStrip, type SeatChrome } from "./UltiTable";
 import { CardChip, KONTRA_WORD, PLAYER_LABEL, TRUMP_LABEL, silentLabel,
 
@@ -513,5 +514,81 @@ export function AuctionPanel({ auction, seat, selPos, setSelPos, selBid,
           </>
         )}
       </div>
+  );
+}
+
+/** One finished round in the match tally — see PlayVsAI's stable-player-space note. */
+export type RoundRow = {
+  contract: string; gp: number[]; soloist: number; winner: string; silents?: string[];
+};
+
+/** The cards you have won so far, grouped by trick. */
+export function CapturedModal({ captured, onClose }: {
+  captured: Card[]; onClose: () => void;
+}) {
+  return (
+    <div className="play-modal-backdrop" onClick={onClose}>
+      <div className="play-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="play-modal-head">
+          <span>Ütött lapok</span>
+          <button className="btn" onClick={onClose}>×</button>
+        </div>
+        <div className="play-captured-reveal">
+          {Array.from({ length: Math.floor(captured.length / 3) }).map((_, g) => (
+            <div key={g} className="play-captured-trick-row">
+              {captured.slice(g * 3, g * 3 + 3).map((c) => (
+                <CardView key={c.id} card={c} size="thumb" />
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Running match scorecard — one row per round, in stable player space (you = column 0). */
+export function ScorecardModal({ rounds, matchGp, onClose }: {
+  rounds: RoundRow[]; matchGp: number[]; onClose: () => void;
+}) {
+  const cell = (v: number, s: number) => (
+    <td key={s} className={`${v > 0 ? "play-sc-pos" : v < 0 ? "play-sc-neg" : ""} ${s === 0 ? "play-sc-you" : ""}`}>
+      {v > 0 ? "+" : ""}{v}
+    </td>
+  );
+  return (
+    <div className="play-modal-backdrop" onClick={onClose}>
+      <div className="play-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="play-modal-head">
+          <span>Pontszámok ({rounds.length} kör)</span>
+          <button className="btn" onClick={onClose}>×</button>
+        </div>
+        {rounds.length === 0 ? (
+          <div className="muted">Még nincs lejátszott kör.</div>
+        ) : (
+          <table className="play-sc-table">
+            <thead>
+              <tr><th>#</th><th>Játék</th><th>Te</th><th>Gép 1</th><th>Gép 2</th></tr>
+            </thead>
+            <tbody>
+              {rounds.map((r, i) => (
+                <tr key={i}>
+                  <td>{i + 1}</td>
+                  <td>{r.contract}{(r.silents?.length ?? 0) > 0 &&
+                    <span className="play-sc-silent"> · {r.silents!.join(", ")}</span>}</td>
+                  {([0, 1, 2] as const).map((s) => cell(r.gp[s], s))}
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr>
+                <td></td><td>Összesen</td>
+                {([0, 1, 2] as const).map((s) => cell(matchGp[s], s))}
+              </tr>
+            </tfoot>
+          </table>
+        )}
+      </div>
+    </div>
   );
 }

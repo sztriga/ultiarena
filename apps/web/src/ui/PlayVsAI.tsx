@@ -19,7 +19,8 @@ import { PuzzleRush } from "./PuzzleRush";
 import { Live } from "./Live";
 import { Profile } from "./Profile";
 import { useAnalysisViewer } from "./useAnalysisViewer";
-import { AnalysisBoard, AuctionPanel, KontraBox, ResultPanel, Splash } from "./playPanels";
+import { AnalysisBoard, AuctionPanel, CapturedModal, KontraBox, ResultPanel, ScorecardModal, Splash,
+         type RoundRow } from "./playPanels";
 
 type Seat = 0 | 1 | 2;
 
@@ -92,7 +93,6 @@ export function PlayVsAI() {
   // scoreboard on real seats — we'd smear the human across all three columns.
   // Instead remap each round into STABLE player space: column 0 = You (always),
   // 1 = the opponent downstream of you, 2 = the opponent upstream. You are P0 forever.
-  type RoundRow = { contract: string; gp: number[]; soloist: number; winner: string; silents?: string[] };
   const [rounds, setRounds] = useState<RoundRow[]>([]);
   const recordedGame = useRef<string | null>(null);
 
@@ -729,69 +729,11 @@ export function PlayVsAI() {
         </section>
       </main>
 
-      {/* Captured cards — revealed grouped by trick */}
       {showCaptured && (
-        <div className="play-modal-backdrop" onClick={() => setShowCaptured(false)}>
-          <div className="play-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="play-modal-head">
-              <span>Ütött lapok</span>
-              <button className="btn" onClick={() => setShowCaptured(false)}>×</button>
-            </div>
-            <div className="play-captured-reveal">
-              {Array.from({ length: Math.floor((state.captured?.length ?? 0) / 3) }).map((_, g) => (
-                <div key={g} className="play-captured-trick-row">
-                  {(state.captured ?? []).slice(g * 3, g * 3 + 3).map((c) => (
-                    <CardView key={c.id} card={c} size="thumb" />
-                  ))}
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+        <CapturedModal captured={state.captured ?? []} onClose={() => setShowCaptured(false)} />
       )}
-
       {showCard && (
-        <div className="play-modal-backdrop" onClick={() => setShowCard(false)}>
-          <div className="play-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="play-modal-head">
-              <span>Pontszámok ({rounds.length} kör)</span>
-              <button className="btn" onClick={() => setShowCard(false)}>×</button>
-            </div>
-            {rounds.length === 0 ? (
-              <div className="muted">Még nincs lejátszott kör.</div>
-            ) : (
-              <table className="play-sc-table">
-                <thead>
-                  <tr><th>#</th><th>Játék</th><th>Te</th><th>Gép 1</th><th>Gép 2</th></tr>
-                </thead>
-                <tbody>
-                  {rounds.map((r, i) => (
-                    <tr key={i}>
-                      <td>{i + 1}</td>
-                      <td>{r.contract}{(r.silents?.length ?? 0) > 0 &&
-                        <span className="play-sc-silent"> · {r.silents!.join(", ")}</span>}</td>
-                      {([0, 1, 2] as const).map((s) => (
-                        <td key={s} className={`${r.gp[s] > 0 ? "play-sc-pos" : r.gp[s] < 0 ? "play-sc-neg" : ""} ${s === 0 ? "play-sc-you" : ""}`}>
-                          {r.gp[s] > 0 ? "+" : ""}{r.gp[s]}
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-                <tfoot>
-                  <tr>
-                    <td></td><td>Összesen</td>
-                    {([0, 1, 2] as const).map((s) => (
-                      <td key={s} className={`${matchGp[s] > 0 ? "play-sc-pos" : matchGp[s] < 0 ? "play-sc-neg" : ""} ${s === 0 ? "play-sc-you" : ""}`}>
-                        {matchGp[s] > 0 ? "+" : ""}{matchGp[s]}
-                      </td>
-                    ))}
-                  </tr>
-                </tfoot>
-              </table>
-            )}
-          </div>
-        </div>
+        <ScorecardModal rounds={rounds} matchGp={matchGp} onClose={() => setShowCard(false)} />
       )}
     </div>
   );
