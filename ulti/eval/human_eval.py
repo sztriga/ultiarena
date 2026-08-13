@@ -172,6 +172,7 @@ class Evaluator:
         if not units:
             return out
         levels = rec["kontra"] or {}
+        by = rec.get("kontra_by")
         for seat in (0, 1, 2):
             if seat == sol_seat:
                 continue
@@ -186,10 +187,17 @@ class Evaluator:
                     eng = any(c.suit == trump and c.rank in ("king", "upper") for c in own)
                 else:
                     eng = False
-                lv = levels.get(U, 0)
-                did = bool(lv[seat - 1] if isinstance(lv, list) else lv)
-                if trump is not None and not isinstance(lv, list):
-                    self.skipped["kontra_attrib"] += 1   # shared: cannot attribute
+                # `kontra_by` (recorded from 2026-08-13) says WHO doubled, by play index.
+                # Without it a COLORED unit is ambiguous: együtt sírunk means one
+                # defender's kontra binds both, so the level alone cannot attribute.
+                play_idx = (seat - sol_seat) % 3
+                if by is not None:
+                    did = play_idx in (by.get(U, {}).get("def") or [])
+                else:
+                    lv = levels.get(U, 0)
+                    did = bool(lv[play_idx - 1] if isinstance(lv, list) else lv)
+                    if trump is not None and not isinstance(lv, list):
+                        self.skipped["kontra_attrib_pre_0813"] += 1
                 out.append(_dec("kontra", seat, seat in humans, eng == did,
                                 rec["seat_gp"][seat], unit=U,
                                 did="kontra" if did else "pass",
@@ -203,6 +211,9 @@ class Evaluator:
             return []
         trump = rec["trump"]
         sol10 = dealt["play_hands"][0]
+        # Mirrors apps/api/auction_flow._setup_play exactly — a colourless COMBO still
+        # frames as the multi objective, so the trumpless test must also require a single
+        # trick contract, or build_position gets contract='parti' with trump=None.
         n_trick = int(bid.ulti) + int(bid.durchmars) + int(bid.betli)
         if bid.betli:
             bc, sc, t, rs, w = "betli", "betli", None, None, None
@@ -258,6 +269,7 @@ def load(db_path: str, vs_ai: Optional[bool] = None, user: Optional[str] = None)
                     "soloist_seat": row[4], "kontra_level": row[6], "made": row[8],
                     "seat_gp": json.loads(row[9]), "humans": humans,
                     "auction": t["auction"], "plays": t["plays"], "kontra": t["kontra"],
+                    "kontra_by": t.get("kontra_by"),
                     "stored_hands": t["deal"]["hands"], "final_talon": t["deal"]["talon"]})
     return out
 
@@ -277,9 +289,12 @@ def evaluate(games, worlds: int = 0) -> tuple:
         }
         decisions += ev.auction(g, dealt, g["humans"])
         if not passed:
-            rung = next(r for r in LADDER
-                        if r.name == next(a["contract"] for a in g["auction"]
-                                          if a["kind"] == "bid"))
+            # By rung_index, NOT by name: the recorded `contract` is the DISPLAY label
+            # (_bid_label, e.g. "színtelen durchmars"), which is not a rung name.
+            # The LAST bid wins the auction, not the first — taking the first gave a
+            # rung that disagreed with the recorded contract on any contested deal.
+            last_bid = [a for a in g["auction"] if a["kind"] == "bid"][-1]
+            rung = next(r for r in LADDER if r.index == last_bid["rung_index"])
             bid = resolve_bidset(rung, [card_from_id(i) for i in dealt["play_hands"][0]],
                                  g["trump"])
             decisions += ev.kontra(g, dealt, g["humans"], bid, g["trump"], sol_seat)

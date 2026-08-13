@@ -15,7 +15,8 @@ from ulti.card import card_from_id, sort_hand
 from .serialize import card_to_dict
 from .engine import Session, _BETLI_DEF, _EXPLOIT, _MIX_EQUIV, _exp36, _recipe
 from . import ai_pool
-from .kontra_flow import _apply_kontra_ai, _kontra_dict, _next_kontra_offer
+from .kontra_flow import (_apply_kontra_ai, _kontra_attribution, _kontra_dict,
+                          _next_kontra_offer)
 
 
 # ── Play ─────────────────────────────────────────────────────────────────────────
@@ -248,13 +249,14 @@ def _record_session(sess: Session) -> None:
             # at the third pass (after any burials); soloist_seat 0 = the payer
             deal = {"hands": [[c.id for c in h] for h in sess.a_hands],
                     "talon": [c.id for c in sess.a_talon]}
-            plays, kontra, marriages = [], {}, []
+            plays, kontra, kontra_by, marriages = [], {}, {}, []
         else:
             # play-index space (0 = soloist); auction stays real-seat
             deal = {"hands": [[c.id for c in h] for h in sess.play_hands0],
                     "talon": [c.id for c in sess.play_talon]}
             plays = [[h["player_id"], h["card"]["id"], h["trick_index"]] for h in sess.p_history]
             kontra = _kontra_dict(sess)
+            kontra_by = _kontra_attribution(sess)
             marriages = [[p, su, pts] for (p, su, pts) in getattr(sess.p_pos, "marriages", [])]
         r = sess.result
         record_game({
@@ -276,7 +278,8 @@ def _record_session(sess: Session) -> None:
                 for s in range(3)
             ],
             "transcript": {"deal": deal, "auction": sess.a_history,
-                           "plays": plays, "kontra": kontra, "marriages": marriages},
+                           "plays": plays, "kontra": kontra, "kontra_by": kontra_by,
+                           "marriages": marriages},
         })
     except Exception as e:
         print(f"[recording] game {sess.id} NOT recorded: {e!r}",

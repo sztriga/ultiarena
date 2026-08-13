@@ -137,6 +137,26 @@ def _kontra_dict(sess: Session) -> dict:
     return out
 
 
+def _kontra_attribution(sess: Session) -> dict:
+    """WHO doubled what, by PLAY index — `{unit: {"def": [1,2], "rekontra": bool}}`.
+
+    `_kontra_dict` above is what the ORACLE needs: per-unit levels, with colored units
+    collapsed to a single shared number because együtt sírunk means one defender's kontra
+    binds both. That collapse loses the attribution, and an evaluation harness needs it —
+    without it, "did this player double when they should have" is unanswerable on every
+    colored unit (it was 20 of 22 kontra decisions in the first recorded games).
+
+    Only units somebody actually doubled appear; an empty dict means nobody did.
+    """
+    out: dict = {}
+    for U in sess.k_units:
+        d = sess.k_def.get(U, {})
+        who = [pidx for pidx in (1, 2) if d.get(pidx)]
+        if who:
+            out[U] = {"def": who, "rekontra": bool(sess.k_rekontra.get(U))}
+    return out
+
+
 def _next_kontra_offer(sess: Session):
     """The next kontra decision to offer given trick-1 play so far → (role, pidx,
     available_units) or None. Each defender is offered once, right after playing their
